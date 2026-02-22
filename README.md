@@ -115,7 +115,21 @@ chmod +x start.sh
 ./start.sh
 ```
 
-### 3. Start Manually (Alternative)
+### 3. How to Stop
+
+To stop both the backend and frontend services:
+
+**On Windows:**
+```cmd
+.\stop.bat
+```
+
+**On Linux/macOS:**
+```bash
+./stop.sh
+```
+
+### 4. Start Manually (Alternative)
 
 If you prefer to start them separately:
 
