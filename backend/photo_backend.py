@@ -476,19 +476,7 @@ def background_processor():
 # ==========================================
 # API ENDPOINTS
 # ==========================================
-@app.get("/api/image/{photo_id}")
-async def get_image(photo_id: int):
-    """Serves the actual image file given a photo ID."""
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT filepath FROM photos WHERE id = ?", (photo_id,))
-    row = cursor.fetchone()
-    conn.close()
-    
-    if not row or not os.path.exists(row[0]):
-        raise HTTPException(status_code=404, detail="Image not found")
-        
-    return FileResponse(row[0])
+
 
 @app.get("/api/photo/{photo_id}/detail")
 async def get_photo_detail(photo_id: int):

@@ -167,9 +167,21 @@ If you are a developer looking to extend the Python backend, you can automatical
 ```
 This will create a `docs` folder globally, and deposit the newly generated HTML schema inside!
 
-MIT
+### 7. Running Backend Tests
+
+The backend is fully tested using `pytest` with a suite of unit and integration tests covering the REST API, background worker, database setup, and mock AI interactions.
+
+1. Ensure your virtual environment is activated in the `backend` folder.
+2. Run the full test suite with coverage reporting:
+   ```bash
+   cd backend
+   pytest -v --cov=.
+   ```
+This will execute the isolated test database and output the coverage metrics (currently targeted at >80%). You can also generate an HTML coverage report using `pytest --cov=. --cov-report=html`.
 
 ---
+
+MIT
 
 Built by **Ejber Ozkan** using **Gemini Antigravity** and these skills
 ```

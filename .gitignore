@@ -8,6 +8,9 @@ env/
 .env
 .pytest_cache/
 htmlcov/
+.coverage
+pytest.log
+pytest_output*.txt
 .tox/
 
 # Node.js
