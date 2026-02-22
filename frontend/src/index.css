@@ -1,0 +1,301 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   STRUCTURAL VARIABLES — Light and Dark Modes
+   Applied via data-mode="dark" | data-mode="light" on <html>
+   ========================================================================== */
+
+:root,
+[data-mode="dark"] {
+  --bg-body: #0a0a0a;
+  --bg-surface: #171717;
+  --bg-panel: #111111;
+  --bg-hover: #262626;
+  --bg-card: #1c1c1c;
+  --border-subtle: #2a2a2a;
+  --border-mid: #3a3a3a;
+  --text-main: #f0f0f0;
+  --text-muted: #888888;
+  --text-dim: #555555;
+  --scrollbar-thumb: #444;
+  --scrollbar-hover: #666;
+}
+
+[data-mode="light"] {
+  --bg-body: #f4f1ee;
+  --bg-surface: #ffffff;
+  --bg-panel: #ece8e3;
+  --bg-hover: #ddd9d3;
+  --bg-card: #f8f5f2;
+  --border-subtle: #d4cfc9;
+  --border-mid: #bbb5af;
+  --text-main: #1a1a1a;
+  --text-muted: #5a5a5a;
+  --text-dim: #8a8a8a;
+  --scrollbar-thumb: #c0b8b0;
+  --scrollbar-hover: #a09890;
+}
+
+/* ==========================================================================
+   ACCENT COLOUR GROUPS — Applied via data-color="..." on <html>
+   Each theme sets: --color-primary, --color-secondary, --color-glow
+   ========================================================================== */
+
+/* Default (set to Twilight Purple so app has a colour on first load) */
+:root {
+  --color-primary: #905ea9;
+  --color-secondary: #a884f3;
+  --color-glow: rgba(144, 94, 169, 0.25);
+  --color-primary-light: #eaaded;
+}
+
+[data-color="twilight"] {
+  --color-primary: #905ea9;
+  --color-secondary: #a884f3;
+  --color-glow: rgba(144, 94, 169, 0.25);
+  --color-primary-light: #eaaded;
+}
+
+[data-color="crimson"] {
+  --color-primary: #e83b3b;
+  --color-secondary: #fb6b1d;
+  --color-glow: rgba(232, 59, 59, 0.25);
+  --color-primary-light: #f79617;
+}
+
+[data-color="citrus"] {
+  --color-primary: #a2a947;
+  --color-secondary: #d5e04b;
+  --color-glow: rgba(162, 169, 71, 0.25);
+  --color-primary-light: #fbff86;
+}
+
+[data-color="ocean"] {
+  --color-primary: #1ebc73;
+  --color-secondary: #30e1b9;
+  --color-glow: rgba(30, 188, 115, 0.25);
+  --color-primary-light: #8ff8e2;
+}
+
+[data-color="sapphire"] {
+  --color-primary: #4d9be6;
+  --color-secondary: #8fd3ff;
+  --color-glow: rgba(77, 155, 230, 0.25);
+  --color-primary-light: #323353;
+}
+
+[data-color="magenta"] {
+  --color-primary: #cf657f;
+  --color-secondary: #ed8099;
+  --color-glow: rgba(207, 101, 127, 0.25);
+  --color-primary-light: #831c5d;
+}
+
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
+
+@layer base {
+  body {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    min-height: 100vh;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    transition: background-color 0.3s ease, color 0.2s ease;
+  }
+
+  /* Always use theme variables for form controls — prevents white-on-white in light mode */
+  input,
+  select,
+  textarea {
+    color: var(--text-main) !important;
+    caret-color: var(--color-primary);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-dim);
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   CUSTOM SCROLLBAR
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+}
+
+/* ==========================================================================
+   CUSTOM SCROLLBAR — .custom-scrollbar variant
+   ========================================================================== */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+/* ==========================================================================
+   UTILITY CLASSES — avoids Tailwind breaking on CSS variable colors
+   ========================================================================== */
+
+.bg-app-body {
+  background-color: var(--bg-body);
+}
+
+.bg-app-surface {
+  background-color: var(--bg-surface);
+}
+
+.bg-app-panel {
+  background-color: var(--bg-panel);
+}
+
+.bg-app-hover {
+  background-color: var(--bg-hover);
+}
+
+.bg-app-card {
+  background-color: var(--bg-card);
+}
+
+.border-subtle {
+  border-color: var(--border-subtle);
+}
+
+.border-mid {
+  border-color: var(--border-mid);
+}
+
+.text-main {
+  color: var(--text-main);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-dim {
+  color: var(--text-dim);
+}
+
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-secondary {
+  color: var(--color-secondary);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.primary-glow {
+  box-shadow: 0 0 16px var(--color-glow);
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+/* ==========================================================================
+   THEMES — Ensure primary colour propagates to all interactive elements.
+   These overrides fix cases where Tailwind's hover:bg-blue-600 etc. win.
+   ========================================================================== */
+
+/* Primary buttons: override any hardcoded hover colour */
+button.bg-primary,
+a.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+button.bg-primary:hover,
+a.bg-primary:hover {
+  filter: brightness(1.15);
+  background-color: var(--color-primary) !important;
+}
+
+button.bg-primary:focus-visible,
+a.bg-primary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Focus rings on inputs, selects */
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 2px var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Nav sidebar — active link highlight */
+nav a.active,
+nav a[aria-current="page"] {
+  color: var(--color-primary) !important;
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
+}
+
+/* Nav sidebar — icon colour on hover */
+nav a:hover svg {
+  color: var(--color-primary) !important;
+}
+
+/* Entity row hover highlight border */
+[class*="hover:border-primary"]:hover {
+  border-color: var(--color-primary) !important;
+}
+
+/* Progress bars */
+[class*="bg-primary"][class*="rounded-full"],
+.progress-primary {
+  background-color: var(--color-primary) !important;
+}
+
+/* Text primary — ensure it picks up the variable */
+.text-primary,
+[class~="text-primary"] {
+  color: var(--color-primary) !important;
+}
+
+.border-primary,
+[class~="border-primary"] {
+  border-color: var(--color-primary) !important;
+}
+
+/* Themed badge (e.g. ai_model badge) */
+.text-secondary,
+[class~="text-secondary"] {
+  color: var(--color-secondary) !important;
+}
+
+/* Swatch glow effect for the settings page */
+.ring-primary {
+  --tw-ring-color: var(--color-primary);
+}

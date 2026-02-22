@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pydantic
+requests
+deepface
+opencv-python-headless
+tf-keras
+python-multipart
+Pillow
+aiofiles
+numpy<2

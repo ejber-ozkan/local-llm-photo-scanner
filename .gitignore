@@ -1,0 +1,53 @@
+# Python / Frameworks
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+venv/
+env/
+.env
+.pytest_cache/
+htmlcov/
+.tox/
+
+# Node.js
+node_modules/
+dist/
+build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Databases and App Data
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+backend/uploads/
+backend/test_duplicates_dir/
+backend/backups/
+uploads/
+
+# Debug / scratch files generated at runtime
+backend/*_debug.json
+
+# Generated docs (run generate_pydocs.py yourself) — but keep screenshots
+docs/*.html
+docs/photovault/
+
+# Agent / AI Tools
+.agent/
+.agents/
+.gemini/
+skills-lock.json
+project_skills.md
+
+# IDE / OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Explicitly excluded user files
+*NOT4GITHUB*
