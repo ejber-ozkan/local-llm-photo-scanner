@@ -18,6 +18,7 @@ interface ScanHistoryItem {
 export default function SettingsPage() {
     const [path, setPath] = useState('');
     const [apiError, setApiError] = useState('');
+    const [appVersion, setAppVersion] = useState('0.0.0');
 
     // Live scan state
     const [scanStatus, setScanStatus] = useState<ScanStatus>({
@@ -80,6 +81,17 @@ export default function SettingsPage() {
             setLoadingModels(false);
         }
     };
+
+    const fetchVersion = async () => {
+        try {
+            const res = await axios.get('http://localhost:8000/api/version');
+            setAppVersion(res.data.version);
+        } catch (err) { }
+    };
+
+    useEffect(() => {
+        fetchVersion();
+    }, []);
 
     // Poll logs and status continuously
     useEffect(() => {
@@ -664,6 +676,9 @@ export default function SettingsPage() {
                     </div>
                 </div>
             )}
+            <div className="mt-8 text-center text-gray-600 text-xs font-mono pb-4">
+                Local LLM Photo Scanner v{appVersion}
+            </div>
             {/* Toast container */}
             <ToastContainer toasts={toasts} onDismiss={dismiss} />
         </div>

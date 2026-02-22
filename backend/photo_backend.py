@@ -30,6 +30,8 @@ def add_log(msg: str):
     log_entry = f"[{timestamp}] {msg}"
     scan_logs.append(log_entry)
     print(msg)
+    
+VERSION = "1.0.4"
 
 
 try:
@@ -1483,6 +1485,10 @@ async def update_settings_model(req: SettingsUpdateRequest):
     global ACTIVE_OLLAMA_MODEL
     ACTIVE_OLLAMA_MODEL = req.model_name
     return {"success": True, "active": ACTIVE_OLLAMA_MODEL}
+
+@app.get("/api/version")
+async def get_version():
+    return {"version": VERSION}
 
 if __name__ == "__main__":
     import uvicorn
