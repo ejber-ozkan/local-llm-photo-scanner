@@ -1,5 +1,12 @@
 import sqlite3
 
+"""
+Verifies the database schema successfully captures creation and modification dates.
+
+This script executes a brief SQL query against the `photometadata.db` to ensure
+the migration columns `date_created` and `date_modified` exist and are queryable.
+"""
+
 print("Testing photo backend database setup...")
 # Check if date_created and date_modified columns exist
 conn = sqlite3.connect("photometadata.db")

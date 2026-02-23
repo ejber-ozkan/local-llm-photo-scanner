@@ -5,13 +5,23 @@ from PIL import Image
 
 
 class ImageServiceError(Exception):
+    """Base exception for errors originating from the image service module."""
     pass
 
 
 from typing import Any
 
 def _convert_gps_to_decimal(gps_coords: tuple[Any, ...], gps_ref: str) -> float | None:
-    """Converts GPS coordinates from degrees/minutes/seconds to decimal."""
+    """Converts GPS coordinates from degrees/minutes/seconds to decimal.
+
+    Args:
+        gps_coords (tuple[Any, ...]): A tuple containing degrees, minutes, and
+            seconds extracted from the EXIF data.
+        gps_ref (str): The cardinal direction reference ('N', 'S', 'E', 'W').
+
+    Returns:
+        float | None: The computed decimal degree, or None if conversion fails.
+    """
     try:
         d = float(gps_coords[0])
         m = float(gps_coords[1])
@@ -25,7 +35,19 @@ def _convert_gps_to_decimal(gps_coords: tuple[Any, ...], gps_ref: str) -> float 
 
 
 def extract_gps_from_exif(filepath: str) -> dict[str, float | None]:
-    """Extracts GPS latitude and longitude from a photo's EXIF data."""
+    """Extracts GPS latitude and longitude from a photo's EXIF data.
+
+    Attempts to read the 0x8825 (GPSInfo) IFD tag from the image at the
+    specified filepath, parsing the latitude and longitude degrees along
+    with their cardinal direction references.
+
+    Args:
+        filepath (str): The absolute or relative path to the image file.
+
+    Returns:
+        dict[str, float | None]: A dictionary containing `gps_lat` and
+            `gps_lon` keys mapped to their decimal float values or None.
+    """
     result: dict[str, float | None] = {"gps_lat": None, "gps_lon": None}
     try:
         with Image.open(filepath) as img:
@@ -50,7 +72,19 @@ def extract_gps_from_exif(filepath: str) -> dict[str, float | None]:
 
 
 def extract_exif_for_filters(filepath: str) -> dict[str, str | float | None]:
-    """Extracts date_taken, camera_make, camera_model, and GPS from a photo's EXIF."""
+    """Extracts date_taken, camera_make, camera_model, and GPS from a photo's EXIF.
+
+    Parses standard EXIF tags relevant for gallery filtering, including
+    device make/model, original datetime, and geolocation mappings.
+
+    Args:
+        filepath (str): The path to the image file to analyze.
+
+    Returns:
+        dict[str, str | float | None]: A dictionary containing the parsed
+            metadata values mapped to their respective keys. Values are None if
+            the corresponding EXIF tag is missing or unparseable.
+    """
     result: dict[str, str | float | None] = {
         "date_taken": None,
         "camera_make": None,
@@ -104,13 +138,37 @@ def extract_exif_for_filters(filepath: str) -> dict[str, str | float | None]:
 
 
 def encode_image_to_base64(filepath: str) -> str:
-    """Encode an image file to a base64 string."""
+    """Encode an image file to a base64 string.
+
+    Reads the binary data of the file and encodes it into a UTF-8 base64
+    string suitable for JSON transmission over REST APIs.
+
+    Args:
+        filepath (str): The path to the image file to encode.
+
+    Returns:
+        str: The image file encoded as a base64 string.
+    """
     with open(filepath, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
 def process_image_with_ollama(filepath: str, ollama_url: str, model_to_use: str) -> str | None:
-    """Sends the image to local Ollama to get a description and pet entities."""
+    """Sends the image to local Ollama to get a description and pet entities.
+
+    Constructs a JSON payload featuring a vision prompt and the base64-encoded
+    image, and POSTs it to the specified Ollama endpoint.
+
+    Args:
+        filepath (str): The path to the image file to process.
+        ollama_url (str): The full HTTP endpoint to the local Ollama instance
+            (e.g., 'http://127.0.0.1:11434/api/generate').
+        model_to_use (str): The specific vision model to query (e.g., 'llava:13b').
+
+    Returns:
+        str | None: The raw text response containing the description and pet entities.
+            Returns None if the network request fails or another exception occurs.
+    """
     try:
         base64_image = encode_image_to_base64(filepath)
 

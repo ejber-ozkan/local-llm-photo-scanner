@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.3.0"
+VERSION="1.2.0"
 
 echo "===================================================="
 echo "   Local LLM Photo Scanner v$VERSION"

@@ -7,8 +7,20 @@ BACKUP_DIR = "backups"
 DB_FILE = "photometadata.db"
 
 
-def restore_database(backup_filename: str):
-    """Restores the database from a backup file, keeping a safety copy of the current DB."""
+def restore_database(backup_filename: str) -> bool:
+    """Restores the database from a backup file, keeping a safety copy of the current DB.
+
+    Locates the target backup file by name. Before overwriting the active
+    `photometadata.db`, it generates an emergency `pre_restore_safety_...db`
+    copy of the current data state.
+
+    Args:
+        backup_filename (str): The specific filename of the `.db` copy to restore.
+
+    Returns:
+        bool: True if the file was successfully copied over the active database,
+            False if the specified backup doesn't exist or an I/O error occurs.
+    """
 
     backup_path = os.path.join(BACKUP_DIR, backup_filename)
 

@@ -6,8 +6,16 @@ BACKUP_DIR = "backups"
 DB_FILE = "photometadata.db"
 
 
-def backup_database() -> dict[str, str]:
-    """Duplicates the main library database into the backups folder."""
+def backup_database() -> str | bool:
+    """Duplicates the main library database into the backups folder.
+
+    Generates a timestamped copy of `photometadata.db` and places it within
+    the persistent `backups/` directory.
+
+    Returns:
+        str | bool: The absolute file path of the new backup copy upon success,
+            or `False` if the backup encounters an error.
+    """
     if not os.path.exists(DB_FILE):
         print(f"Error: Database file '{DB_FILE}' not found. Cannot create backup.")
         return False

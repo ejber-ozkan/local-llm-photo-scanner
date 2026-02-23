@@ -29,14 +29,19 @@ scan_logs: collections.deque[str] = collections.deque(maxlen=500)
 SCAN_STATE = "idle"
 
 
-def add_log(msg: str):
+def add_log(msg: str) -> None:
+    """Appends a timestamped log message to the global scan logs history.
+
+    Args:
+        msg (str): The raw log message to be timestamped and appended.
+    """
     timestamp = datetime.now().strftime("%H:%M:%S")
     log_entry = f"[{timestamp}] {msg}"
     scan_logs.append(log_entry)
     print(msg)
 
 
-VERSION = "1.3.0"
+VERSION = "1.2.0"
 
 
 try:
@@ -62,6 +67,15 @@ except ImportError:
 # End imports
 
 def get_local_ip() -> str:
+    """Detects and returns the local IPv4 address of the machine.
+
+    Attempts to connect to a public DNS server via a UDP socket to determine
+    the correct outgoing interface's IP address. If it fails, falls back to
+    localhost.
+
+    Returns:
+        str: The local IPv4 address as a string, defaults to '127.0.0.1'.
+    """
     try:
         # Create a dummy socket to determine the local network IP
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -103,15 +117,35 @@ init_db()
 # MODELS
 # ==========================================
 class ScanRequest(BaseModel):
+    """Request payload for starting a newly scheduled directory scan.
+
+    Attributes:
+        directory_path (str): The absolute path to the directory containing images.
+        force_rescan (bool): If True, forces reprocessing of images even if they
+            were previously scanned. Defaults to False.
+    """
     directory_path: str
     force_rescan: bool = False
 
 
 class SettingsUpdateRequest(BaseModel):
+    """Payload for updating active models in the engine configuration.
+
+    Attributes:
+        model_name (str): The identifier name of the Ollama model to set as active.
+    """
     model_name: str
 
 
 class SearchResponse(BaseModel):
+    """Schema representing a single photo result in the gallery search API.
+
+    Attributes:
+        id (int): The unique internal database ID for the photo.
+        filepath (str): The absolute path to the image on disk.
+        filename (str): The base name of the image file.
+        description (str | None): The AI-generated description of the photo, if available.
+    """
     id: int
     filepath: str
     filename: str
@@ -119,6 +153,12 @@ class SearchResponse(BaseModel):
 
 
 class UpdateEntityRequest(BaseModel):
+    """Request payload for renaming or merging a detected face entity.
+
+    Attributes:
+        entity_id (str | int): The ID identifying the target entity.
+        new_name (str): The updated name to apply to the entity.
+    """
     # Depending on the route (gallery vs test), this could be an integer ID or a string Name
     entity_id: str | int
     new_name: str
@@ -130,8 +170,14 @@ class UpdateEntityRequest(BaseModel):
 # AI Processing logic moved to services.image_service and database
 
 
-def background_processor():
-    """Background task to find pending photos and process them."""
+def background_processor() -> None:
+    """Background task to find pending photos and process them.
+
+    Continuously polls the database for photos with a 'pending' status. Coordinates
+    EXIF extraction, facial recognition clustering using DeepFace, and image
+    description analysis via Ollama. It saves the final metadata and updates
+    the status to 'processed' or 'error'.
+    """
     global SCAN_STATE
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -362,7 +408,18 @@ def background_processor():
 
 @app.get("/api/photo/{photo_id}/detail")
 async def get_photo_detail(photo_id: int):
-    """Returns full photo detail: description, entities, and live EXIF metadata."""
+    """Returns full photo detail: description, entities, and live EXIF metadata.
+
+    Fetches the database record and child entities for a specific photo. Merges
+    the retrieved SQL data with a live parse of the image file's EXIF properties.
+
+    Args:
+        photo_id (int): The unique internal ID of the photo in the database.
+
+    Returns:
+        dict[str, Any]: A dictionary containing photo attributes, lists of
+            detected entities, and structured EXIF tags.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
@@ -458,7 +515,20 @@ async def get_photo_detail(photo_id: int):
 
 @app.post("/api/scan")
 async def scan_directory(req: ScanRequest, background_tasks: BackgroundTasks):
-    """Scans a local directory and adds new images to the database queue."""
+    """Scans a local directory and adds new images to the database queue.
+
+    Recursively walks through a local folder yielding valid image extensions,
+    inserting them into the DB queue. After populating the 'pending' queue, it
+    kicks off the asynchronous `background_processor` worker.
+
+    Args:
+        req (ScanRequest): The JSON payload containing the directory path
+            and the force_rescan flag.
+        background_tasks (BackgroundTasks): FastAPI's background task manager.
+
+    Returns:
+        dict[str, str]: A status dictionary with a brief success message.
+    """
     global SCAN_STATE
     add_log(f"Starting scan of directory: {req.directory_path}")
     if not os.path.exists(req.directory_path):
@@ -521,11 +591,29 @@ async def scan_directory(req: ScanRequest, background_tasks: BackgroundTasks):
 
 
 class ScanControlRequest(BaseModel):
+    """Request payload for controlling the active directory scanner.
+
+    Attributes:
+        action (str): The desired state operation. Must be one of "pause",
+            "resume", or "cancel".
+    """
     action: str  # "pause", "resume", "cancel"
 
 
 @app.post("/api/scan/control")
 async def control_scan(req: ScanControlRequest, background_tasks: BackgroundTasks):
+    """Changes the global background processing state.
+
+    Supports pausing, resuming, or completely terminating the AI scanning worker.
+    Terminating drops all 'pending' photos from the queue.
+
+    Args:
+        req (ScanControlRequest): Payload containing the target action.
+        background_tasks (BackgroundTasks): FastAPI's job coordinator.
+
+    Returns:
+        dict[str, Any]: An execution status block displaying the new SCAN_STATE.
+    """
     global SCAN_STATE
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -551,7 +639,12 @@ async def control_scan(req: ScanControlRequest, background_tasks: BackgroundTask
 
 @app.get("/api/scan/history")
 async def get_scan_history():
-    """Returns the list of previously scanned directories, ordered by most recent."""
+    """Returns the list of previously scanned directories, ordered by most recent.
+
+    Returns:
+        dict[str, list[dict[str, str]]]: A structure wrapping a history list,
+            each element featuring the `directory_path` and `last_scanned` time.
+    """
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
@@ -565,6 +658,12 @@ async def get_scan_history():
 
 @app.get("/api/scan/status")
 async def get_scan_status():
+    """Retrieves the current state of the database processing queue.
+
+    Returns:
+        dict[str, Any]: A structural summary denoting the global SCAN_STATE,
+            total tracked photos, and counts of processed vs pending items.
+    """
     global SCAN_STATE
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -584,11 +683,29 @@ async def get_scan_status():
 
 
 class DatabaseCleanRequest(BaseModel):
+    """Payload targeting a specific database file for complete erasure.
+
+    Attributes:
+        target (str): Which database to drop. Accepts 'main' or 'test'.
+    """
     target: str  # 'main' or 'test'
 
 
 @app.post("/api/database/clean")
 async def clean_database(req: DatabaseCleanRequest):
+    """Drops all application tables and reinstantiates a clean database schema.
+
+    Forces the active global scan state to 'idle' and executes a hard drop
+    on the `entities`, `photos`, and `scan_history` tables for the
+    specified environment target, returning a fresh empty SQL store.
+
+    Args:
+        req (DatabaseCleanRequest): Targeting payload specifying 'main' or 'test'.
+
+    Returns:
+        dict[str, Any]: A success message upon successful structural wipe.
+            Raises HTTP 400 or 500 otherwise.
+    """
     global SCAN_STATE
 
     if req.target not in ["main", "test"]:
@@ -621,12 +738,25 @@ async def clean_database(req: DatabaseCleanRequest):
 
 
 class RestoreRequest(BaseModel):
+    """Payload defining which database backup file to restore from.
+
+    Attributes:
+        filename (str): The filename of the `.db` backup residing in the `backups` dir.
+    """
     filename: str
 
 
 @app.get("/api/database/backups")
 async def get_backups():
-    """Returns a list of available database backups."""
+    """Returns a list of available database backups.
+
+    Scans the local `backups/` directory, surfacing file sizes and timestamps.
+    The response is automatically sorted by newest first.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: A dictionary grouping backups containing
+            filename, size in bytes, and ISO-8601 created times.
+    """
     if not os.path.exists("backups"):
         return {"backups": []}
 
@@ -646,7 +776,14 @@ async def get_backups():
 
 @app.post("/api/database/backup")
 async def trigger_backup():
-    """Triggers a manual backup of the main database."""
+    """Triggers a manual backup of the main database.
+
+    Invokes the automated standard SQL copy function to safely clone the active DB.
+
+    Returns:
+        dict[str, Any]: A success descriptor containing the absolute path of the
+            newly generated backup `.db` file.
+    """
     result = backup_db.backup_database()
     if result:
         return {"success": True, "path": result}
@@ -655,7 +792,17 @@ async def trigger_backup():
 
 @app.post("/api/database/restore")
 async def trigger_restore(req: RestoreRequest):
-    """Restores the main database from a backup file."""
+    """Restores the main database from a backup file.
+
+    Halts the global background scanning processor to prevent data corruption,
+    and replaces the active `photometadata.db` with the designated backup.
+
+    Args:
+        req (RestoreRequest): Data transfer object pointing to the backup filename.
+
+    Returns:
+        dict[str, Any]: Application confirmation message referencing the loaded DB.
+    """
     # Stop any running scans before restoring
     global SCAN_STATE
     SCAN_STATE = "idle"
@@ -669,12 +816,32 @@ async def trigger_restore(req: RestoreRequest):
 
 @app.get("/api/scan/logs")
 async def get_scan_logs():
+    """Retrieves the transient in-memory list of processing worker logs.
+
+    Returns:
+        dict[str, list[str]]: Up to 500 chronological logging strings captured
+            during background or foreground photo processing operations.
+    """
     return {"logs": list(scan_logs)}
 
 
 @app.post("/api/scan/single")
 async def scan_single_photo(file: UploadFile = File(...), model: str | None = Form(None)):
-    """Uploads, saves, and immediately processes a single photo into the test database."""
+    """Uploads, saves, and immediately processes a single photo into the test database.
+
+    Bypasses the persistent `main` directory scanning flow. This stores the image in
+    a designated test cache directory and forces it through the Ollama + Deepface
+    synchronous pipeline, rendering prompt analytics immediately for the user.
+
+    Args:
+        file (UploadFile): The binary image file received via form-data.
+        model (str | None): A customized Ollama vision model identifier override,
+            sent via form-data. Defaults to using `ACTIVE_OLLAMA_MODEL`.
+
+    Returns:
+        dict[str, Any]: The finalized `id` and descriptive statistics populated in
+            the test database structure.
+    """
     if not any((file.filename or "").lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
         raise HTTPException(status_code=400, detail="Invalid image extension.")
 
@@ -1019,7 +1186,18 @@ async def scan_single_photo(file: UploadFile = File(...), model: str | None = Fo
 
 @app.get("/api/image/{photo_id}")
 async def get_image(photo_id: int):
-    """Returns the actual image file for a given photo ID."""
+    """Returns the actual image file for a given photo ID.
+
+    Queries both the `main` and `test` environments sequentially to locate
+    the absolute file path, confirming existence before serving the binary.
+
+    Args:
+        photo_id (int): The unique database identifier for the photo.
+
+    Returns:
+        FileResponse: A streaming file response serving the physical image.
+            Raises HTTP 404 if the path cannot be resolved from the DB.
+    """
     # First check main DB
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -1056,7 +1234,28 @@ async def search_photos(
     sort_dir: str = "desc",
     limit: int = 500,
 ):
-    """Searches photos with full filter and sort support."""
+    """Searches photos with full filter and sort support.
+
+    Builds dynamic SQL `JOIN`s and `WHERE` clauses to query processed
+    metadata effectively. Accommodates multi-faceted text search, entity
+    cross-referencing, metadata filtering, and strict date bounds.
+
+    Args:
+        q (str): Universal text query across filename, desc, or entity names.
+        name (str): Exact name match for an entity attached to the photo.
+        entity_type (str): Restricts search strictly to 'person' or 'pet'.
+        date_from (str): Start date string boundary `YYYY-MM-DD`.
+        date_to (str): End date boundary `YYYY-MM-DD`.
+        camera (str): Camera make/model combination parameter.
+        has_faces (bool): Filter requiring at least one detected person.
+        unidentified (bool): Filter requiring 'Unknown' named entities.
+        sort_by (str): Standardized column to sort on (e.g. `date_taken`).
+        sort_dir (str): `asc` or `desc` directional enum flag.
+        limit (int): Paginated limit, enforcing a maximum batch cap.
+
+    Returns:
+        list[dict[str, Any]]: A clean list of dictionaries modeling the SQL rows.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
@@ -1148,7 +1347,15 @@ async def search_photos(
 
 @app.get("/api/duplicates")
 async def get_duplicates():
-    """Returns grouped duplicate files."""
+    """Returns grouped duplicate files based on MD5 analysis.
+
+    Searches the database for records uniquely flagged as `duplicate`
+    via matching binary file checksums mapped back to the primary `processed` asset.
+
+    Returns:
+        list[dict[str, Any]]: An array containing hashes grouped by counts, pointing
+            towards the original baseline image alongside an array of identified copies.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
@@ -1211,7 +1418,14 @@ async def get_duplicates():
 
 @app.get("/api/gallery/filters")
 async def get_gallery_filters():
-    """Returns available filter options for the gallery."""
+    """Returns available filter options dynamically computed for the frontend gallery.
+
+    Tallies unique extracted metadata constants such as camera descriptors,
+    named entity bounds, explicit date constraints, and aggregation counts.
+
+    Returns:
+        dict[str, Any]: Available configuration flags rendering drop-down states.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
@@ -1262,7 +1476,13 @@ async def get_gallery_filters():
 
 @app.get("/api/gallery/years")
 async def get_gallery_years():
-    """Returns years that have photos, with counts, for the timeline sidebar."""
+    """Returns years that have photos, with counts, for the timeline sidebar.
+
+    Performs a high-level substring group mapping on the `date_taken` column.
+
+    Returns:
+        list[dict[str, Any]]: Array mapping four-digit year string to integer count.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -1279,7 +1499,12 @@ async def get_gallery_years():
 
 @app.get("/api/unidentified")
 async def get_unidentified_entities():
-    """Gets a list of people/pets that currently have an 'Unknown' name."""
+    """Gets a list of people/pets that currently have an 'Unknown' name.
+
+    Returns:
+        list[dict[str, Any]]: Entity rows prefixed with the "Unknown" pattern,
+            accompanied by their respective bounding boxes and DB links.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     # Group by name to just return one instance of each unknown person/pet
@@ -1300,7 +1525,15 @@ async def get_unidentified_entities():
 
 @app.get("/api/photo/{photo_id}/entities")
 async def get_photo_entities(photo_id: int):
-    """Gets ALL entities (both identified and unidentified) for a specific photo."""
+    """Gets ALL entities (both identified and unidentified) for a specific photo.
+    
+    Args:
+        photo_id (int): The unique database identifier for the photo.
+        
+    Returns:
+        list[dict[str, Any]]: Array of associated entity records containing their
+            IDs, structural types, names, and spatial bounding boxes.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute(
@@ -1318,7 +1551,15 @@ async def get_photo_entities(photo_id: int):
 
 
 def parse_name(full_name: str):
-    """Splits a full name into first and last name."""
+    """Splits a full name into first and last name components.
+    
+    Args:
+        full_name (str): The raw string space-separated name to parse.
+        
+    Returns:
+        tuple[str, str]: A tuple containing the extracted `first_name` and
+            remaining `last_name`. If no space exists, `last_name` is empty.
+    """
     parts = full_name.strip().split(" ", 1)
     if len(parts) == 1:
         return parts[0], ""
@@ -1327,7 +1568,18 @@ def parse_name(full_name: str):
 
 @app.post("/api/entities/name")
 async def name_main_entity(req: UpdateEntityRequest):
-    """Updates the name of a person in the MAIN database globally."""
+    """Updates the name of a person in the MAIN database globally.
+    
+    Renames all instances of a specific entity (e.g., 'Unknown Person 1') across
+    all photos. If the new name already exists, it acts as a merge operation.
+    
+    Args:
+        req (UpdateEntityRequest): Data payload containing the old `entity_id`
+            and the new replacement string.
+            
+    Returns:
+        dict[str, Any]: Basic success confirmation and renaming details.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
@@ -1357,7 +1609,14 @@ async def name_main_entity(req: UpdateEntityRequest):
 
 @app.delete("/api/entities/{entity_name}")
 async def delete_main_entity(entity_name: str):
-    """Deletes all entities in the MAIN db matching the specific name."""
+    """Deletes all entities in the MAIN db matching the specific name.
+    
+    Args:
+        entity_name (str): The exact entity string name to drop from the table.
+        
+    Returns:
+        dict[str, Any]: A success message indicating deletion completion.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM entities WHERE entity_name = ?", (entity_name,))
@@ -1368,8 +1627,17 @@ async def delete_main_entity(entity_name: str):
 
 @app.post("/api/test/entities/name")
 async def name_test_entity(req: UpdateEntityRequest):
-    """Updates the name of a person in the TEST database, saving first and last name separately.
-    Acts as a merge by assigning the identity of an existing person if the name matches.
+    """Updates the name of a person in the TEST database.
+    
+    Acts as a merge by assigning the identity of an existing person if the name
+    matches. Separate records are preserved to build a diverse face-profile
+    for improved future clustering accuracy.
+    
+    Args:
+        req (UpdateEntityRequest): Payload containing the target entity to rename.
+        
+    Returns:
+        dict[str, Any]: Success indication mapping the old name to the new name.
     """
     conn = sqlite3.connect(DB_TEST_FILE)
     cursor = conn.cursor()
@@ -1421,7 +1689,14 @@ async def name_test_entity(req: UpdateEntityRequest):
 
 @app.delete("/api/test/entities/{entity_name}")
 async def delete_test_entity(entity_name: str):
-    """Deletes all entities in the test db matching the specific name/label."""
+    """Deletes all entities in the test db matching the specific name/label.
+    
+    Args:
+        entity_name (str): The name identifier targeted for removal.
+        
+    Returns:
+        dict[str, Any]: A success descriptor.
+    """
     conn = sqlite3.connect(DB_TEST_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM entities WHERE entity_name = ?", (entity_name,))
@@ -1432,7 +1707,14 @@ async def delete_test_entity(entity_name: str):
 
 @app.post("/api/test/clear")
 async def clear_test_db():
-    """Drops all data in the test database to reset the sandbox."""
+    """Drops all data in the test database to reset the sandbox.
+    
+    Empties both the `entities` and `photos` tables, and physically removes
+    any lingering files within the `uploads/` image caching directory.
+    
+    Returns:
+        dict[str, Any]: Sandbox clearance completion message.
+    """
     conn = sqlite3.connect(DB_TEST_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM entities")
@@ -1453,7 +1735,15 @@ async def clear_test_db():
 
 @app.get("/api/select-folder")
 async def select_folder():
-    """Opens a native file dialog to select a directory."""
+    """Opens a native file dialog to select a directory.
+    
+    Leverages `tkinter` on the host OS to summon a folder-picker prompt.
+    Runs asynchronously in a separate thread to prevent blocking.
+    
+    Returns:
+        dict[str, str]: A dictionary containing the `path` key mapping to the
+            absolute directory selected by the user.
+    """
     if not TKINTER_AVAILABLE:
         raise HTTPException(status_code=500, detail="Tkinter is not available. Please type the path manually.")
 
@@ -1472,7 +1762,15 @@ async def select_folder():
 
 @app.get("/api/models")
 async def get_ollama_models():
-    """Fetches available models from local Ollama and flags vision models."""
+    """Fetches available models from local Ollama and flags vision models.
+    
+    Queries the localized `OLLAMA_HOST` tags endpoint. Cross-references fetched
+    models against a dictionary of known vision-capable architectures.
+    
+    Returns:
+        dict[str, Any]: The overarching list of available models and the
+            identifier of the currently active processing model.
+    """
     try:
         resp = requests.get(f"{OLLAMA_HOST}/api/tags", timeout=5)
         if resp.status_code == 200:
@@ -1503,7 +1801,14 @@ async def get_ollama_models():
 
 @app.post("/api/settings/model")
 async def update_settings_model(req: SettingsUpdateRequest):
-    """Updates the active Ollama model for processing."""
+    """Updates the active Ollama model for processing.
+    
+    Args:
+        req (SettingsUpdateRequest): Payload denoting the requested model identifier.
+        
+    Returns:
+        dict[str, Any]: Updated configuration confirmation.
+    """
     global ACTIVE_OLLAMA_MODEL
     ACTIVE_OLLAMA_MODEL = req.model_name
     return {"success": True, "active": ACTIVE_OLLAMA_MODEL}
@@ -1511,6 +1816,11 @@ async def update_settings_model(req: SettingsUpdateRequest):
 
 @app.get("/api/version")
 async def get_version():
+    """Retrieves the active application version strictly.
+    
+    Returns:
+        dict[str, str]: The globally defined system VERSION string.
+    """
     return {"version": VERSION}
 
 
