@@ -9,3 +9,6 @@ python-multipart
 Pillow
 aiofiles
 numpy<2
+ruff
+mypy
+types-requests

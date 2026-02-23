@@ -1,5 +1,4 @@
 import sqlite3
-import os
 
 print("Testing photo backend database setup...")
 # Check if date_created and date_modified columns exist
@@ -17,5 +16,5 @@ try:
     print("SUCCESS: Sorting by date_modified works!")
 except Exception as e:
     print(f"FAILED: sorting by date_modified failed - {e}")
-    
+
 conn.close()

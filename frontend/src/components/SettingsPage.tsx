@@ -119,7 +119,7 @@ export default function SettingsPage() {
             } catch (err) {
                 // silently fail interval to prevent spam
             }
-        }, 1000);
+        }, 5000);
         return () => clearInterval(interval);
     }, [isLogOpen]);
 

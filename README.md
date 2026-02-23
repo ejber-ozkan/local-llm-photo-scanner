@@ -187,11 +187,20 @@ The backend is fully tested using `pytest` with a suite of unit and integration 
 
 1. Ensure your virtual environment is activated in the `backend` folder.
 2. Run the full test suite with coverage reporting:
+
+   **On Windows:**
+   ```powershell
+   cd backend
+   .\venv\Scripts\pytest -v --cov=.
+   ```
+
+   **On Linux/macOS:**
    ```bash
    cd backend
-   pytest -v --cov=.
+   ./venv/bin/pytest -v --cov=.
    ```
-This will execute the isolated test database and output the coverage metrics (currently targeted at >80%). You can also generate an HTML coverage report using `pytest --cov=. --cov-report=html`.
+
+This will execute the isolated test database and output the coverage metrics (currently targeted at >80%). You can also generate an HTML coverage report by appending `--cov-report=html` to the commands above.
 
 ---
 

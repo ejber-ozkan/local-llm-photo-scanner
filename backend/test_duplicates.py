@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+
 import requests
 
 TEST_DIR = "test_duplicates_dir"
@@ -17,10 +18,10 @@ with open(dummy_img1, "wb") as f:
 shutil.copy(dummy_img1, os.path.join(TEST_DIR, "photo2_copy.jpg"))
 shutil.copy(dummy_img1, os.path.join(TEST_DIR, "photo3_copy.jpg"))
 
-# Generate a screenshot file 
+# Generate a screenshot file
 with open(os.path.join(TEST_DIR, "screenshot_2024.jpg"), "wb") as f:
     f.write(b"fake screenshot data")
-    
+
 # Clean MAIN DB before we begin
 requests.post("http://localhost:8000/api/database/clean", json={"target": "main", "confirm": True, "confirm2": True})
 
@@ -45,8 +46,8 @@ try:
     for group in data:
         print(f"  Group Hash: {group['hash']} ({group['count']} copies)")
         print(f"  Original: {group['original']['filename']}")
-        for copy in group['copies']:
+        for copy in group["copies"]:
             print(f"  Copy: {copy['filename']}")
-except Exception as e:
+except Exception:
     print(f"Failed to parse JSON. Status: {res.status_code}")
     print(f"Response: {res.text}")
