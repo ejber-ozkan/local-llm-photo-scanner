@@ -31,7 +31,7 @@ def add_log(msg: str):
     scan_logs.append(log_entry)
     print(msg)
     
-VERSION = "1.0.4"
+VERSION = "1.1.0"
 
 
 try:
@@ -52,7 +52,23 @@ except ImportError:
 # ==========================================
 # CONFIGURATION
 # ==========================================
-OLLAMA_URL = "http://localhost:11434/api/generate"
+import socket
+
+def get_local_ip():
+    try:
+        # Create a dummy socket to determine the local network IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # We don't actually need to connect, just use a public IP to find the correct interface
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+LOCAL_IP = get_local_ip()
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", f"http://{LOCAL_IP}:11434")
+OLLAMA_URL = f"{OLLAMA_HOST}/api/generate"
 ACTIVE_OLLAMA_MODEL = "llava:13b" # Recommended vision model
 DB_FILE = "photometadata.db"
 DB_TEST_FILE = "test_photometadata.db"
@@ -1463,7 +1479,7 @@ async def select_folder():
 async def get_ollama_models():
     """Fetches available models from local Ollama and flags vision models."""
     try:
-        resp = requests.get("http://localhost:11434/api/tags", timeout=5)
+        resp = requests.get(f"{OLLAMA_HOST}/api/tags", timeout=5)
         if resp.status_code == 200:
             models = resp.json().get("models", [])
             # Workaround for Ollama issue #10002 not broadcasting vision capabilities correctly for all architectures

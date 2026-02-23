@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { FolderSearch, Settings as SettingsIcon, CheckCircle, AlertTriangle, FolderOpen, Cpu, Terminal, ChevronDown, ChevronUp, Play, Pause, XCircle, Database, Trash2, Palette, Moon, Sun } from 'lucide-react';
 import { useToast, ToastContainer } from './Toast';
+import { API_BASE_URL } from '../config';
 
 interface ScanStatus {
     state: 'idle' | 'running' | 'paused';
@@ -72,7 +73,7 @@ export default function SettingsPage() {
 
     const fetchModels = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/models');
+            const res = await axios.get(`${API_BASE_URL}/api/models`);
             setModels(res.data.models);
             setActiveModel(res.data.active);
         } catch (err) {
@@ -84,7 +85,7 @@ export default function SettingsPage() {
 
     const fetchVersion = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/version');
+            const res = await axios.get(`${API_BASE_URL}/api/version`);
             setAppVersion(res.data.version);
         } catch (err) { }
     };
@@ -99,12 +100,12 @@ export default function SettingsPage() {
         interval = setInterval(async () => {
             try {
                 // Always poll status to know when a scan is happening
-                const statusRes = await axios.get('http://localhost:8000/api/scan/status');
+                const statusRes = await axios.get(`${API_BASE_URL}/api/scan/status`);
                 setScanStatus(statusRes.data);
 
                 // If the user has the log window open, or a scan is running/paused, get logs
                 if (statusRes.data.state !== 'idle' || isLogOpen) {
-                    const res = await axios.get('http://localhost:8000/api/scan/logs');
+                    const res = await axios.get(`${API_BASE_URL}/api/scan/logs`);
                     setLogs(res.data.logs);
 
                     // Auto-scroll localized container to bottom
@@ -129,7 +130,7 @@ export default function SettingsPage() {
 
     const fetchHistory = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/scan/history');
+            const res = await axios.get(`${API_BASE_URL}/api/scan/history`);
             setScanHistory(res.data.history);
         } catch (err) {
             console.error("Failed to fetch scan history");
@@ -143,7 +144,7 @@ export default function SettingsPage() {
 
     const fetchBackups = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/database/backups');
+            const res = await axios.get(`${API_BASE_URL}/api/database/backups`);
             setBackups(res.data.backups);
             if (res.data.backups.length > 0 && !selectedBackup) {
                 setSelectedBackup(res.data.backups[0].filename);
@@ -156,7 +157,7 @@ export default function SettingsPage() {
     const handleCreateBackup = async () => {
         setBackupLoading(true);
         try {
-            await axios.post('http://localhost:8000/api/database/backup');
+            await axios.post(`${API_BASE_URL}/api/database/backup`);
             await fetchBackups();
             toastSuccess('Backup created successfully!');
         } catch (err: any) {
@@ -168,7 +169,7 @@ export default function SettingsPage() {
 
     const handleSelectFolder = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/select-folder');
+            const res = await axios.get(`${API_BASE_URL}/api/select-folder`);
             if (res.data.path) {
                 setPath(res.data.path);
             }
@@ -181,7 +182,7 @@ export default function SettingsPage() {
         const newModel = e.target.value;
         setActiveModel(newModel);
         try {
-            await axios.post('http://localhost:8000/api/settings/model', { model_name: newModel });
+            await axios.post(`${API_BASE_URL}/api/settings/model`, { model_name: newModel });
         } catch (err) {
             console.error("Failed to update model");
         }
@@ -206,7 +207,7 @@ export default function SettingsPage() {
     const executeScan = async (force: boolean) => {
         setApiError('');
         try {
-            await axios.post('http://localhost:8000/api/scan', { directory_path: path.trim(), force_rescan: force });
+            await axios.post(`${API_BASE_URL}/api/scan`, { directory_path: path.trim(), force_rescan: force });
             setPath('');
             setIsHistoryOpen(false); // Close history so user can see it processing
             setIsLogOpen(true);
@@ -219,7 +220,7 @@ export default function SettingsPage() {
 
     const handleControlAction = async (action: 'pause' | 'resume' | 'cancel') => {
         try {
-            await axios.post('http://localhost:8000/api/scan/control', { action });
+            await axios.post(`${API_BASE_URL}/api/scan/control`, { action });
         } catch (err: any) {
             setApiError(err.message || `Failed to ${action} scan`);
         }
@@ -248,8 +249,8 @@ export default function SettingsPage() {
     const executeRestore = async (filename: string) => {
         try {
             setApiError('');
-            await axios.post('http://localhost:8000/api/database/restore', { filename });
-            const statusRes = await axios.get('http://localhost:8000/api/scan/status');
+            await axios.post(`${API_BASE_URL}/api/database/restore`, { filename });
+            const statusRes = await axios.get(`${API_BASE_URL}/api/scan/status`);
             setScanStatus(statusRes.data);
             fetchHistory();
             toastSuccess(`Successfully restored DB to version: ${filename}`);
@@ -261,9 +262,9 @@ export default function SettingsPage() {
     const executeCleanDatabase = async (target: 'main' | 'test') => {
         try {
             setApiError('');
-            await axios.post('http://localhost:8000/api/database/clean', { target: target });
+            await axios.post(`${API_BASE_URL}/api/database/clean`, { target: target });
             // Refresh state since everything was wiped
-            const statusRes = await axios.get('http://localhost:8000/api/scan/status');
+            const statusRes = await axios.get(`${API_BASE_URL}/api/scan/status`);
             setScanStatus(statusRes.data);
             fetchHistory();
         } catch (err: any) {
@@ -493,7 +494,7 @@ export default function SettingsPage() {
                     <div className="bg-[#111] p-4 rounded-xl border border-gray-800">
                         <p className="text-sm text-gray-400 mb-1">Ollama Connection</p>
                         <p className="text-emerald-400 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Available (localhost:11434)
+                            <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Available (Network Available)
                         </p>
                     </div>
                     <div className="bg-[#111] p-4 rounded-xl border border-gray-800">

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Search, Image as ImageIcon, X, Maximize2, User, PawPrint, Camera, FileText, MapPin, Info, Filter, ChevronDown, ChevronUp, Eye, HelpCircle, ArrowUpDown, ArrowUp, ArrowDown, Calendar, Loader2, Check, Sparkles, Trash2 } from 'lucide-react';
 import LocationMap from './LocationMap';
 import { useToast, ToastContainer } from './Toast';
+import { API_BASE_URL } from '../config';
 
 interface Photo {
     id: number;
@@ -209,7 +210,7 @@ export default function Gallery() {
             params.set('sort_by', sortBy);
             params.set('sort_dir', sortDir);
 
-            const res = await axios.get(`http://localhost:8000/api/search?${params.toString()}`);
+            const res = await axios.get(`${API_BASE_URL}/api/search?${params.toString()}`);
             setPhotos(res.data);
         } catch (err) {
             console.error(err);
@@ -220,14 +221,14 @@ export default function Gallery() {
 
     const fetchFilterOptions = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/gallery/filters');
+            const res = await axios.get(`${API_BASE_URL}/api/gallery/filters`);
             setFilterOptions(res.data);
         } catch (err) { console.error(err); }
     };
 
     const fetchYears = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/gallery/years');
+            const res = await axios.get(`${API_BASE_URL}/api/gallery/years`);
             setYears(res.data);
         } catch (err) { console.error(err); }
     };
@@ -286,7 +287,7 @@ export default function Gallery() {
         setImgNaturalSize(null);
         setHoveredEntity(null);
         try {
-            const res = await axios.get(`http://localhost:8000/api/photo/${photoId}/detail`);
+            const res = await axios.get(`${API_BASE_URL}/api/photo/${photoId}/detail`);
             setSelectedPhoto(res.data);
         } catch (err) { console.error(err); }
         finally { setModalLoading(false); }
@@ -301,7 +302,7 @@ export default function Gallery() {
 
     const handleRenameEntity = async (oldName: string, newName: string) => {
         try {
-            await axios.post('http://localhost:8000/api/entities/name', {
+            await axios.post(`${API_BASE_URL}/api/entities/name`, {
                 entity_id: oldName,
                 new_name: newName.trim()
             });
@@ -321,7 +322,7 @@ export default function Gallery() {
 
     const handleDeleteEntity = async (entityName: string) => {
         try {
-            await axios.delete(`http://localhost:8000/api/entities/${encodeURIComponent(entityName)}`);
+            await axios.delete(`${API_BASE_URL}/api/entities/${encodeURIComponent(entityName)}`);
             if (selectedPhoto) {
                 setSelectedPhoto({
                     ...selectedPhoto,
@@ -603,7 +604,7 @@ export default function Gallery() {
                                             <div key={photo.id}
                                                 className="break-inside-avoid relative group rounded-xl overflow-hidden shadow-lg bg-surface hover:shadow-2xl transition-all duration-300 cursor-pointer"
                                                 onClick={() => openPhotoDetail(photo.id)}>
-                                                <img src={`http://localhost:8000/api/image/${photo.id}`} alt={photo.filename}
+                                                <img src={`${API_BASE_URL}/api/image/${photo.id}`} alt={photo.filename}
                                                     className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                                                     <p className="text-white text-sm font-medium leading-relaxed drop-shadow-md">
@@ -646,7 +647,7 @@ export default function Gallery() {
             {/* ========== FULL SIZE LIGHTBOX ========== */}
             {fullSize && selectedPhoto && (
                 <div className="fixed inset-0 bg-black z-[60] flex items-center justify-center cursor-zoom-out" onClick={() => setFullSize(false)}>
-                    <img src={`http://localhost:8000/api/image/${selectedPhoto.id}`} alt={selectedPhoto.filename} className="max-w-full max-h-full object-contain" />
+                    <img src={`${API_BASE_URL}/api/image/${selectedPhoto.id}`} alt={selectedPhoto.filename} className="max-w-full max-h-full object-contain" />
                     <button onClick={() => setFullSize(false)} className="absolute top-6 right-6 text-white/60 hover:text-white bg-black/50 hover:bg-black/80 p-3 rounded-full transition-all">
                         <X className="w-6 h-6" />
                     </button>
@@ -683,7 +684,7 @@ export default function Gallery() {
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         <div className="flex flex-col gap-4">
                                             <div className="relative bg-black rounded-xl overflow-hidden flex items-center justify-center cursor-pointer group" onClick={() => setFullSize(true)}>
-                                                <img src={`http://localhost:8000/api/image/${selectedPhoto.id}`} alt={selectedPhoto.filename}
+                                                <img src={`${API_BASE_URL}/api/image/${selectedPhoto.id}`} alt={selectedPhoto.filename}
                                                     className="max-w-full max-h-[55vh] object-contain rounded-lg"
                                                     onLoad={(e) => { const el = e.target as HTMLImageElement; setImgNaturalSize({ w: el.naturalWidth, h: el.naturalHeight }); }}
                                                 />

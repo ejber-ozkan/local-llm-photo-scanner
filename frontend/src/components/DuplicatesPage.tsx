@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Copy, Trash2, ShieldAlert, ChevronDown, ChevronUp } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface DuplicatePhoto {
     id: number;
@@ -24,7 +25,7 @@ export default function DuplicatesPage() {
     const fetchDuplicates = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:8000/api/duplicates');
+            const res = await axios.get(`${API_BASE_URL}/api/duplicates`);
             setDuplicates(res.data);
         } catch (err) {
             console.error(err);
@@ -103,7 +104,7 @@ export default function DuplicatesPage() {
                             <div key={group.hash} className="bg-surface rounded-xl overflow-hidden border border-[#333] hover:border-[#444] transition-all shadow-lg flex flex-col">
                                 <div className="aspect-square relative bg-black">
                                     <img
-                                        src={`http://localhost:8000/api/image/${group.original.id}`}
+                                        src={`${API_BASE_URL}/api/image/${group.original.id}`}
                                         alt={group.original.filename}
                                         className="w-full h-full object-cover"
                                         loading="lazy"

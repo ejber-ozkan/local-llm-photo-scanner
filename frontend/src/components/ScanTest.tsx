@@ -3,6 +3,7 @@ import axios from 'axios';
 import { UploadCloud, Image as ImageIcon, Loader2, Sparkles, User, PawPrint, Edit2, Check, X, Trash2, AlertTriangle } from 'lucide-react';
 import LocationMap from './LocationMap';
 import { useToast, ToastContainer } from './Toast';
+import { API_BASE_URL } from '../config';
 
 interface TestResult {
     photo_id: number;
@@ -164,7 +165,7 @@ export default function ScanTest() {
     useEffect(() => {
         const fetchModels = async () => {
             try {
-                const response = await axios.get('http://localhost:8000/api/models');
+                const response = await axios.get(`${API_BASE_URL}/api/models`);
                 setModels(response.data.models);
                 if (response.data.active && !selectedModel) {
                     setSelectedModel(response.data.active);
@@ -188,7 +189,7 @@ export default function ScanTest() {
         if (selectedModel) formData.append('model', selectedModel);
 
         try {
-            const res = await axios.post('http://localhost:8000/api/scan/single', formData, {
+            const res = await axios.post(`${API_BASE_URL}/api/scan/single`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 },
@@ -206,7 +207,7 @@ export default function ScanTest() {
         setShowConfirm(false);
         setActionLoading(true);
         try {
-            await axios.post('http://localhost:8000/api/test/clear');
+            await axios.post(`${API_BASE_URL}/api/test/clear`);
             setResult(null);
             setFile(null);
             setPreview(null);
@@ -220,7 +221,7 @@ export default function ScanTest() {
 
     const handleRename = async (oldName: string, newName: string) => {
         try {
-            await axios.post('http://localhost:8000/api/test/entities/name', {
+            await axios.post(`${API_BASE_URL}/api/test/entities/name`, {
                 entity_id: oldName,
                 new_name: newName.trim()
             });
@@ -240,7 +241,7 @@ export default function ScanTest() {
     const handleDeleteEntity = async (entityName: string) => {
         setActionLoading(true);
         try {
-            await axios.delete(`http://localhost:8000/api/test/entities/${encodeURIComponent(entityName)}`);
+            await axios.delete(`${API_BASE_URL}/api/test/entities/${encodeURIComponent(entityName)}`);
             if (result) {
                 setResult({
                     ...result,

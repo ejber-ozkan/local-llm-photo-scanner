@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.0.4"
+VERSION="1.1.0"
 
 echo "===================================================="
 echo "   Local LLM Photo Scanner v$VERSION"
@@ -11,7 +11,7 @@ if [ ! -d "backend/venv" ]; then
     echo "[*] Creating virtual environment..."
     python3 -m venv backend/venv
     echo "[*] Installing backend dependencies..."
-    source backend/venv/bin/activate
+    . backend/venv/bin/activate
     pip install -r backend/requirements.txt
 fi
 
@@ -28,7 +28,7 @@ lsof -t -i:8000 | xargs -r kill -9 2>/dev/null
 lsof -t -i:5173 | xargs -r kill -9 2>/dev/null
 
 # 4. Get Local IP Address
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [ "$(uname)" = "Darwin" ]; then
     LOCAL_IP=$(ipconfig getifaddr en0)
 else
     LOCAL_IP=$(hostname -I | awk '{print $1}')
@@ -58,7 +58,7 @@ trap cleanup INT TERM
 
 # 5. Start services
 echo "[*] Starting Backend..."
-(cd backend && source venv/bin/activate && uvicorn photo_backend:app --host 0.0.0.0 --port 8000) &
+(cd backend && . venv/bin/activate && uvicorn photo_backend:app --host 0.0.0.0 --port 8000) &
 BACKEND_PID=$!
 
 echo "[*] Starting Frontend..."

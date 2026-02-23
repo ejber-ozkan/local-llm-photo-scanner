@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { UserCheck, Tag, Loader2, X, User, PawPrint, Check, Edit2 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface Entity {
     id: number;
@@ -35,7 +36,7 @@ export default function Identify() {
     const fetchUnidentified = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:8000/api/unidentified');
+            const res = await axios.get(`${API_BASE_URL}/api/unidentified`);
             setEntities(res.data);
         } catch (err) {
             console.error(err);
@@ -54,7 +55,7 @@ export default function Identify() {
         setImgNaturalSize(null);
         setHoveredEntity(null);
         try {
-            const res = await axios.get(`http://localhost:8000/api/photo/${entity.photo_id}/entities`);
+            const res = await axios.get(`${API_BASE_URL}/api/photo/${entity.photo_id}/entities`);
             setPhotoEntities(res.data);
         } catch (err) {
             console.error(err);
@@ -78,7 +79,7 @@ export default function Identify() {
 
         setSubmitting(entityId);
         try {
-            await axios.post('http://localhost:8000/api/entities/name', {
+            await axios.post(`${API_BASE_URL}/api/entities/name`, {
                 entity_id: entityId,
                 new_name: nameToUse
             });
@@ -172,7 +173,7 @@ export default function Identify() {
                         >
                             <div className="relative h-48 bg-black overflow-hidden flex items-center justify-center">
                                 <img
-                                    src={`http://localhost:8000/api/image/${entity.photo_id}`}
+                                    src={`${API_BASE_URL}/api/image/${entity.photo_id}`}
                                     alt="Entity context"
                                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                 />
@@ -221,7 +222,7 @@ export default function Identify() {
                                     {selectedEntity && (
                                         <div className="relative w-full h-full flex items-center justify-center">
                                             <img
-                                                src={`http://localhost:8000/api/image/${selectedEntity.photo_id}`}
+                                                src={`${API_BASE_URL}/api/image/${selectedEntity.photo_id}`}
                                                 alt="Full photo"
                                                 className="max-w-full max-h-[60vh] object-contain rounded-lg"
                                                 onLoad={(e) => {
