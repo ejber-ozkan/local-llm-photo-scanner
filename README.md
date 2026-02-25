@@ -1,4 +1,4 @@
-# Local LLM Photo Scanner
+# Local LLM Photo Scanner v1.2.1
 
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
@@ -27,8 +27,10 @@ The application intelligently scans your local directories, processing images us
 
 ## Screenshots
 
-| Scan & Settings                                                                                                      | Database, Themes & Danger Zone                                                                         |
+| Gallery & Timeline                                                                                                   | Single Image Testing & QA                                                                              |
 | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| ![Gallery View — filtering, timeline, and sorting](docs/screenshots/screenshot_gallery_view.png)                     | ![Test Scan — single image AI evaluation](docs/screenshots/screenshot_test_scan.png)                   |
+| **Scan & Settings**                                                                                                  | **Database, Themes & Danger Zone**                                                                     |
 | ![Scan & Settings — directory scanner, progress, AI engine selection](docs/screenshots/screenshot_settings_scan.png) | ![Appearance, backup/restore and database management](docs/screenshots/screenshot_settings_themes.png) |
 
 ---
