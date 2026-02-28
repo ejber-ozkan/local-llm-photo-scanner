@@ -5,6 +5,7 @@ Creates a temporary directory populated with identical byte-for-byte image copie
 and a mock screenshot. Submits this directory to the local endpoints and asserts
 that the API gallery and duplicates registry accurately isolate the files.
 """
+
 import os
 import shutil
 import time

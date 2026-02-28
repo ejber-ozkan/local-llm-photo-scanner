@@ -28,11 +28,18 @@ yarn-error.log*
 *.db-journal
 backend/uploads/
 backend/test_duplicates_dir/
+test_duplicates_dir/
 backend/backups/
 uploads/
 
 # Debug / scratch files generated at runtime
 backend/*_debug.json
+backend/mypy_output.txt
+backend/test_out.log
+
+# HEIC → JPEG cached conversions (created alongside originals)
+*.heic.jpg
+*.heif.jpg
 
 # Generated docs (run generate_pydocs.py yourself) — but keep screenshots
 docs/*.html

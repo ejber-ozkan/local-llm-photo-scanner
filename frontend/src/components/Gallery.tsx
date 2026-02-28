@@ -86,6 +86,7 @@ function EntityRow({
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(ent.name);
     const [loading, setLoading] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     const handleSubmit = async () => {
         if (!editName.trim() || editName === ent.name) {
@@ -99,66 +100,91 @@ function EntityRow({
     };
 
     return (
-        <div
-            className="group relative flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 shadow-sm hover:border-gray-500 transition-colors cursor-default"
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-        >
-            {ent.type === 'person' ? <User className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : <PawPrint className="w-3.5 h-3.5 text-orange-400 shrink-0" />}
+        <>
+            <div
+                className="group relative flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 shadow-sm hover:border-gray-500 transition-colors cursor-default"
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
+            >
+                {ent.type === 'person' ? <User className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : <PawPrint className="w-3.5 h-3.5 text-orange-400 shrink-0" />}
 
-            <div className="flex-1 min-w-[100px]">
-                {isEditing ? (
-                    <div className="flex items-center gap-1 w-full relative z-10">
-                        <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                            className="bg-gray-900 border border-primary rounded px-2 py-0.5 text-sm text-white w-full min-w-[120px] focus:outline-none"
-                            autoFocus
-                            disabled={loading}
-                        />
-                        <button onClick={handleSubmit} disabled={loading} className="text-green-500 hover:text-green-400 shrink-0">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                <div className="flex-1 min-w-[100px]">
+                    {isEditing ? (
+                        <div className="flex items-center gap-1 w-full relative z-10">
+                            <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                                className="bg-gray-900 border border-primary rounded px-2 py-0.5 text-sm text-white w-full min-w-[120px] focus:outline-none"
+                                autoFocus
+                                disabled={loading}
+                            />
+                            <button onClick={handleSubmit} disabled={loading} className="text-green-500 hover:text-green-400 shrink-0">
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            </button>
+                            <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} className="text-gray-500 hover:text-gray-400 shrink-0">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ) : (
+                        <p
+                            className="text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis cursor-text hover:text-blue-400 transition-colors"
+                            title="Click to rename"
+                            onClick={() => setIsEditing(true)}
+                        >
+                            {ent.name}
+                        </p>
+                    )}
+                </div>
+
+                {!isEditing && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 z-10 shrink-0">
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="text-gray-400 hover:text-white p-1"
+                            title="Rename entity"
+                        >
+                            <FileText className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} className="text-gray-500 hover:text-gray-400 shrink-0">
-                            <X className="w-4 h-4" />
+                        <button
+                            onClick={() => setConfirmDelete(true)}
+                            className="text-gray-400 hover:text-red-400 p-1"
+                            title="Delete entity"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
                         </button>
                     </div>
-                ) : (
-                    <p
-                        className="text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis cursor-text hover:text-blue-400 transition-colors"
-                        title="Click to rename"
-                        onClick={() => setIsEditing(true)}
-                    >
-                        {ent.name}
-                    </p>
                 )}
             </div>
 
-            {!isEditing && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 z-10 shrink-0">
-                    <button
-                        onClick={() => setIsEditing(true)}
-                        className="text-gray-400 hover:text-white p-1"
-                        title="Rename entity"
-                    >
-                        <FileText className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            if (window.confirm(`Delete ${ent.name}?`)) {
-                                onDelete(ent.name);
-                            }
-                        }}
-                        className="text-gray-400 hover:text-red-400 p-1"
-                        title="Delete entity"
-                    >
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+            {/* Custom confirm modal for delete */}
+            {confirmDelete && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-6" onClick={() => setConfirmDelete(false)}>
+                    <div className="bg-surface border border-[#333] shadow-2xl rounded-2xl p-8 max-w-md w-full" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-4 text-red-500 mb-4">
+                            <Trash2 className="w-7 h-7 shrink-0" />
+                            <h2 className="text-xl font-bold text-white">Delete Entity</h2>
+                        </div>
+                        <p className="text-gray-300 text-base mb-8 leading-relaxed">
+                            Are you sure you want to delete <strong className="text-white">{ent.name}</strong>? This will remove all instances of this entity from every photo.
+                        </p>
+                        <div className="flex justify-end gap-3 font-medium">
+                            <button onClick={() => setConfirmDelete(false)} className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-300 transition-colors">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => { setConfirmDelete(false); onDelete(ent.name); }}
+                                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20 transition-colors flex items-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
 

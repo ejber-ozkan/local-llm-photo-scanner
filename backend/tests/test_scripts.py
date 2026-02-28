@@ -5,7 +5,7 @@ import runpy
 
 def test_backup_restore_scripts(mock_db_file, monkeypatch):
     import backup_db
-    import photo_backend
+    import core.config
     import restore_db
 
     # Override settings explicitly for exactly where mock_db_file points
@@ -13,7 +13,7 @@ def test_backup_restore_scripts(mock_db_file, monkeypatch):
     backup_db.BACKUP_DIR = "test_backups_dir"
     restore_db.DB_FILE = mock_db_file
     restore_db.BACKUP_DIR = "test_backups_dir"
-    photo_backend.BACKUP_DIR = "test_backups_dir"
+    core.config.BACKUPS_DIR = "test_backups_dir"
 
     os.makedirs("test_backups_dir", exist_ok=True)
 

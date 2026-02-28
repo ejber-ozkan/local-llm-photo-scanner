@@ -4,8 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-# Mock the database paths BEFORE importing photo_backend
-# This ensures that when photo_backend.py is loaded, it uses the test DB.
+# Mock the database paths BEFORE importing application modules
+# This ensures that when core.config.py is loaded, it uses the test DB.
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_env(tmp_path_factory):
     """Sets up physical environment variables for testing."""
@@ -31,13 +31,23 @@ def mock_db_file(tmp_path, monkeypatch):
     db_path = str(tmp_path / "test_photometadata.db")
 
     # We must patch the variables where they are defined/used in the module
-    monkeypatch.setattr("database.DB_FILE", db_path)
-    monkeypatch.setattr("photo_backend.DB_FILE", db_path)
+    monkeypatch.setattr("database_setup.DB_FILE", db_path)
+    monkeypatch.setattr("database_setup.DB_TEST_FILE", db_path)
+    monkeypatch.setattr("core.config.DB_FILE", db_path)
+    monkeypatch.setattr("core.config.DB_TEST_FILE", db_path)
+    monkeypatch.setattr("core.database.DB_FILE", db_path)
+    monkeypatch.setattr("core.database.DB_TEST_FILE", db_path)
+    monkeypatch.setattr("services.scan_worker.DB_FILE", db_path)
+    monkeypatch.setattr("api.routes.gallery.DB_FILE", db_path)
+    monkeypatch.setattr("api.routes.entities.DB_FILE", db_path)
+    monkeypatch.setattr("api.routes.system.DB_FILE", db_path)
+    monkeypatch.setattr("api.routes.system.DB_TEST_FILE", db_path)
+
     monkeypatch.setattr("backup_db.DB_FILE", db_path)
     monkeypatch.setattr("restore_db.DB_FILE", db_path)
 
     # Import inside fixture to ensure module variables are patched
-    from database import init_db
+    from database_setup import init_db
 
     init_db()
     return db_path
@@ -55,7 +65,7 @@ def client(mock_db_file, tmp_path, monkeypatch):
     monkeypatch.setattr("restore_db.BACKUP_DIR", backups_dir)
 
     # Import app here so patches apply
-    from photo_backend import app
+    from main import app
 
     return TestClient(app)
 
@@ -64,8 +74,10 @@ def client(mock_db_file, tmp_path, monkeypatch):
 def mock_ollama(monkeypatch):
     """Provides a mocked responses endpoint for Ollama API calls."""
     import responses
-    import photo_backend
-    monkeypatch.setattr(photo_backend, "OLLAMA_URL", "http://localhost:11434/api/generate")
+
+    import core.config
+
+    monkeypatch.setattr(core.config, "OLLAMA_URL", "http://localhost:11434/api/generate")
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         rsps.add(

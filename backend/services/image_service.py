@@ -1,15 +1,17 @@
 import base64
+from datetime import datetime
+from typing import Any
 
 import requests
 from PIL import Image
+from PIL.ExifTags import TAGS
 
 
 class ImageServiceError(Exception):
     """Base exception for errors originating from the image service module."""
+
     pass
 
-
-from typing import Any
 
 def _convert_gps_to_decimal(gps_coords: tuple[Any, ...], gps_ref: str) -> float | None:
     """Converts GPS coordinates from degrees/minutes/seconds to decimal.
@@ -135,6 +137,93 @@ def extract_exif_for_filters(filepath: str) -> dict[str, str | float | None]:
     except Exception:
         pass
     return result
+
+
+def extract_all_exif(filepath: str) -> dict[str, str]:
+    """Extracts all available EXIF data from a photo and converts to string.
+
+    Iterates through all EXIF tags present in the image, resolving their human-readable
+    names and stringifying the values for display.
+
+    Args:
+        filepath (str): The path to the image file.
+
+    Returns:
+        dict[str, str]: Dictionary mapping EXIF tag names to string values.
+    """
+    result: dict[str, str] = {}
+    try:
+        with Image.open(filepath) as img:
+            exif_data = img.getexif()
+            if exif_data:
+                for tag_id, value in exif_data.items():
+                    tag = TAGS.get(tag_id, tag_id)
+                    # Convert byte data or potentially complex types to string
+                    if isinstance(value, bytes):
+                        try:
+                            value = value.decode("utf-8", errors="replace")
+                        except Exception:
+                            value = "<binary data>"
+                    result[str(tag)] = str(value)
+
+                # Try getting IFD EXIF data specifically for more camera details
+                if hasattr(exif_data, "get_ifd"):
+                    try:
+                        ifd = exif_data.get_ifd(0x8769)  # EXIF IFD
+                        if ifd:
+                            for tag_id, value in ifd.items():
+                                tag = TAGS.get(tag_id, tag_id)
+                                if isinstance(value, bytes):
+                                    try:
+                                        value = value.decode("utf-8", errors="replace")
+                                    except Exception:
+                                        value = "<binary data>"
+                                result[str(tag)] = str(value)
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"Error extracting full EXIF from {filepath}: {e}")
+    return result
+
+
+def resize_image_for_ollama(filepath: str, max_size: int = 1024) -> str | None:
+    """Resizes an image if its dimensions exceed max_size, saving to a temporary file.
+
+    This function is intended to prepare images for models like Ollama that may have
+    input size limitations. If the image is resized, a path to a temporary file
+    is returned. Otherwise, the original filepath is returned.
+
+    Args:
+        filepath (str): The path to the original image file.
+        max_size (int): The maximum dimension (width or height) allowed.
+
+    Returns:
+        str | None: The path to the resized temporary image file, or the original
+            filepath if no resizing was needed. Returns None if an error occurs.
+    """
+    try:
+        with Image.open(filepath) as img:
+            width, height = img.size
+            if max(width, height) <= max_size:
+                return filepath  # No resizing needed
+
+            # Calculate new dimensions while maintaining aspect ratio
+            if width > height:
+                new_width = max_size
+                new_height = int(max_size * height / width)
+            else:
+                new_height = max_size
+                new_width = int(max_size * width / height)
+
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # Save to a temporary file
+            temp_filepath = f"/tmp/resized_ollama_{datetime.now().timestamp()}.jpeg"
+            resized_img.save(temp_filepath, format="JPEG")
+            return temp_filepath
+    except Exception as e:
+        print(f"Error resizing image {filepath}: {e}")
+        return None
 
 
 def encode_image_to_base64(filepath: str) -> str:

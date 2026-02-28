@@ -6,9 +6,10 @@ import { API_BASE_URL } from '../config';
 
 interface ScanStatus {
     state: 'idle' | 'running' | 'paused';
-    total: number;
-    processed: number;
-    pending: number;
+    total_gallery: number;
+    total_duplicates: number;
+    scan_total: number;
+    scan_processed: number;
 }
 
 interface ScanHistoryItem {
@@ -23,7 +24,7 @@ export default function SettingsPage() {
 
     // Live scan state
     const [scanStatus, setScanStatus] = useState<ScanStatus>({
-        state: 'idle', total: 0, processed: 0, pending: 0
+        state: 'idle', total_gallery: 0, total_duplicates: 0, scan_total: 0, scan_processed: 0
     });
 
     // New state for Models
@@ -36,7 +37,7 @@ export default function SettingsPage() {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     // Live logging state
-    const [logs, setLogs] = useState<string[]>([]);
+    const [logs, setLogs] = useState<{ time: string, message: string }[]>([]);
     const [isLogOpen, setIsLogOpen] = useState(false);
     const logsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +45,7 @@ export default function SettingsPage() {
     const [confirmModal, setConfirmModal] = useState<{ target: 'main' | 'test' | 'restore' | 'rescan', step: 1 | 2, payload?: string } | null>(null);
 
     // Backup State
-    const [backups, setBackups] = useState<{ filename: string, size_bytes: number, created_at: string }[]>([]);
+    const [backups, setBackups] = useState<{ filename: string, size: number, created: number }[]>([]);
     const [selectedBackup, setSelectedBackup] = useState('');
     const [backupLoading, setBackupLoading] = useState(false);
 
@@ -107,14 +108,6 @@ export default function SettingsPage() {
                 if (statusRes.data.state !== 'idle' || isLogOpen) {
                     const res = await axios.get(`${API_BASE_URL}/api/scan/logs`);
                     setLogs(res.data.logs);
-
-                    // Auto-scroll localized container to bottom
-                    if (logsContainerRef.current) {
-                        logsContainerRef.current.scrollTo({
-                            top: logsContainerRef.current.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    }
                 }
             } catch (err) {
                 // silently fail interval to prevent spam
@@ -373,7 +366,7 @@ export default function SettingsPage() {
                 </form>
 
                 {/* Progress Indicators */}
-                {scanStatus.total > 0 && (
+                {scanStatus.scan_total > 0 && scanStatus.state !== 'idle' && (
                     <div className="mt-8 bg-[#111] p-6 rounded-xl border border-gray-800">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-gray-300 flex items-center gap-2">
@@ -382,45 +375,49 @@ export default function SettingsPage() {
                                 ) : scanStatus.state === 'paused' ? (
                                     <><div className="w-2 h-2 rounded-full bg-yellow-500" /> Paused</>
                                 ) : (
-                                    scanStatus.pending > 0 ? (
-                                        <><div className="w-2 h-2 rounded-full bg-gray-500" /> Pending (Ready to Resume)</>
-                                    ) : (
-                                        <><div className="w-2 h-2 rounded-full bg-emerald-500" /> Processing Complete</>
-                                    )
+                                    <><div className="w-2 h-2 rounded-full bg-gray-500" /> Preparing</>
                                 )}
                             </span>
                             <span className="text-sm text-gray-400">
-                                {scanStatus.processed} / {scanStatus.total} ({scanStatus.total > 0 ? Math.round((scanStatus.processed / scanStatus.total) * 100) : 0}%)
+                                {scanStatus.scan_processed} / {scanStatus.scan_total} ({scanStatus.scan_total > 0 ? Math.round((scanStatus.scan_processed / scanStatus.scan_total) * 100) : 0}%)
                             </span>
                         </div>
                         <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
                             <div
                                 className={`h-2.5 rounded-full transition-all duration-500 ${scanStatus.state === 'paused' ? 'bg-yellow-500' : 'bg-primary'}`}
-                                style={{ width: `${scanStatus.total > 0 ? (scanStatus.processed / scanStatus.total) * 100 : 0}%` }}
+                                style={{ width: `${scanStatus.scan_total > 0 ? (scanStatus.scan_processed / scanStatus.scan_total) * 100 : 0}%` }}
                             ></div>
                         </div>
                         <div className="flex gap-6 mt-4 text-xs">
                             <div className="flex flex-col">
-                                <span className="text-gray-500">Processed</span>
-                                <span className="text-white text-lg font-medium">{scanStatus.processed}</span>
+                                <span className="text-gray-500">Processed in Active Scan</span>
+                                <span className="text-white text-lg font-medium">{scanStatus.scan_processed}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-gray-500">Pending</span>
-                                <span className="text-white text-lg font-medium">{scanStatus.pending}</span>
-                            </div>
-                            <div className="flex flex-col ml-auto text-right">
-                                <span className="text-gray-500">Total in Database</span>
-                                <span className="text-white text-lg font-medium">{scanStatus.total}</span>
+                                <span className="text-gray-500">Remaining in Queue</span>
+                                <span className="text-white text-lg font-medium">{scanStatus.scan_total - scanStatus.scan_processed}</span>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {scanStatus.state === 'idle' && scanStatus.pending === 0 && scanStatus.processed > 0 && !apiError && (
+                {/* Global Stats Separated Block */}
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                    <div className="bg-[#111] p-4 rounded-xl border border-gray-800 flex justify-between items-center">
+                        <span className="text-sm text-gray-400">Total in Gallery</span>
+                        <span className="text-white text-lg font-medium">{scanStatus.total_gallery}</span>
+                    </div>
+                    <div className="bg-[#111] p-4 rounded-xl border border-gray-800 flex justify-between items-center">
+                        <span className="text-sm text-gray-400">Duplicates Avoided</span>
+                        <span className="text-white text-lg font-medium">{scanStatus.total_duplicates}</span>
+                    </div>
+                </div>
+
+                {scanStatus.state === 'idle' && scanStatus.scan_processed > 0 && scanStatus.scan_processed === scanStatus.scan_total && !apiError && (
                     <div className="mt-6 p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg flex items-start gap-3 text-emerald-400">
                         <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-medium">All images processed successfully!</p>
+                            <p className="font-medium">Recent processing complete!</p>
                         </div>
                     </div>
                 )}
@@ -456,7 +453,10 @@ export default function SettingsPage() {
                                 <p className="text-gray-600 italic">No logs available...</p>
                             ) : (
                                 logs.map((log, index) => (
-                                    <div key={index} className="break-all border-b border-gray-900 pb-1">{log}</div>
+                                    <div key={index} className="break-all border-b border-gray-900 pb-1">
+                                        <span className="text-gray-500 mr-2">[{log.time}]</span>
+                                        {log.message}
+                                    </div>
                                 ))
                             )}
                         </div>
@@ -540,7 +540,7 @@ export default function SettingsPage() {
                                 {backups.length === 0 && <option>No backups found</option>}
                                 {backups.map(b => (
                                     <option key={b.filename} value={b.filename}>
-                                        {b.filename} ({(b.size_bytes / 1024 / 1024).toFixed(2)} MB) - {new Date(b.created_at).toLocaleString()}
+                                        {b.filename} ({(b.size / 1024 / 1024).toFixed(2)} MB) - {new Date(b.created * 1000).toLocaleString()}
                                     </option>
                                 ))}
                             </select>

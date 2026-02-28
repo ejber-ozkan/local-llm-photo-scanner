@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { UserCheck, Tag, Loader2, X, User, PawPrint, Check, Edit2 } from 'lucide-react';
+import { UserCheck, Tag, Loader2, X, User, PawPrint, Check, Edit2, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 interface Entity {
@@ -18,6 +18,11 @@ interface PhotoEntity {
     bounding_box?: string;
 }
 
+interface UniquePhoto {
+    photo_id: number;
+    entities: Entity[];
+}
+
 export default function Identify() {
     const [entities, setEntities] = useState<Entity[]>([]);
     const [loading, setLoading] = useState(false);
@@ -25,13 +30,14 @@ export default function Identify() {
     const [submitting, setSubmitting] = useState<number | null>(null);
 
     // Modal state
-    const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
+    const [selectedPhotoId, setSelectedPhotoId] = useState<number | null>(null);
     const [photoEntities, setPhotoEntities] = useState<PhotoEntity[]>([]);
     const [modalLoading, setModalLoading] = useState(false);
     const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
     const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number, h: number } | null>(null);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editName, setEditName] = useState('');
+    const [confirmDelete, setConfirmDelete] = useState<PhotoEntity | null>(null);
 
     const fetchUnidentified = async () => {
         setLoading(true);
@@ -49,13 +55,27 @@ export default function Identify() {
         fetchUnidentified();
     }, []);
 
-    const openModal = async (entity: Entity) => {
-        setSelectedEntity(entity);
+    // Deduplicate entities by photo_id — show each photo only once
+    const uniquePhotos: UniquePhoto[] = [];
+    const seenPhotoIds = new Set<number>();
+    for (const entity of entities) {
+        if (!seenPhotoIds.has(entity.photo_id)) {
+            seenPhotoIds.add(entity.photo_id);
+            uniquePhotos.push({
+                photo_id: entity.photo_id,
+                entities: entities.filter(e => e.photo_id === entity.photo_id)
+            });
+        }
+    }
+
+    const openModal = async (photoId: number) => {
+        setSelectedPhotoId(photoId);
         setModalLoading(true);
         setImgNaturalSize(null);
         setHoveredEntity(null);
+        setConfirmDelete(null);
         try {
-            const res = await axios.get(`${API_BASE_URL}/api/photo/${entity.photo_id}/entities`);
+            const res = await axios.get(`${API_BASE_URL}/api/photo/${photoId}/entities`);
             setPhotoEntities(res.data);
         } catch (err) {
             console.error(err);
@@ -66,11 +86,12 @@ export default function Identify() {
     };
 
     const closeModal = () => {
-        setSelectedEntity(null);
+        setSelectedPhotoId(null);
         setPhotoEntities([]);
         setHoveredEntity(null);
         setImgNaturalSize(null);
         setEditingId(null);
+        setConfirmDelete(null);
     };
 
     const handleNameEntity = async (entityId: number, newName?: string) => {
@@ -99,6 +120,19 @@ export default function Identify() {
             console.error(err);
         } finally {
             setSubmitting(null);
+        }
+    };
+
+    const handleDeleteEntity = async (entityName: string) => {
+        try {
+            await axios.delete(`${API_BASE_URL}/api/entities/${encodeURIComponent(entityName)}`);
+            // Remove from modal list
+            setPhotoEntities(prev => prev.filter(e => e.name !== entityName));
+            // Remove from main unidentified list
+            setEntities(prev => prev.filter(e => e.name !== entityName));
+            setConfirmDelete(null);
+        } catch (err) {
+            console.error(err);
         }
     };
 
@@ -159,27 +193,27 @@ export default function Identify() {
                 <div className="flex justify-center mt-20">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary"></div>
                 </div>
-            ) : entities.length === 0 ? (
+            ) : uniquePhotos.length === 0 ? (
                 <div className="bg-surface rounded-2xl p-12 text-center border border-[#333]">
                     <p className="text-xl text-gray-300">All caught up! No unknown entities to identify.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {entities.map(entity => (
+                    {uniquePhotos.map(photo => (
                         <div
-                            key={entity.id}
+                            key={photo.photo_id}
                             className="bg-surface rounded-2xl overflow-hidden shadow-2xl border border-[#262626] flex flex-col transition-transform hover:-translate-y-1 cursor-pointer group"
-                            onClick={() => openModal(entity)}
+                            onClick={() => openModal(photo.photo_id)}
                         >
                             <div className="relative h-48 bg-black overflow-hidden flex items-center justify-center">
                                 <img
-                                    src={`${API_BASE_URL}/api/image/${entity.photo_id}`}
+                                    src={`${API_BASE_URL}/api/image/${photo.photo_id}`}
                                     alt="Entity context"
                                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                 />
-                                <div className="absolute top-3 left-3 bg-black/70 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-white border border-gray-600 capitalize flex items-center gap-2">
+                                <div className="absolute top-3 left-3 bg-black/70 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-white border border-gray-600 flex items-center gap-2">
                                     <Tag className="w-3 h-3" />
-                                    {entity.type}
+                                    {photo.entities.length} unknown
                                 </div>
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                                     <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity text-sm bg-primary/80 px-4 py-2 rounded-lg">
@@ -188,8 +222,10 @@ export default function Identify() {
                                 </div>
                             </div>
                             <div className="p-5 flex-1 flex flex-col">
-                                <p className="text-gray-300 font-medium">{entity.name}</p>
-                                <p className="text-xs text-gray-500 capitalize mt-1">{entity.type}</p>
+                                <p className="text-gray-300 font-medium truncate">
+                                    {photo.entities.map(e => e.name).join(', ')}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">{photo.entities.length} unidentified entit{photo.entities.length === 1 ? 'y' : 'ies'}</p>
                             </div>
                         </div>
                     ))}
@@ -197,7 +233,7 @@ export default function Identify() {
             )}
 
             {/* ========== FULL SCREEN MODAL ========== */}
-            {selectedEntity && (
+            {selectedPhotoId && (
                 <div
                     className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
                     onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
@@ -207,7 +243,7 @@ export default function Identify() {
                         <div className="flex items-center justify-between p-6 border-b border-gray-800">
                             <div>
                                 <h2 className="text-xl font-bold text-white">Identify People in Photo</h2>
-                                <p className="text-sm text-gray-400 mt-1">Hover over a name to highlight their face. Click to rename.</p>
+                                <p className="text-sm text-gray-400 mt-1">Hover over a name to highlight their face. Click to rename or delete.</p>
                             </div>
                             <button onClick={closeModal} className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
                                 <X className="w-6 h-6" />
@@ -219,10 +255,10 @@ export default function Identify() {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {/* Image with bounding boxes */}
                                 <div className="relative flex items-center justify-center bg-black rounded-xl overflow-hidden min-h-[300px]">
-                                    {selectedEntity && (
+                                    {selectedPhotoId && (
                                         <div className="relative w-full h-full flex items-center justify-center">
                                             <img
-                                                src={`${API_BASE_URL}/api/image/${selectedEntity.photo_id}`}
+                                                src={`${API_BASE_URL}/api/image/${selectedPhotoId}`}
                                                 alt="Full photo"
                                                 className="max-w-full max-h-[60vh] object-contain rounded-lg"
                                                 onLoad={(e) => {
@@ -236,7 +272,7 @@ export default function Identify() {
                                     )}
                                 </div>
 
-                                {/* Entity list with hover/rename */}
+                                {/* Entity list with hover/rename/delete */}
                                 <div className="flex flex-col">
                                     <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
                                         Detected Entities ({photoEntities.length})
@@ -290,10 +326,10 @@ export default function Identify() {
                                                             ) : (
                                                                 <>
                                                                     <p
-                                                                        className={`font-medium whitespace-normal break-words leading-tight transition-colors ${isUnknown ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-white'
+                                                                        className={`font-medium whitespace-normal break-words leading-tight transition-colors ${isUnknown ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-white cursor-pointer hover:text-blue-400'
                                                                             }`}
-                                                                        title={isUnknown ? "Click to rename" : ent.name}
-                                                                        onClick={() => { if (isUnknown) { setEditingId(ent.id); setEditName(''); } }}
+                                                                        title="Click to rename"
+                                                                        onClick={() => { setEditingId(ent.id); setEditName(isUnknown ? '' : ent.name); }}
                                                                     >
                                                                         {ent.name}
                                                                         {isUnknown && <span className="ml-2 text-xs text-yellow-600">(click to name)</span>}
@@ -303,14 +339,23 @@ export default function Identify() {
                                                             )}
                                                         </div>
 
-                                                        {!isEditing && isUnknown && (
-                                                            <button
-                                                                onClick={() => { setEditingId(ent.id); setEditName(''); }}
-                                                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white transition-opacity p-2 shrink-0"
-                                                                title="Rename"
-                                                            >
-                                                                <Edit2 className="w-4 h-4" />
-                                                            </button>
+                                                        {!isEditing && (
+                                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                                                <button
+                                                                    onClick={() => { setEditingId(ent.id); setEditName(isUnknown ? '' : ent.name); }}
+                                                                    className="text-gray-400 hover:text-white p-2"
+                                                                    title="Rename"
+                                                                >
+                                                                    <Edit2 className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setConfirmDelete(ent)}
+                                                                    className="text-gray-400 hover:text-red-400 p-2"
+                                                                    title="Delete entity"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 );
@@ -319,6 +364,33 @@ export default function Identify() {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom confirm modal for delete */}
+            {confirmDelete && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-6" onClick={() => setConfirmDelete(null)}>
+                    <div className="bg-surface border border-[#333] shadow-2xl rounded-2xl p-8 max-w-md w-full" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-4 text-red-500 mb-4">
+                            <Trash2 className="w-7 h-7 shrink-0" />
+                            <h2 className="text-xl font-bold text-white">Delete Entity</h2>
+                        </div>
+                        <p className="text-gray-300 text-base mb-8 leading-relaxed">
+                            Are you sure you want to delete <strong className="text-white">{confirmDelete.name}</strong>? This will remove all instances of this entity from every photo.
+                        </p>
+                        <div className="flex justify-end gap-3 font-medium">
+                            <button onClick={() => setConfirmDelete(null)} className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-300 transition-colors">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDeleteEntity(confirmDelete.name)}
+                                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20 transition-colors flex items-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                            </button>
                         </div>
                     </div>
                 </div>

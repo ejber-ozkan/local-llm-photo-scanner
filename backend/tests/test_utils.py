@@ -1,4 +1,5 @@
 import pytest
+
 from services.image_service import _convert_gps_to_decimal, extract_gps_from_exif
 
 

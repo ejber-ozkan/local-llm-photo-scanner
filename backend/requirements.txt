@@ -7,6 +7,7 @@ opencv-python-headless
 tf-keras
 python-multipart
 Pillow
+pillow-heif
 aiofiles
 numpy<2
 ruff

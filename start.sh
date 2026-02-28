@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.2.0"
+VERSION="1.3.0"
 
 echo "===================================================="
 echo "   Local LLM Photo Scanner v$VERSION"
@@ -58,7 +58,7 @@ trap cleanup INT TERM
 
 # 5. Start services
 echo "[*] Starting Backend..."
-(cd backend && . venv/bin/activate && uvicorn photo_backend:app --host 0.0.0.0 --port 8000) &
+(cd backend && . venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000) &
 BACKEND_PID=$!
 
 echo "[*] Starting Frontend..."

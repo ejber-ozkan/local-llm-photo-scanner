@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-set VERSION=1.2.0
+set VERSION=1.3.0
 
 echo ====================================================
 echo    Local LLM Photo Scanner v%VERSION%
@@ -27,8 +27,14 @@ if not exist "frontend\node_modules" (
 
 :: 3. Clean up ports
 echo [*] Stopping any existing services on ports 8000 and 5173...
-FOR /F "tokens=5" %%a IN ('netstat -aon ^| findstr "LISTENING" ^| findstr ":8000"') DO taskkill /F /PID %%a >nul 2>&1
-FOR /F "tokens=5" %%a IN ('netstat -aon ^| findstr "LISTENING" ^| findstr ":5173"') DO taskkill /F /PID %%a >nul 2>&1
+FOR /F "tokens=4,5" %%i IN ('netstat -aon ^| findstr "LISTENING" ^| findstr ":8000"') DO (
+    taskkill /F /PID %%i >nul 2>&1
+    taskkill /F /PID %%j >nul 2>&1
+)
+FOR /F "tokens=4,5" %%i IN ('netstat -aon ^| findstr "LISTENING" ^| findstr ":5173"') DO (
+    taskkill /F /PID %%i >nul 2>&1
+    taskkill /F /PID %%j >nul 2>&1
+)
 
 :: 4. Get Local IP Address
 set LOCAL_IP=127.0.0.1
@@ -51,7 +57,7 @@ echo.
 
 :: 5. Start services
 echo [*] Starting Backend...
-start cmd /k "cd backend && call venv\Scripts\activate.bat && uvicorn photo_backend:app --host 0.0.0.0 --port 8000"
+start cmd /k "cd backend && call venv\Scripts\activate.bat && uvicorn main:app --host 0.0.0.0 --port 8000"
 
 echo [*] Starting Frontend...
 start cmd /k "cd frontend && npm run dev -- --host"

@@ -1,8 +1,9 @@
 import os
 import sqlite3
 
-import database
 import pytest
+
+import database_setup
 
 
 # Setup dummy db seed
@@ -64,7 +65,7 @@ def test_get_photo_detail_success(client, mock_db_file, dummy_img):
     data = resp.json()
     assert data["filename"] == "dummy.jpg"
     assert "Alice" in [e["name"] for e in data["entities"]]
-    assert "Dimensions" in data["metadata"]
+    assert "Camera" in data["metadata"]
 
 
 def test_get_photo_detail_not_found(client, mock_db_file):
@@ -77,12 +78,12 @@ def test_get_image_from_test_db(client, mock_db_file, dummy_img):
     import shutil
     import sqlite3
 
-    import photo_backend
-
     unique_dummy = dummy_img + "_test555.jpg"
     shutil.copy(dummy_img, unique_dummy)
 
-    test_db = database.DB_TEST_FILE
+    from core.config import DB_TEST_FILE
+
+    test_db = DB_TEST_FILE
     conn = sqlite3.connect(test_db)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM photos WHERE id = 555")
@@ -97,13 +98,13 @@ def test_get_image_from_test_db(client, mock_db_file, dummy_img):
     resp = client.get("/api/image/555")
     if resp.status_code != 200:
         json_resp = resp.json()
-        conn = sqlite3.connect(database.DB_TEST_FILE)
+        conn = sqlite3.connect(database_setup.DB_TEST_FILE)
         row = conn.cursor().execute("SELECT id, filepath FROM photos WHERE id=555").fetchone()
         conn.close()
         import os
 
         assert resp.status_code == 200, (
-            f"Failed. JSON={json_resp}, DB_TEST_FILE={database.DB_TEST_FILE}, row={row}, exists={os.path.exists(row[1] if row else '')}"
+            f"Failed. JSON={json_resp}, DB_TEST_FILE={database_setup.DB_TEST_FILE}, row={row}, exists={os.path.exists(row[1] if row else '')}"
         )
 
 
@@ -151,7 +152,7 @@ def test_database_backups_and_restore(client, monkeypatch):
         return True
 
     def fake_listdir(*args, **kwargs):
-        return ["backup1.db", "backup2.db"]
+        return ["backup1.sqlite", "backup2.sqlite"]
 
     def fake_getsize(*args, **kwargs):
         return 1000
@@ -167,13 +168,13 @@ def test_database_backups_and_restore(client, monkeypatch):
     def fake_restore(*args, **kwargs):
         return True
 
-    monkeypatch.setattr("photo_backend.restore_db.restore_database", fake_restore)
+    monkeypatch.setattr("api.routes.system.restore_database", fake_restore)
 
     resp1 = client.get("/api/database/backups")
     assert resp1.status_code == 200
-    assert "backup1.db" in [b["filename"] for b in resp1.json()["backups"]]
+    assert "backup1.sqlite" in [b["filename"] for b in resp1.json()["backups"]]
 
-    resp2 = client.post("/api/database/restore", json={"filename": "backup1.db"})
+    resp2 = client.post("/api/database/restore", json={"filename": "backup1.sqlite"})
     assert resp2.status_code == 200
     assert "Database restored" in resp2.json()["message"]
 
