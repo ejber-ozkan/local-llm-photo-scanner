@@ -1,5 +1,4 @@
-# Local LLM Photo Scanner v1.2.1
-
+# Local LLM Photo Scanner v1.4
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
@@ -187,6 +186,26 @@ This will create a `docs` folder globally, and deposit the newly generated HTML 
 
 The backend is fully tested using `pytest` with a suite of unit and integration tests covering the REST API, background worker, database setup, and mock AI interactions.
 
+**Using the test runner script (Recommended):**
+
+**On Windows:**
+```cmd
+.\run_tests_backend.bat
+```
+
+**On Linux/macOS:**
+```bash
+chmod +x run_tests_backend.sh
+./run_tests_backend.sh
+```
+
+The script will automatically create a virtual environment and install dependencies if they don't exist. You can pass additional pytest arguments, e.g.:
+```cmd
+.\run_tests_backend.bat -k test_search
+```
+
+**Running manually:**
+
 1. Ensure your virtual environment is activated in the `backend` folder.
 2. Run the full test suite with coverage reporting:
 
@@ -203,6 +222,36 @@ The backend is fully tested using `pytest` with a suite of unit and integration 
    ```
 
 This will execute the isolated test database and output the coverage metrics (currently targeted at >80%). You can also generate an HTML coverage report by appending `--cov-report=html` to the commands above.
+
+### 8. Running Frontend Tests
+
+The frontend has a comprehensive test suite built with **Vitest**, **React Testing Library**, and **MSW** (Mock Service Worker). Tests cover all major components: Gallery, Settings, Identify, Duplicates, and the App shell.
+
+**Using the test runner script (Recommended):**
+
+**On Windows:**
+```cmd
+.\run_tests_frontend.bat
+```
+
+**On Linux/macOS:**
+```bash
+chmod +x run_tests_frontend.sh
+./run_tests_frontend.sh
+```
+
+The script will automatically install `node_modules` if they don't exist. You can pass additional vitest arguments, e.g.:
+```cmd
+.\run_tests_frontend.bat --coverage
+```
+
+**Running manually:**
+
+```bash
+cd frontend
+npm test          # interactive watch mode
+npm run test:run  # single run (CI mode)
+```
 
 ---
 

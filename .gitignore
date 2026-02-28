@@ -36,6 +36,8 @@ uploads/
 backend/*_debug.json
 backend/mypy_output.txt
 backend/test_out.log
+frontend/test-*.txt
+frontend/test-*.json
 
 # HEIC → JPEG cached conversions (created alongside originals)
 *.heic.jpg

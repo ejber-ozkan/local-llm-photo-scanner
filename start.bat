@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-set VERSION=1.3.0
+set VERSION=1.4.0
 
 echo ====================================================
 echo    Local LLM Photo Scanner v%VERSION%
