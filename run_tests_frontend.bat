@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-set VERSION=1.4.0
+set VERSION=1.6.0
 
 echo ====================================================
 echo    Frontend Test Runner  v%VERSION%

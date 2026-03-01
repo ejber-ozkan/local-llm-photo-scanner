@@ -44,6 +44,8 @@ async def scan_directory(
 
     cursor = db.cursor()
 
+    state.IGNORE_SCREENSHOTS = req.ignore_screenshots
+
     if req.force_rescan:
         state.add_log(f"Force Rescan enabled. Purging older gallery metadata for: {req.directory_path}")
         # Delete entities linked to photos in this directory

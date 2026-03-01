@@ -7,6 +7,7 @@ import type { ScanStatus, ScanHistoryItem } from '../types';
 
 export default function SettingsPage() {
     const [path, setPath] = useState('');
+    const [ignoreScreenshots, setIgnoreScreenshots] = useState(false);
     const [apiError, setApiError] = useState('');
     const [appVersion, setAppVersion] = useState('0.0.0');
 
@@ -17,7 +18,7 @@ export default function SettingsPage() {
 
     // New state for Models
     const [models, setModels] = useState<{ name: string, is_vision: boolean }[]>([]);
-    const [activeModel, setActiveModel] = useState('');
+    const [activeModel, setActiveModel] = useState(() => localStorage.getItem('activeModel') || '');
     const [loadingModels, setLoadingModels] = useState(true);
 
     // Scan History State
@@ -64,7 +65,14 @@ export default function SettingsPage() {
         try {
             const res = await axios.get(`${API_BASE_URL}/api/models`);
             setModels(res.data.models);
-            setActiveModel(res.data.active);
+
+            const savedModel = localStorage.getItem('activeModel');
+            if (savedModel && res.data.models.some((m: any) => m.name === savedModel)) {
+                setActiveModel(savedModel);
+            } else if (!savedModel && res.data.active) {
+                setActiveModel(res.data.active);
+                localStorage.setItem('activeModel', res.data.active);
+            }
         } catch (err) {
             console.error("Failed to fetch models");
         } finally {
@@ -164,8 +172,9 @@ export default function SettingsPage() {
     const handleModelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newModel = e.target.value;
         setActiveModel(newModel);
+        localStorage.setItem('activeModel', newModel);
         try {
-            await axios.post(`${API_BASE_URL}/api/settings/model`, { model_name: newModel });
+            await axios.post(`${API_BASE_URL}/api/settings/model`, { active_model: newModel });
         } catch (err) {
             console.error("Failed to update model");
         }
@@ -190,7 +199,7 @@ export default function SettingsPage() {
     const executeScan = async (force: boolean) => {
         setApiError('');
         try {
-            await axios.post(`${API_BASE_URL}/api/scan`, { directory_path: path.trim(), force_rescan: force });
+            await axios.post(`${API_BASE_URL}/api/scan`, { directory_path: path.trim(), force_rescan: force, ignore_screenshots: ignoreScreenshots });
             setPath('');
             setIsHistoryOpen(false); // Close history so user can see it processing
             setIsLogOpen(true);
@@ -276,8 +285,8 @@ export default function SettingsPage() {
                         <label className="block text-sm font-medium text-gray-300 mb-2">Photo Directory</label>
                         <div
                             className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all cursor-text ${path
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-gray-700 bg-surface hover:border-gray-500'
+                                ? 'border-primary bg-primary/5'
+                                : 'border-gray-700 bg-surface hover:border-gray-500'
                                 }`}
                             onClick={() => {
                                 const input = document.getElementById('path-input');
@@ -297,6 +306,20 @@ export default function SettingsPage() {
                                 {path ? 'All images in this directory will be scanned recursively' : 'e.g. C:\\Users\\John\\Pictures or /home/john/Pictures'}
                             </p>
                         </div>
+                    </div>
+
+                    {/* Ignore Screenshots Checkbox */}
+                    <div className="flex items-center gap-3 bg-[#111] p-4 rounded-xl border border-gray-800">
+                        <input
+                            type="checkbox"
+                            id="ignoreScreenshots"
+                            checked={ignoreScreenshots}
+                            onChange={(e) => setIgnoreScreenshots(e.target.checked)}
+                            className="w-5 h-5 text-primary border-gray-700 rounded focus:ring-primary focus:ring-offset-gray-900 bg-[#161616]"
+                        />
+                        <label htmlFor="ignoreScreenshots" className="text-sm text-gray-300 font-medium cursor-pointer flex-1">
+                            Ignore Screenshots <span className="text-gray-500 font-normal ml-1">(Skips files with "screenshot" in name or AI description)</span>
+                        </label>
                     </div>
 
                     {/* Scan History Collapsible */}

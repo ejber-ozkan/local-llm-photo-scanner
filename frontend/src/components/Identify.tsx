@@ -189,7 +189,7 @@ export default function Identify() {
                         >
                             <div className="relative h-48 bg-black overflow-hidden flex items-center justify-center">
                                 <img
-                                    src={`${API_BASE_URL}/api/image/${photo.photo_id}`}
+                                    src={`${API_BASE_URL}/api/image/${photo.photo_id}?t=${Date.now()}`}
                                     alt="Entity context"
                                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                 />
@@ -240,7 +240,7 @@ export default function Identify() {
                                     {selectedPhotoId && (
                                         <div className="relative w-full h-full flex items-center justify-center">
                                             <img
-                                                src={`${API_BASE_URL}/api/image/${selectedPhotoId}`}
+                                                src={`${API_BASE_URL}/api/image/${selectedPhotoId}?t=${Date.now()}`}
                                                 alt="Full photo"
                                                 className="max-w-full max-h-[60vh] object-contain rounded-lg"
                                                 onLoad={(e) => {

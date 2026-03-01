@@ -21,7 +21,8 @@ except ImportError:
     print("WARNING: DeepFace is not installed. Facial recognition features will be disabled.")
 
 import core.state as state
-from core.config import ACTIVE_OLLAMA_MODEL, DB_FILE, OLLAMA_URL
+import core.config as config
+from core.config import DB_FILE
 from database_setup import find_best_face_match
 from services.image_service import extract_exif_for_filters, process_image_with_ollama
 
@@ -58,13 +59,17 @@ def background_processor() -> None:
         state.add_log(f"Processing: {filepath}")
         state.current_scan_processed += 1
 
-        # 0. Check for Screenshots
-        filename_lower = os.path.basename(filepath).lower()
-        if any(term in filename_lower for term in ["screenshot", "screen shot", "snip", "capture"]):
-            state.add_log(f"Skipping screenshot: {filepath}")
-            cursor.execute("UPDATE photos SET status = 'screenshot' WHERE id = ?", (photo_id,))
-            conn.commit()
-            continue
+        # 0. Check for Screenshots based on filename
+        if state.IGNORE_SCREENSHOTS:
+            filename_lower = os.path.basename(filepath).lower()
+            if any(term in filename_lower for term in ["screenshot", "screen shot", "snip", "capture"]):
+                state.add_log(f"Skipping screenshot by filename: {filepath}")
+                cursor.execute(
+                    "UPDATE photos SET status = 'screenshot', description = 'Skipped: Matched screenshot keywords in filename' WHERE id = ?",
+                    (photo_id,),
+                )
+                conn.commit()
+                continue
 
         # 0. Check for Duplicates
         try:
@@ -74,7 +79,7 @@ def background_processor() -> None:
 
             cursor.execute(
                 "SELECT id FROM photos WHERE file_hash = ? AND status = 'processed' AND ai_model = ? LIMIT 1",
-                (file_hash, ACTIVE_OLLAMA_MODEL),
+                (file_hash, config.ACTIVE_OLLAMA_MODEL),
             )
             if cursor.fetchone():
                 state.add_log(f"Skipping duplicate: {filepath}")
@@ -92,8 +97,17 @@ def background_processor() -> None:
             state.add_log(f"Error checking duplicate for {filepath}: {e}")
 
         # 1. Process with Ollama for description
-        ai_response = process_image_with_ollama(filepath, OLLAMA_URL, ACTIVE_OLLAMA_MODEL)
+        ai_response = process_image_with_ollama(filepath, config.OLLAMA_URL, config.ACTIVE_OLLAMA_MODEL)
         description = ai_response if ai_response else ""
+
+        if state.IGNORE_SCREENSHOTS and description and ("screenshot" in description.lower() or description.upper().startswith("SCREENSHOT")):
+            state.add_log(f"Skipping AI-detected screenshot/document: {filepath}")
+            cursor.execute(
+                "UPDATE photos SET status = 'screenshot', description = 'Skipped: AI recognized as screenshot, video game, or document.' WHERE id = ?",
+                (photo_id,),
+            )
+            conn.commit()
+            continue
 
         # Extract EXIF for filter columns
         exif_info = extract_exif_for_filters(filepath)
@@ -123,7 +137,7 @@ def background_processor() -> None:
                 exif_info["gps_lon"],
                 date_created,
                 date_modified,
-                ACTIVE_OLLAMA_MODEL,
+                config.ACTIVE_OLLAMA_MODEL,
                 photo_id,
             ),
         )

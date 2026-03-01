@@ -19,7 +19,7 @@ export default function ScanTest() {
 
     // Model Selection State
     const [models, setModels] = useState<{ name: string, is_vision: boolean }[]>([]);
-    const [selectedModel, setSelectedModel] = useState("");
+    const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem('activeModel') || '');
     const [loadingModels, setLoadingModels] = useState(true);
 
     // Toast (replaces native alert)
@@ -60,8 +60,13 @@ export default function ScanTest() {
             try {
                 const response = await axios.get(`${API_BASE_URL}/api/models`);
                 setModels(response.data.models);
-                if (response.data.active && !selectedModel) {
+
+                const savedModel = localStorage.getItem('activeModel');
+                if (savedModel && response.data.models.some((m: any) => m.name === savedModel)) {
+                    setSelectedModel(savedModel);
+                } else if (!selectedModel && response.data.active) {
                     setSelectedModel(response.data.active);
+                    localStorage.setItem('activeModel', response.data.active);
                 }
             } catch (err) {
                 console.error("Failed to fetch models", err);
@@ -184,7 +189,11 @@ export default function ScanTest() {
                             ) : (
                                 <select
                                     value={selectedModel}
-                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    onChange={(e) => {
+                                        setSelectedModel(e.target.value);
+                                        localStorage.setItem('activeModel', e.target.value);
+                                        axios.post(`${API_BASE_URL}/api/settings/model`, { active_model: e.target.value }).catch(() => { });
+                                    }}
                                     className="w-full bg-[#111] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
                                 >
                                     {models.map(m => (

@@ -8,8 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, Response
 from PIL import Image
 
-# We need the fallback DB_TEST_FILE reference for image fetching
-from core.config import DB_FILE, DB_TEST_FILE
+from core.config import DB_FILE
 from core.database import get_db
 
 # Register HEIC/HEIF support with Pillow
@@ -72,16 +71,7 @@ async def get_image(photo_id: int) -> Response:
     }
 
     if not row or not os.path.exists(row[0]):
-        # Fallback to check test DB
-        conn_test = sqlite3.connect(DB_TEST_FILE)
-        cursor_test = conn_test.cursor()
-        cursor_test.execute("SELECT filepath FROM photos WHERE id = ?", (photo_id,))
-        row_test = cursor_test.fetchone()
-        conn_test.close()
-
-        if not row_test or not os.path.exists(row_test[0]):
-            raise HTTPException(status_code=404, detail="Image not found")
-        return _serve_image(row_test[0], headers)
+        raise HTTPException(status_code=404, detail="Image not found")
 
     return _serve_image(row[0], headers)
 
@@ -297,6 +287,32 @@ async def get_duplicates(db: sqlite3.Connection = Depends(get_db)) -> list[dict[
             )
 
     return response_data
+
+
+@router.get("/skipped")
+async def get_skipped(db: sqlite3.Connection = Depends(get_db)) -> list[dict[str, Any]]:
+    """Returns files that were explicitly skipped during import (e.g., screenshots)."""
+    cursor = db.cursor()
+    cursor.execute(
+        """
+        SELECT id, filepath, filename, file_size, description
+        FROM photos
+        WHERE status = 'screenshot' OR status = 'error'
+        ORDER BY id DESC
+    """
+    )
+    skipped = cursor.fetchall()
+    
+    return [
+        {
+            "id": row[0],
+            "filepath": row[1],
+            "filename": row[2],
+            "file_size": row[3],
+            "reason": row[4] or "Skipped: Not imported",
+        }
+        for row in skipped
+    ]
 
 
 @lru_cache(maxsize=1)

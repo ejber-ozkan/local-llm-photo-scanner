@@ -13,7 +13,8 @@ from fastapi import APIRouter, HTTPException
 
 import core.state as state
 from backup_db import backup_database
-from core.config import ACTIVE_OLLAMA_MODEL, DB_FILE, DB_TEST_FILE, VERSION
+import core.config as config
+from core.config import DB_FILE, DB_TEST_FILE, VERSION
 from models.schemas import DatabaseCleanRequest, RestoreRequest, SettingsUpdateRequest
 from restore_db import restore_database
 
@@ -157,11 +158,11 @@ async def get_ollama_models() -> dict[str, Any]:
                 name = m.get("name")
                 is_vision = any(kw in name.lower() for kw in vision_keywords)
                 result.append({"name": name, "is_vision": is_vision})
-            return {"models": result, "active": ACTIVE_OLLAMA_MODEL}
+            return {"models": result, "active": config.ACTIVE_OLLAMA_MODEL}
     except Exception as e:
         print(f"Error fetching Ollama models: {e}")
     # Fallback if connection fails
-    return {"models": [{"name": ACTIVE_OLLAMA_MODEL, "is_vision": True}], "active": ACTIVE_OLLAMA_MODEL}
+    return {"models": [{"name": config.ACTIVE_OLLAMA_MODEL, "is_vision": True}], "active": config.ACTIVE_OLLAMA_MODEL}
 
 
 @router.post("/settings/model")

@@ -264,6 +264,7 @@ def process_image_with_ollama(filepath: str, ollama_url: str, model_to_use: str)
         prompt = (
             "Describe this image in detail. "
             "Also, explicitly list if there are any pets (dogs, cats, etc.) in the photo. "
+            "CRITICAL META-CLASSIFICATION: If this image is clearly a video game, a computer/phone screen, a meme, a text document, or a newspaper clipping, you MUST start your Description exactly with the word 'SCREENSHOT:'. "
             "Format the output strictly as: 'Description: [description]. Entities: [comma separated list of pet entities]'"
         )
 
