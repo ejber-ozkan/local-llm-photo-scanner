@@ -58,13 +58,20 @@ async def scan_directory(
         db.commit()
 
     added_count = 0
+    from datetime import datetime
+    
+    # Generate exactly one timestamp for the entire folder scan
+    scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     for root, _, files in os.walk(req.directory_path):
         for file in files:
             if any(file.lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
                 full_path = os.path.join(root, file)
                 try:
-                    cursor.execute("INSERT INTO photos (filepath, filename) VALUES (?, ?)", (full_path, file))
+                    cursor.execute(
+                        "INSERT INTO photos (filepath, filename, scanned_at) VALUES (?, ?, ?)",
+                        (full_path, file, scan_time)
+                    )
                     added_count += 1
                 except sqlite3.IntegrityError:
                     pass  # Normal scan, skip existing files

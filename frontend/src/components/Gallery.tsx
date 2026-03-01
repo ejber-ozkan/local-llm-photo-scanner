@@ -38,6 +38,7 @@ export default function Gallery() {
     const [fullSize, setFullSize] = useState(false);
     const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
     const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number, h: number } | null>(null);
+    const [timestamp] = useState(Date.now());
 
     const activeFilterCount = [filterName, filterEntityType, filterCamera, filterHasFaces, filterUnidentified].filter(Boolean).length;
 
@@ -432,7 +433,7 @@ export default function Gallery() {
                                             <div key={photo.id}
                                                 className="break-inside-avoid relative group rounded-xl overflow-hidden shadow-lg bg-surface hover:shadow-2xl transition-all duration-300 cursor-pointer"
                                                 onClick={() => openPhotoDetail(photo.id)}>
-                                                <img src={`${API_BASE_URL}/api/image/${photo.id}?t=${Date.now()}`} alt={photo.filename}
+                                                <img src={`${API_BASE_URL}/api/image/${photo.id}?t=${timestamp}`} alt={photo.filename}
                                                     className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                                                     <p className="text-white text-sm font-medium leading-relaxed drop-shadow-md">
@@ -475,7 +476,7 @@ export default function Gallery() {
             {/* ========== FULL SIZE LIGHTBOX ========== */}
             {fullSize && selectedPhoto && (
                 <div className="fixed inset-0 bg-black z-[60] flex items-center justify-center cursor-zoom-out" onClick={() => setFullSize(false)}>
-                    <img src={`${API_BASE_URL}/api/image/${selectedPhoto.id}?t=${Date.now()}`} alt={selectedPhoto.filename} className="max-w-full max-h-full object-contain" />
+                    <img src={`${API_BASE_URL}/api/image/${selectedPhoto.id}?t=${timestamp}`} alt={selectedPhoto.filename} className="max-w-full max-h-full object-contain" />
                     <button onClick={() => setFullSize(false)} className="absolute top-6 right-6 text-white/60 hover:text-white bg-black/50 hover:bg-black/80 p-3 rounded-full transition-all">
                         <X className="w-6 h-6" />
                     </button>
@@ -512,7 +513,7 @@ export default function Gallery() {
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         <div className="flex flex-col gap-4">
                                             <div className="relative bg-black rounded-xl overflow-hidden flex items-center justify-center cursor-pointer group" onClick={() => setFullSize(true)}>
-                                                <img src={`${API_BASE_URL}/api/image/${selectedPhoto.id}?t=${Date.now()}`} alt={selectedPhoto.filename}
+                                                <img src={`${API_BASE_URL}/api/image/${selectedPhoto.id}?t=${timestamp}`} alt={selectedPhoto.filename}
                                                     className="max-w-full max-h-[55vh] object-contain rounded-lg"
                                                     onLoad={(e) => { const el = e.target as HTMLImageElement; setImgNaturalSize({ w: el.naturalWidth, h: el.naturalHeight }); }}
                                                 />

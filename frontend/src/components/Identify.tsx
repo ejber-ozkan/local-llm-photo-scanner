@@ -20,6 +20,7 @@ export default function Identify() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editName, setEditName] = useState('');
     const [confirmDelete, setConfirmDelete] = useState<PhotoEntity | null>(null);
+    const [timestamp] = useState(Date.now());
 
     const fetchUnidentified = async () => {
         setLoading(true);
@@ -76,14 +77,14 @@ export default function Identify() {
         setConfirmDelete(null);
     };
 
-    const handleNameEntity = async (entityId: number, newName?: string) => {
+    const handleNameEntity = async (entityId: number, entityName: string, newName?: string) => {
         const nameToUse = newName || names[entityId];
         if (!nameToUse?.trim()) return;
 
         setSubmitting(entityId);
         try {
             await axios.post(`${API_BASE_URL}/api/entities/name`, {
-                entity_id: entityId,
+                entity_id: entityName,
                 new_name: nameToUse
             });
             // Update in photo entities list
@@ -189,7 +190,7 @@ export default function Identify() {
                         >
                             <div className="relative h-48 bg-black overflow-hidden flex items-center justify-center">
                                 <img
-                                    src={`${API_BASE_URL}/api/image/${photo.photo_id}?t=${Date.now()}`}
+                                    src={`${API_BASE_URL}/api/image/${photo.photo_id}?t=${timestamp}`}
                                     alt="Entity context"
                                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                 />
@@ -240,7 +241,7 @@ export default function Identify() {
                                     {selectedPhotoId && (
                                         <div className="relative w-full h-full flex items-center justify-center">
                                             <img
-                                                src={`${API_BASE_URL}/api/image/${selectedPhotoId}?t=${Date.now()}`}
+                                                src={`${API_BASE_URL}/api/image/${selectedPhotoId}?t=${timestamp}`}
                                                 alt="Full photo"
                                                 className="max-w-full max-h-[60vh] object-contain rounded-lg"
                                                 onLoad={(e) => {
@@ -289,13 +290,13 @@ export default function Identify() {
                                                                         type="text"
                                                                         value={editName}
                                                                         onChange={(e) => setEditName(e.target.value)}
-                                                                        onKeyDown={(e) => e.key === 'Enter' && handleNameEntity(ent.id, editName)}
+                                                                        onKeyDown={(e) => e.key === 'Enter' && handleNameEntity(ent.id, ent.name, editName)}
                                                                         className="bg-gray-800 border-2 border-primary rounded-md px-3 py-1.5 text-sm text-white w-full focus:outline-none shadow-inner"
                                                                         autoFocus
                                                                         placeholder="Enter real name..."
                                                                     />
                                                                     <button
-                                                                        onClick={() => handleNameEntity(ent.id, editName)}
+                                                                        onClick={() => handleNameEntity(ent.id, ent.name, editName)}
                                                                         disabled={!editName.trim() || submitting === ent.id}
                                                                         className="text-green-500 hover:text-green-400 shrink-0 p-1"
                                                                     >

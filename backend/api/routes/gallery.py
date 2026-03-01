@@ -249,7 +249,7 @@ async def get_duplicates(db: sqlite3.Connection = Depends(get_db)) -> list[dict[
     for file_hash, duplicate_count in hash_groups:
         cursor.execute(
             """
-            SELECT id, filepath, filename, file_size
+            SELECT id, filepath, filename, file_size, scanned_at
             FROM photos
             WHERE file_hash = ? AND status = 'processed'
             LIMIT 1
@@ -260,7 +260,7 @@ async def get_duplicates(db: sqlite3.Connection = Depends(get_db)) -> list[dict[
 
         cursor.execute(
             """
-            SELECT id, filepath, filename, file_size
+            SELECT id, filepath, filename, file_size, scanned_at
             FROM photos
             WHERE file_hash = ? AND status = 'duplicate'
         """,
@@ -278,9 +278,10 @@ async def get_duplicates(db: sqlite3.Connection = Depends(get_db)) -> list[dict[
                         "filepath": original[1],
                         "filename": original[2],
                         "file_size": original[3],
+                        "scanned_at": original[4],
                     },
                     "copies": [
-                        {"id": dup[0], "filepath": dup[1], "filename": dup[2], "file_size": dup[3]}
+                        {"id": dup[0], "filepath": dup[1], "filename": dup[2], "file_size": dup[3], "scanned_at": dup[4]}
                         for dup in duplicates
                     ],
                 }
@@ -295,7 +296,7 @@ async def get_skipped(db: sqlite3.Connection = Depends(get_db)) -> list[dict[str
     cursor = db.cursor()
     cursor.execute(
         """
-        SELECT id, filepath, filename, file_size, description
+        SELECT id, filepath, filename, file_size, description, scanned_at
         FROM photos
         WHERE status = 'screenshot' OR status = 'error'
         ORDER BY id DESC
@@ -310,6 +311,7 @@ async def get_skipped(db: sqlite3.Connection = Depends(get_db)) -> list[dict[str
             "filename": row[2],
             "file_size": row[3],
             "reason": row[4] or "Skipped: Not imported",
+            "scanned_at": row[5],
         }
         for row in skipped
     ]

@@ -39,7 +39,8 @@ def init_single_db(db_path: str) -> None:
             status TEXT DEFAULT 'pending', -- pending, processed, error, duplicate, screenshot
             file_size INTEGER,
             file_hash TEXT,
-            ai_model TEXT
+            ai_model TEXT,
+            scanned_at TEXT
         )
     """)
     # Table for detected entities (People, Pets)
@@ -76,6 +77,7 @@ def init_single_db(db_path: str) -> None:
         "file_size INTEGER",
         "file_hash TEXT",
         "ai_model TEXT",
+        "scanned_at TEXT",
     ]
     import contextlib
 

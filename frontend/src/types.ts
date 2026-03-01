@@ -9,6 +9,7 @@ export interface Photo {
     date_taken?: string;
     date_created?: string;
     date_modified?: string;
+    scanned_at?: string;
 }
 
 export interface PhotoEntity {
@@ -65,6 +66,7 @@ export interface DuplicatePhoto {
     filepath: string;
     filename: string;
     file_size: number;
+    scanned_at?: string;
 }
 
 export interface DuplicateGroup {
