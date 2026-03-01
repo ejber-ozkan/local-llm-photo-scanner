@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.7.0"
+VERSION="1.8.0"
 
 echo "===================================================="
 echo "   Backend Test Runner  v$VERSION"

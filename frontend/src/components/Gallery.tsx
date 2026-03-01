@@ -4,7 +4,7 @@ import { Search, Image as ImageIcon, X, Maximize2, User, PawPrint, Camera, FileT
 import LocationMap from './LocationMap';
 import { useToast, ToastContainer } from './Toast';
 import { API_BASE_URL } from '../config';
-import type { Photo, PhotoDetail, FilterOptions, YearInfo } from '../types';
+import type { Photo, PhotoDetail, FilterOptions } from '../types';
 import { formatDateGroup, getYearFromDate } from '../utils/dateFormatters';
 import EntityRow from './shared/EntityRow';
 import MetadataSection from './shared/MetadataSection';
@@ -27,9 +27,6 @@ export default function Gallery() {
     const [sortBy, setSortBy] = useState('date_taken');
     const [sortDir, setSortDir] = useState('desc');
     const [sortOpen, setSortOpen] = useState(false);
-
-    // Timeline state
-    const [years, setYears] = useState<YearInfo[]>([]);
     const galleryRef = useRef<HTMLDivElement>(null);
 
     // Modal state
@@ -74,16 +71,9 @@ export default function Gallery() {
         } catch (err) { console.error(err); }
     };
 
-    const fetchYears = async () => {
-        try {
-            const res = await axios.get(`${API_BASE_URL}/api/gallery/years`);
-            setYears(res.data);
-        } catch (err) { console.error(err); }
-    };
-
     useEffect(() => {
         // Parallelize independent fetches (async-parallel rule)
-        Promise.all([fetchPhotos(), fetchFilterOptions(), fetchYears()]);
+        Promise.all([fetchPhotos(), fetchFilterOptions()]);
     }, []);
 
     useEffect(() => {
@@ -103,8 +93,8 @@ export default function Gallery() {
         setFilterUnidentified(false);
     };
 
-    const scrollToYear = (year: string) => {
-        const el = document.getElementById(`year-group-${year}`);
+    const scrollToGroup = (id: string) => {
+        const el = document.getElementById(id);
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -112,22 +102,61 @@ export default function Gallery() {
 
     // Group photos by active sort date — memoized to avoid recomputation (rerender-derived-state-no-effect)
     const groupedPhotos = useMemo(() =>
-        photos.reduce<{ label: string; year: string; photos: Photo[] }[]>((groups, photo) => {
+        photos.reduce<{ label: string; year: string; safeId: string; month: string; photos: Photo[] }[]>((groups, photo) => {
             let activeDate = photo.date_taken;
             if (sortBy === 'date_created') activeDate = photo.date_created;
             if (sortBy === 'date_modified') activeDate = photo.date_modified;
 
             const label = formatDateGroup(activeDate);
             const year = getYearFromDate(activeDate);
+
+            let month = '';
+            if (activeDate && activeDate.length >= 7) {
+                const mStr = activeDate.substring(5, 7);
+                if (!isNaN(Number(mStr))) {
+                    const mIdx = parseInt(mStr) - 1;
+                    const mNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    if (mIdx >= 0 && mIdx < 12) month = mNames[mIdx];
+                }
+            }
+
+            const safeId = `date-group-${label.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+
             const existing = groups.find(g => g.label === label);
             if (existing) {
                 existing.photos.push(photo);
             } else {
-                groups.push({ label, year, photos: [photo] });
+                groups.push({ label, year, month, safeId, photos: [photo] });
             }
             return groups;
         }, []),
         [photos, sortBy]);
+
+    const timelineMarkers = useMemo(() => {
+        const markers: { type: 'year' | 'month'; label: string; id: string }[] = [];
+        let currentYear = '';
+        let currentMonth = '';
+
+        groupedPhotos.forEach((group) => {
+            if (group.year && /^\d{4}$/.test(group.year)) {
+                if (group.year !== currentYear) {
+                    currentYear = group.year;
+                    currentMonth = group.month;
+                    // Always inject the huge Year dot
+                    markers.push({ type: 'year', label: currentYear, id: group.safeId });
+                    // Followed immediately by its first month small notch
+                    if (currentMonth) {
+                        markers.push({ type: 'month', label: currentMonth, id: group.safeId });
+                    }
+                } else if (group.month && group.month !== currentMonth) {
+                    // Inject a month notch safely
+                    currentMonth = group.month;
+                    markers.push({ type: 'month', label: currentMonth, id: group.safeId });
+                }
+            }
+        });
+        return markers;
+    }, [groupedPhotos]);
 
     const openPhotoDetail = async (photoId: number) => {
         setModalLoading(true);
@@ -416,11 +445,9 @@ export default function Gallery() {
                 ) : (
                     <div className="max-w-7xl mx-auto pr-16">
                         {/* Photos grouped by date */}
-                        {groupedPhotos.map((group, gi) => {
-                            // Track first group of each year for timeline anchor
-                            const isFirstOfYear = gi === 0 || groupedPhotos[gi - 1].year !== group.year;
+                        {groupedPhotos.map((group) => {
                             return (
-                                <div key={group.label} className="mb-10" id={isFirstOfYear && group.year ? `year-group-${group.year}` : undefined}>
+                                <div key={group.label} className="mb-10" id={group.safeId}>
                                     {/* Date header */}
                                     <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-3">
                                         <Calendar className="w-5 h-5 text-gray-500" />
@@ -450,25 +477,32 @@ export default function Gallery() {
                     </div>
                 )}
 
-                {/* ========== YEAR TIMELINE SIDEBAR ========== */}
-                {years.length > 0 && photos.length > 0 && (
+                {/* ========== YEAR & MONTH TIMELINE SIDEBAR ========== */}
+                {timelineMarkers.length > 0 && photos.length > 0 && (
                     <div className="fixed right-0 top-1/2 -translate-y-1/2 z-30 flex flex-col items-end pr-3 gap-0" style={{ pointerEvents: 'auto' }}>
-                        {/* Vertical line */}
-                        <div className="absolute right-[22px] top-2 bottom-2 w-px bg-gray-700" />
+                        {/* Vertical line centered around the dots */}
+                        <div className="absolute right-[17px] top-2 bottom-2 w-px bg-gray-700/50" />
 
-                        {years.map((yearInfo) => (
-                            <button
-                                key={yearInfo.year}
-                                onClick={() => scrollToYear(yearInfo.year)}
-                                className="relative flex items-center gap-2 py-2 px-1 group transition-all"
-                                title={`${yearInfo.year} (${yearInfo.count} photos)`}
-                            >
-                                <span className="text-xs font-semibold text-gray-500 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100 mr-1 whitespace-nowrap">
-                                    {yearInfo.year}
-                                </span>
-                                <div className="w-2 h-2 rounded-full bg-gray-600 group-hover:bg-blue-400 group-hover:shadow-[0_0_8px_rgba(59,130,246,0.6)] transition-all z-10" />
-                            </button>
-                        ))}
+                        {timelineMarkers.map((marker, i) => {
+                            const isYear = marker.type === 'year';
+                            return (
+                                <button
+                                    key={`${marker.id}-${marker.label}-${i}`}
+                                    onClick={() => scrollToGroup(marker.id)}
+                                    className={`relative flex items-center gap-2 group transition-all ${isYear ? 'py-2 px-0' : 'py-1 px-1'}`}
+                                    title={marker.label}
+                                >
+                                    <span className={`text-[10px] uppercase font-bold text-gray-500 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100 mr-1 whitespace-nowrap bg-black/60 px-1.5 rounded-sm backdrop-blur-sm ${isYear ? 'text-xs tracking-wider text-blue-400' : ''
+                                        }`}>
+                                        {marker.label}
+                                    </span>
+                                    <div className={`rounded-full group-hover:shadow-[0_0_8px_rgba(59,130,246,0.6)] transition-all z-10 ${isYear
+                                        ? 'w-3 h-3 bg-blue-500 group-hover:bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
+                                        : 'w-1.5 h-1.5 bg-gray-600 group-hover:bg-blue-400 mr-[3px]'
+                                        }`} />
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>

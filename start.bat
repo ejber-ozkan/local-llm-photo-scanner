@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-set VERSION=1.7.0
+set VERSION=1.8.0
 
 echo ====================================================
 echo    Local LLM Photo Scanner v%VERSION%
@@ -37,7 +37,7 @@ FOR /F "tokens=4,5" %%i IN ('netstat -aon ^| findstr "LISTENING" ^| findstr ":51
 )
 
 :: 4. Get Local IP Address
-set LOCAL_IP=127.0.0.1
+set LOCAL_IP=1.8.0.0.1
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
     set temp_ip=%%a
     set LOCAL_IP=!temp_ip:~1!
