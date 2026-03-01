@@ -1,192 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { Search, Image as ImageIcon, X, Maximize2, User, PawPrint, Camera, FileText, MapPin, Info, Filter, ChevronDown, ChevronUp, Eye, HelpCircle, ArrowUpDown, ArrowUp, ArrowDown, Calendar, Loader2, Check, Sparkles, Trash2 } from 'lucide-react';
+import { Search, Image as ImageIcon, X, Maximize2, User, PawPrint, Camera, FileText, MapPin, Info, Filter, ChevronDown, ChevronUp, Eye, HelpCircle, ArrowUpDown, ArrowUp, ArrowDown, Calendar, Sparkles } from 'lucide-react';
 import LocationMap from './LocationMap';
 import { useToast, ToastContainer } from './Toast';
 import { API_BASE_URL } from '../config';
-
-interface Photo {
-    id: number;
-    filepath: string;
-    filename: string;
-    description: string;
-    date_taken?: string;
-    date_created?: string;
-    date_modified?: string;
-}
-
-interface PhotoEntity {
-    id: number;
-    type: string;
-    name: string;
-    bounding_box?: string;
-}
-
-interface PhotoDetail {
-    id: number;
-    filepath: string;
-    filename: string;
-    description: string;
-    entities: PhotoEntity[];
-    metadata: Record<string, string>;
-    gps_lat?: number;
-    gps_lon?: number;
-    ai_model?: string;
-}
-
-interface FilterOptions {
-    names: { name: string; type: string }[];
-    cameras: string[];
-    date_min: string | null;
-    date_max: string | null;
-    total_photos: number;
-    photos_with_faces: number;
-    photos_unidentified: number;
-}
-
-interface YearInfo {
-    year: string;
-    count: number;
-}
-
-// Helper: parse EXIF date string to a label
-function formatDateGroup(dateTaken: string | undefined): string {
-    if (!dateTaken) return 'Unknown Date';
-    try {
-        // EXIF dates are "YYYY:MM:DD HH:MM:SS"
-        const parts = dateTaken.replace(/:/g, '-').split(' ');
-        const datePart = parts[0].replace(/-/g, ':').split(':');
-        const d = new Date(parseInt(datePart[0]), parseInt(datePart[1]) - 1, parseInt(datePart[2]));
-        if (isNaN(d.getTime())) return 'Unknown Date';
-        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch {
-        return 'Unknown Date';
-    }
-}
-
-function getYearFromDate(dateTaken: string | undefined): string {
-    if (!dateTaken) return '';
-    return dateTaken.substring(0, 4);
-}
-
-// Isolated component for each entity row to prevent React re-renders from stealing focus while typing.
-function EntityRow({
-    ent,
-    onRename,
-    onDelete,
-    onMouseEnter,
-    onMouseLeave
-}: {
-    ent: PhotoEntity;
-    onRename: (oldName: string, newName: string) => Promise<void>;
-    onDelete: (name: string) => Promise<void>;
-    onMouseEnter: () => void;
-    onMouseLeave: () => void;
-}) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [editName, setEditName] = useState(ent.name);
-    const [loading, setLoading] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
-
-    const handleSubmit = async () => {
-        if (!editName.trim() || editName === ent.name) {
-            setIsEditing(false);
-            return;
-        }
-        setLoading(true);
-        await onRename(ent.name, editName);
-        setLoading(false);
-        setIsEditing(false);
-    };
-
-    return (
-        <>
-            <div
-                className="group relative flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 shadow-sm hover:border-gray-500 transition-colors cursor-default"
-                onMouseEnter={onMouseEnter}
-                onMouseLeave={onMouseLeave}
-            >
-                {ent.type === 'person' ? <User className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : <PawPrint className="w-3.5 h-3.5 text-orange-400 shrink-0" />}
-
-                <div className="flex-1 min-w-[100px]">
-                    {isEditing ? (
-                        <div className="flex items-center gap-1 w-full relative z-10">
-                            <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                                className="bg-gray-900 border border-primary rounded px-2 py-0.5 text-sm text-white w-full min-w-[120px] focus:outline-none"
-                                autoFocus
-                                disabled={loading}
-                            />
-                            <button onClick={handleSubmit} disabled={loading} className="text-green-500 hover:text-green-400 shrink-0">
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                            </button>
-                            <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} className="text-gray-500 hover:text-gray-400 shrink-0">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ) : (
-                        <p
-                            className="text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis cursor-text hover:text-blue-400 transition-colors"
-                            title="Click to rename"
-                            onClick={() => setIsEditing(true)}
-                        >
-                            {ent.name}
-                        </p>
-                    )}
-                </div>
-
-                {!isEditing && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 z-10 shrink-0">
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="text-gray-400 hover:text-white p-1"
-                            title="Rename entity"
-                        >
-                            <FileText className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                            onClick={() => setConfirmDelete(true)}
-                            className="text-gray-400 hover:text-red-400 p-1"
-                            title="Delete entity"
-                        >
-                            <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Custom confirm modal for delete */}
-            {confirmDelete && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-6" onClick={() => setConfirmDelete(false)}>
-                    <div className="bg-surface border border-[#333] shadow-2xl rounded-2xl p-8 max-w-md w-full" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-4 text-red-500 mb-4">
-                            <Trash2 className="w-7 h-7 shrink-0" />
-                            <h2 className="text-xl font-bold text-white">Delete Entity</h2>
-                        </div>
-                        <p className="text-gray-300 text-base mb-8 leading-relaxed">
-                            Are you sure you want to delete <strong className="text-white">{ent.name}</strong>? This will remove all instances of this entity from every photo.
-                        </p>
-                        <div className="flex justify-end gap-3 font-medium">
-                            <button onClick={() => setConfirmDelete(false)} className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-300 transition-colors">
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => { setConfirmDelete(false); onDelete(ent.name); }}
-                                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20 transition-colors flex items-center gap-2"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
-    );
-}
+import type { Photo, PhotoDetail, FilterOptions, YearInfo } from '../types';
+import { formatDateGroup, getYearFromDate } from '../utils/dateFormatters';
+import EntityRow from './shared/EntityRow';
+import MetadataSection from './shared/MetadataSection';
 
 export default function Gallery() {
     const [photos, setPhotos] = useState<Photo[]>([]);
@@ -260,9 +81,8 @@ export default function Gallery() {
     };
 
     useEffect(() => {
-        fetchPhotos();
-        fetchFilterOptions();
-        fetchYears();
+        // Parallelize independent fetches (async-parallel rule)
+        Promise.all([fetchPhotos(), fetchFilterOptions(), fetchYears()]);
     }, []);
 
     useEffect(() => {
@@ -289,22 +109,24 @@ export default function Gallery() {
         }
     };
 
-    // Group photos by active sort date
-    const groupedPhotos = photos.reduce<{ label: string; year: string; photos: Photo[] }[]>((groups, photo) => {
-        let activeDate = photo.date_taken;
-        if (sortBy === 'date_created') activeDate = photo.date_created;
-        if (sortBy === 'date_modified') activeDate = photo.date_modified;
+    // Group photos by active sort date — memoized to avoid recomputation (rerender-derived-state-no-effect)
+    const groupedPhotos = useMemo(() =>
+        photos.reduce<{ label: string; year: string; photos: Photo[] }[]>((groups, photo) => {
+            let activeDate = photo.date_taken;
+            if (sortBy === 'date_created') activeDate = photo.date_created;
+            if (sortBy === 'date_modified') activeDate = photo.date_modified;
 
-        const label = formatDateGroup(activeDate);
-        const year = getYearFromDate(activeDate);
-        const existing = groups.find(g => g.label === label);
-        if (existing) {
-            existing.photos.push(photo);
-        } else {
-            groups.push({ label, year, photos: [photo] });
-        }
-        return groups;
-    }, []);
+            const label = formatDateGroup(activeDate);
+            const year = getYearFromDate(activeDate);
+            const existing = groups.find(g => g.label === label);
+            if (existing) {
+                existing.photos.push(photo);
+            } else {
+                groups.push({ label, year, photos: [photo] });
+            }
+            return groups;
+        }, []),
+        [photos, sortBy]);
 
     const openPhotoDetail = async (photoId: number) => {
         setModalLoading(true);
@@ -319,48 +141,44 @@ export default function Gallery() {
         finally { setModalLoading(false); }
     };
 
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setSelectedPhoto(null);
         setFullSize(false);
         setHoveredEntity(null);
         setImgNaturalSize(null);
-    };
+    }, []);
 
-    const handleRenameEntity = async (oldName: string, newName: string) => {
+    const handleRenameEntity = useCallback(async (oldName: string, newName: string) => {
         try {
             await axios.post(`${API_BASE_URL}/api/entities/name`, {
                 entity_id: oldName,
                 new_name: newName.trim()
             });
             // Update local state and trigger re-fetch of filters
-            if (selectedPhoto) {
-                setSelectedPhoto({
-                    ...selectedPhoto,
-                    entities: selectedPhoto.entities.map(e => e.name === oldName ? { ...e, name: newName.trim() } : e)
-                });
-            }
-            fetchFilterOptions(); // Re-fetch the filter dropdown list since a name might have changed
+            setSelectedPhoto(prev => prev ? {
+                ...prev,
+                entities: prev.entities.map(e => e.name === oldName ? { ...e, name: newName.trim() } : e)
+            } : null);
+            fetchFilterOptions();
         } catch (err) {
             console.error(err);
             toastError('Failed to rename entity');
         }
-    };
+    }, [toastError]);
 
-    const handleDeleteEntity = async (entityName: string) => {
+    const handleDeleteEntity = useCallback(async (entityName: string) => {
         try {
             await axios.delete(`${API_BASE_URL}/api/entities/${encodeURIComponent(entityName)}`);
-            if (selectedPhoto) {
-                setSelectedPhoto({
-                    ...selectedPhoto,
-                    entities: selectedPhoto.entities.filter(e => e.name !== entityName)
-                });
-            }
+            setSelectedPhoto(prev => prev ? {
+                ...prev,
+                entities: prev.entities.filter(e => e.name !== entityName)
+            } : null);
             fetchFilterOptions();
         } catch (err) {
             console.error(err);
             toastError('Failed to delete entity');
         }
-    };
+    }, [toastError]);
 
     const getMetadataSections = (metadata: Record<string, string>) => {
         const camera: Record<string, string> = {};
@@ -401,22 +219,6 @@ export default function Gallery() {
         });
     };
 
-    const MetadataSection = ({ title, icon, data }: { title: string, icon: React.ReactNode, data: Record<string, string> }) => {
-        if (Object.keys(data).length === 0) return null;
-        return (
-            <div className="mb-5">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">{icon}{title}</h4>
-                <div className="space-y-2">
-                    {Object.entries(data).map(([key, value]) => (
-                        <div key={key} className="flex justify-between items-start text-sm gap-4">
-                            <span className="text-gray-400 shrink-0">{key}</span>
-                            <span className="text-gray-200 text-right break-all">{value}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
 
     const sortLabels: Record<string, string> = {
         'date_taken': 'Date taken',

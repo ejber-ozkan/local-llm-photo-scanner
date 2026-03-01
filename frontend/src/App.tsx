@@ -1,21 +1,34 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { useEffect } from 'react';
-import { Camera, Search, UserCheck, Settings, Copy } from 'lucide-react';
-import Gallery from './components/Gallery';
-import Identify from './components/Identify';
-import SettingsPage from './components/SettingsPage';
-import ScanTest from './components/ScanTest';
-import DuplicatesPage from './components/DuplicatesPage';
+import { lazy, Suspense } from 'react';
+import { Camera, Search, UserCheck, Settings, Copy, Loader2 } from 'lucide-react';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// ── Lazy-loaded route components (bundle-dynamic-imports) ─────────────
+const Gallery = lazy(() => import('./components/Gallery'));
+const Identify = lazy(() => import('./components/Identify'));
+const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const ScanTest = lazy(() => import('./components/ScanTest'));
+const DuplicatesPage = lazy(() => import('./components/DuplicatesPage'));
+
+// ── Lazy theme initialization (no-flicker, runs before first paint) ──
+// Uses an IIFE that fires synchronously during module evaluation
+// so the theme attributes are set before React mounts.
+(() => {
+  const mode = localStorage.getItem('themeMode') || 'dark';
+  const color = localStorage.getItem('themeColor') || 'twilight';
+  document.documentElement.setAttribute('data-mode', mode);
+  document.documentElement.setAttribute('data-color', color);
+})();
+
+function RouteSpinner() {
+  return (
+    <div className="flex items-center justify-center h-full opacity-60">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+}
 
 function App() {
-  // Apply any saved theme preferences immediately on app load
-  useEffect(() => {
-    const mode = localStorage.getItem('themeMode') || 'dark';
-    const color = localStorage.getItem('themeColor') || 'twilight';
-    document.documentElement.setAttribute('data-mode', mode);
-    document.documentElement.setAttribute('data-color', color);
-  }, []);
-
   const navCls = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors group font-medium ${isActive
       ? 'active text-white'
@@ -58,13 +71,17 @@ function App() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-auto h-screen relative bg-gradient-to-br from-background via-background to-[#111]">
-          <Routes>
-            <Route path="/" element={<Gallery />} />
-            <Route path="/identify" element={<Identify />} />
-            <Route path="/duplicates" element={<DuplicatesPage />} />
-            <Route path="/test" element={<ScanTest />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Routes>
+          <ErrorBoundary>
+            <Suspense fallback={<RouteSpinner />}>
+              <Routes>
+                <Route path="/" element={<Gallery />} />
+                <Route path="/identify" element={<Identify />} />
+                <Route path="/duplicates" element={<DuplicatesPage />} />
+                <Route path="/test" element={<ScanTest />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
     </BrowserRouter>

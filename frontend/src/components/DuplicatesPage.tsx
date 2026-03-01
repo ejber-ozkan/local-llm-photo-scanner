@@ -2,20 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Copy, Trash2, ShieldAlert, ChevronDown, ChevronUp } from 'lucide-react';
 import { API_BASE_URL } from '../config';
-
-interface DuplicatePhoto {
-    id: number;
-    filepath: string;
-    filename: string;
-    file_size: number;
-}
-
-interface DuplicateGroup {
-    hash: string;
-    count: number;
-    original: DuplicatePhoto;
-    copies: DuplicatePhoto[];
-}
+import type { DuplicateGroup } from '../types';
 
 export default function DuplicatesPage() {
     const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);

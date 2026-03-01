@@ -6,8 +6,6 @@ import asyncio
 import contextlib
 import os
 import sqlite3
-import tkinter as tk
-from tkinter import filedialog
 from typing import Any
 
 import requests
@@ -22,16 +20,6 @@ from restore_db import restore_database
 router = APIRouter()
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".heic"}
-
-try:
-    # Optional dependency for native folder picking dialog
-    import tkinter as tk
-    from tkinter import filedialog
-
-    TKINTER_AVAILABLE = True
-except ImportError:
-    TKINTER_AVAILABLE = False
-    print("WARNING: Tkinter is not installed. Native folder dialog will fall back to manual entry.")
 
 
 @router.post("/database/clean")
@@ -141,24 +129,6 @@ async def clear_test_db() -> dict[str, Any]:
 
     return {"success": True, "message": "Test sandbox cleared"}
 
-
-@router.get("/select-folder")
-async def select_folder() -> dict[str, Any]:
-    """Opens a native file dialog to select a directory."""
-    if not TKINTER_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Tkinter is not available. Please type the path manually.")
-
-    def _open_dialog() -> str:
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        folder = filedialog.askdirectory(parent=root, title="Select Photo Directory")
-        root.destroy()
-        return folder
-
-    # Run in a separate thread so it doesn't block the async event loop
-    folder_path = await asyncio.to_thread(_open_dialog)
-    return {"path": folder_path}
 
 
 @router.get("/models")

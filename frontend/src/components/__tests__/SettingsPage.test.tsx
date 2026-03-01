@@ -37,7 +37,7 @@ describe('SettingsPage', () => {
         renderSettings();
         await waitFor(() => {
             expect(
-                screen.getByPlaceholderText(/C:\\Users/i)
+                screen.getByPlaceholderText(/Type or paste folder path/i)
             ).toBeInTheDocument();
         });
     });

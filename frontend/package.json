@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -28,6 +28,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.2.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.24",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

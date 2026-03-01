@@ -1,21 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FolderSearch, Settings as SettingsIcon, CheckCircle, AlertTriangle, FolderOpen, Cpu, Terminal, ChevronDown, ChevronUp, Play, Pause, XCircle, Database, Trash2, Palette, Moon, Sun } from 'lucide-react';
+import { FolderSearch, Settings as SettingsIcon, CheckCircle, AlertTriangle, Cpu, Terminal, ChevronDown, ChevronUp, Play, Pause, XCircle, Database, Trash2, Palette, Moon, Sun } from 'lucide-react';
 import { useToast, ToastContainer } from './Toast';
 import { API_BASE_URL } from '../config';
-
-interface ScanStatus {
-    state: 'idle' | 'running' | 'paused';
-    total_gallery: number;
-    total_duplicates: number;
-    scan_total: number;
-    scan_processed: number;
-}
-
-interface ScanHistoryItem {
-    directory_path: string;
-    last_scanned: string;
-}
+import type { ScanStatus, ScanHistoryItem } from '../types';
 
 export default function SettingsPage() {
     const [path, setPath] = useState('');
@@ -81,6 +69,17 @@ export default function SettingsPage() {
             console.error("Failed to fetch models");
         } finally {
             setLoadingModels(false);
+        }
+    };
+
+    // Refresh the model list only (e.g. when dropdown is clicked)
+    // Does NOT reset activeModel to the server value
+    const refreshModelList = async () => {
+        try {
+            const res = await axios.get(`${API_BASE_URL}/api/models`);
+            setModels(res.data.models);
+        } catch (err) {
+            console.error("Failed to refresh model list");
         }
     };
 
@@ -160,16 +159,7 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSelectFolder = async () => {
-        try {
-            const res = await axios.get(`${API_BASE_URL}/api/select-folder`);
-            if (res.data.path) {
-                setPath(res.data.path);
-            }
-        } catch (err) {
-            console.error("Failed to open folder dialog", err);
-        }
-    };
+
 
     const handleModelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newModel = e.target.value;
@@ -283,25 +273,30 @@ export default function SettingsPage() {
 
                 <form onSubmit={handleScan} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Absolute Path to Photos</label>
-                        <div className="flex gap-3">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Photo Directory</label>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all cursor-text ${path
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-gray-700 bg-surface hover:border-gray-500'
+                                }`}
+                            onClick={() => {
+                                const input = document.getElementById('path-input');
+                                if (input) input.focus();
+                            }}
+                        >
+                            <FolderSearch className={`w-8 h-8 mb-3 ${path ? 'text-primary' : 'text-gray-500'}`} />
                             <input
+                                id="path-input"
                                 type="text"
                                 value={path}
                                 onChange={(e) => setPath(e.target.value)}
-                                placeholder="e.g. C:\Users\John\Pictures"
-                                className="flex-1 bg-[#111] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none font-mono text-sm"
+                                placeholder="Type or paste folder path…"
+                                className="w-full bg-transparent text-center text-white font-mono text-sm placeholder-gray-500 focus:outline-none border-none"
                             />
-                            <button
-                                type="button"
-                                onClick={handleSelectFolder}
-                                className="bg-[#222] hover:bg-[#333] border border-gray-700 text-white font-medium px-4 py-3 rounded-xl transition-colors flex items-center gap-2"
-                            >
-                                <FolderOpen className="w-5 h-5" />
-                                Browse...
-                            </button>
+                            <p className="text-xs text-gray-500 mt-3">
+                                {path ? 'All images in this directory will be scanned recursively' : 'e.g. C:\\Users\\John\\Pictures or /home/john/Pictures'}
+                            </p>
                         </div>
-                        <p className="mt-2 text-xs text-gray-500">The backend will recursively discover all .jpg, .png, and .webp files in this directory.</p>
                     </div>
 
                     {/* Scan History Collapsible */}
@@ -477,7 +472,7 @@ export default function SettingsPage() {
                         <select
                             value={activeModel}
                             onChange={handleModelChange}
-                            onClick={fetchModels}
+                            onClick={refreshModelList}
                             className="w-full bg-[#111] border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
                         >
                             {models.map(m => (

@@ -1,31 +1,9 @@
 /**
- * Unit tests for date formatting utilities used in Gallery.
- * These functions are currently defined inside Gallery.tsx — we test them
- * indirectly via the Gallery component, and will extract them in Phase 3.
- *
- * For now, we duplicate the logic here to unit-test the pure functions.
+ * Unit tests for date formatting utilities.
+ * Now imports from the extracted utils/dateFormatters module.
  */
 import { describe, it, expect } from 'vitest';
-
-// ── Copy of functions from Gallery.tsx (will be extracted in Phase 3) ──
-
-function formatDateGroup(dateTaken: string | undefined): string {
-    if (!dateTaken) return 'Unknown Date';
-    try {
-        const parts = dateTaken.replace(/:/g, '-').split(' ');
-        const datePart = parts[0].replace(/-/g, ':').split(':');
-        const d = new Date(parseInt(datePart[0]), parseInt(datePart[1]) - 1, parseInt(datePart[2]));
-        if (isNaN(d.getTime())) return 'Unknown Date';
-        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch {
-        return 'Unknown Date';
-    }
-}
-
-function getYearFromDate(dateTaken: string | undefined): string {
-    if (!dateTaken) return '';
-    return dateTaken.substring(0, 4);
-}
+import { formatDateGroup, getYearFromDate } from '../dateFormatters';
 
 // ── Tests ──────────────────────────────────────────────────────────────
 

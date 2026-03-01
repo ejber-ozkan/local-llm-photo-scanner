@@ -1,119 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { UploadCloud, Image as ImageIcon, Loader2, Sparkles, User, PawPrint, Edit2, Check, X, Trash2, AlertTriangle } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Loader2, Sparkles, Trash2, AlertTriangle } from 'lucide-react';
 import LocationMap from './LocationMap';
 import { useToast, ToastContainer } from './Toast';
 import { API_BASE_URL } from '../config';
-
-interface TestResult {
-    photo_id: number;
-    filename: string;
-    description: string;
-    entities: { type: string; name: string; bounding_box?: string }[];
-    metadata: Record<string, string>;
-    gps_lat?: number;
-    gps_lon?: number;
-    ai_model?: string;
-    history?: {
-        photo_id: number;
-        ai_model: string;
-        description: string;
-        entities: { type: string; name: string; bounding_box?: string }[];
-    }[];
-}
-
-// Isolated component for each entity row to prevent React re-renders from stealing focus while typing.
-function EntityRow({
-    ent,
-    onRename,
-    onDelete,
-    onMouseEnter,
-    onMouseLeave
-}: {
-    ent: { type: string; name: string; bounding_box?: string };
-    onRename: (oldName: string, newName: string) => Promise<void>;
-    onDelete: (name: string) => Promise<void>;
-    onMouseEnter: () => void;
-    onMouseLeave: () => void;
-}) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [editName, setEditName] = useState(ent.name);
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async () => {
-        if (!editName.trim() || editName === ent.name) {
-            setIsEditing(false);
-            return;
-        }
-        setLoading(true);
-        await onRename(ent.name, editName);
-        setLoading(false);
-        setIsEditing(false);
-    };
-
-    return (
-        <div
-            className="group relative flex items-center gap-3 bg-[#111] border border-gray-700 rounded-xl p-4 shadow-sm hover:border-primary transition-colors cursor-default"
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-        >
-            <div className={`p-2 rounded-lg ${ent.type === 'person' ? 'bg-blue-500/10 text-blue-400' : 'bg-orange-500/10 text-orange-400'}`}>
-                {ent.type === 'person' ? <User className="w-5 h-5" /> : <PawPrint className="w-5 h-5" />}
-            </div>
-            <div className={`flex-1 ${isEditing ? 'min-w-[250px]' : 'min-w-[120px]'}`}>
-                {isEditing ? (
-                    <div className="flex items-center gap-2 w-full">
-                        <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                            className="bg-gray-800 border-2 border-primary rounded-md px-3 py-1.5 text-base text-white w-full min-w-[200px] focus:outline-none shadow-inner"
-                            autoFocus
-                            disabled={loading}
-                        />
-                        <button onClick={handleSubmit} disabled={loading} className="text-green-500 hover:text-green-400 shrink-0 p-1">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-5 h-5" />}
-                        </button>
-                        <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} className="text-gray-500 hover:text-gray-400 shrink-0 p-1">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-                ) : (
-                    <>
-                        <p
-                            className="text-white font-medium whitespace-normal break-words leading-tight cursor-pointer hover:text-blue-400 transition-colors"
-                            title="Click to rename"
-                            onClick={() => setIsEditing(true)}
-                        >
-                            {ent.name}
-                        </p>
-                        <p className="text-xs text-gray-500 capitalize mt-1">{ent.type}</p>
-                    </>
-                )}
-            </div>
-
-            {!isEditing && (
-                <div className="flex items-center gap-2 shrink-0 min-w-max ml-auto">
-                    <button
-                        onClick={() => setIsEditing(true)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white transition-opacity p-2 shrink-0"
-                        title="Rename person"
-                    >
-                        <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => onDelete(ent.name)}
-                        className="opacity-0 group-hover:opacity-100 text-red-500/70 hover:text-red-400 p-2 transition-opacity shrink-0"
-                        title="Delete Entity"
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-}
+import type { TestResult } from '../types';
+import EntityRow from './shared/EntityRow';
+import ConfirmDialog from './shared/ConfirmDialog';
 
 export default function ScanTest() {
     const [file, setFile] = useState<File | null>(null);
@@ -477,6 +370,7 @@ export default function ScanTest() {
                                                 onDelete={handleDeleteEntity}
                                                 onMouseEnter={() => setHoveredEntity(ent.name)}
                                                 onMouseLeave={() => setHoveredEntity(null)}
+                                                variant="card"
                                             />
                                         ))}
                                     </div>
@@ -520,31 +414,15 @@ export default function ScanTest() {
                     )}
                 </div>
 
-                {/* Custom Confirm Modal Override */}
-                {
-                    showConfirm && (
-                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setShowConfirm(false)}>
-                            <div className="bg-surface border border-[#333] shadow-2xl rounded-2xl p-8 max-w-md w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center gap-4 text-red-500 mb-4">
-                                    <AlertTriangle className="w-8 h-8" />
-                                    <h2 className="text-2xl font-bold text-white">Warning: Destructive Action</h2>
-                                </div>
-                                <div className="text-gray-300 text-lg mb-8 leading-relaxed">
-                                    <p>Are you sure you want to completely <strong>WIPE</strong> the Test Database? This will erase all uploaded test scans.</p>
-                                </div>
-                                <div className="flex justify-end gap-3 font-medium">
-                                    <button onClick={() => setShowConfirm(false)} className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-300 transition-colors">
-                                        Cancel
-                                    </button>
-                                    <button onClick={handleClearDB} className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20 transition-colors flex items-center gap-2">
-                                        <Trash2 className="w-4 h-4" />
-                                        CONFIRM WIPE
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
+                <ConfirmDialog
+                    open={showConfirm}
+                    title="Warning: Destructive Action"
+                    message={<p>Are you sure you want to completely <strong>WIPE</strong> the Test Database? This will erase all uploaded test scans.</p>}
+                    confirmLabel="CONFIRM WIPE"
+                    variant="danger"
+                    onConfirm={handleClearDB}
+                    onCancel={() => setShowConfirm(false)}
+                />
             </div>
             <ToastContainer toasts={toasts} onDismiss={dismiss} />
         </div>

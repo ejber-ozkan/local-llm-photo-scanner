@@ -2,26 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { UserCheck, Tag, Loader2, X, User, PawPrint, Check, Edit2, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
-
-interface Entity {
-    id: number;
-    type: string;
-    name: string;
-    photo_id: number;
-    bounding_box?: string;
-}
-
-interface PhotoEntity {
-    id: number;
-    type: string;
-    name: string;
-    bounding_box?: string;
-}
-
-interface UniquePhoto {
-    photo_id: number;
-    entities: Entity[];
-}
+import type { Entity, PhotoEntity, UniquePhoto } from '../types';
+import ConfirmDialog from './shared/ConfirmDialog';
 
 export default function Identify() {
     const [entities, setEntities] = useState<Entity[]>([]);
@@ -369,32 +351,16 @@ export default function Identify() {
                 </div>
             )}
 
-            {/* Custom confirm modal for delete */}
-            {confirmDelete && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-6" onClick={() => setConfirmDelete(null)}>
-                    <div className="bg-surface border border-[#333] shadow-2xl rounded-2xl p-8 max-w-md w-full" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-4 text-red-500 mb-4">
-                            <Trash2 className="w-7 h-7 shrink-0" />
-                            <h2 className="text-xl font-bold text-white">Delete Entity</h2>
-                        </div>
-                        <p className="text-gray-300 text-base mb-8 leading-relaxed">
-                            Are you sure you want to delete <strong className="text-white">{confirmDelete.name}</strong>? This will remove all instances of this entity from every photo.
-                        </p>
-                        <div className="flex justify-end gap-3 font-medium">
-                            <button onClick={() => setConfirmDelete(null)} className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-300 transition-colors">
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleDeleteEntity(confirmDelete.name)}
-                                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20 transition-colors flex items-center gap-2"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Confirm delete dialog */}
+            <ConfirmDialog
+                open={confirmDelete !== null}
+                title="Delete Entity"
+                message={confirmDelete ? <>Are you sure you want to delete <strong className="text-white">{confirmDelete.name}</strong>? This will remove all instances of this entity from every photo.</> : ''}
+                confirmLabel="Delete"
+                variant="danger"
+                onConfirm={() => { if (confirmDelete) handleDeleteEntity(confirmDelete.name); }}
+                onCancel={() => setConfirmDelete(null)}
+            />
         </div>
     );
 }
