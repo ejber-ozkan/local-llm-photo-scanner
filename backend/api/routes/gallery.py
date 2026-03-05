@@ -149,12 +149,63 @@ async def search_photos(
     params: list[Any] = []
     joins = []
 
-    # Text search
+    # Text search (Hybrid: ChromaDB + SQLite Fallback)
     if q:
-        query = f"%{q}%"
-        joins.append("LEFT JOIN entities eq ON p.id = eq.photo_id")
-        conditions.append("(p.description LIKE ? OR p.filename LIKE ? OR eq.entity_name LIKE ?)")
-        params.extend([query, query, query])
+        try:
+            import core.chroma
+            from core.clip_model import get_clip_model
+            
+            clip_model = get_clip_model()
+            
+            if clip_model:
+                clip_collection = core.chroma.get_clip_collection()
+                
+                # CLIP models are optimized for queries starting with "a photo of..."
+                # If the user typed a very short query like "cat", silently enhance it
+                optimized_q = f"a photo of {q}" if len(q.split()) <= 2 else q
+                
+                query_vector = clip_model.encode([optimized_q], normalize_embeddings=True).tolist()
+                # Request up to 100 results so SQLite can further filter them
+                results = clip_collection.query(query_embeddings=query_vector, n_results=100)
+                used_threshold = 1.51  # Precision tuned threshold for normalized embeddings (avoids false positives)
+            else:
+                # Fallback to textual AI descriptions if CLIP is somehow not loaded
+                photos_collection = core.chroma.get_photos_collection()
+                results = photos_collection.query(query_texts=[q], n_results=100)
+                used_threshold = 1.4  # Original threshold for unnormalized text embeddings
+                
+            if results and results.get("ids") and len(results["ids"]) > 0 and len(results["ids"][0]) > 0:
+                # We got semantic matches, filter SQLite to just these IDs
+                raw_ids = results["ids"][0]
+                distances = results.get("distances", [[0] * len(raw_ids)])[0]
+                
+                # Keep items with distance below the model's distinct threshold
+                chroma_ids = [int(raw_ids[i]) for i in range(len(raw_ids)) if distances[i] < used_threshold]
+                
+                if chroma_ids:
+                    placeholders = ",".join(["?"] * len(chroma_ids))
+                    conditions.append(f"p.id IN ({placeholders})")
+                    params.extend(chroma_ids)
+                else:
+                    # No good semantic matches below the threshold, fallback to standard SQLite search
+                    query = f"%{q}%"
+                    joins.append("LEFT JOIN entities eq ON p.id = eq.photo_id")
+                    conditions.append("(p.description LIKE ? OR p.filename LIKE ? OR eq.entity_name LIKE ?)")
+                    params.extend([query, query, query])
+            else:
+                # Fallback to pure SQLite search if ChromaDB returns nothing
+                query = f"%{q}%"
+                joins.append("LEFT JOIN entities eq ON p.id = eq.photo_id")
+                conditions.append("(p.description LIKE ? OR p.filename LIKE ? OR eq.entity_name LIKE ?)")
+                params.extend([query, query, query])
+                
+        except Exception as e:
+            # If ChromaDB fails or isn't set up, fallback to standard SQLite search
+            print(f"ChromaDB search failed: {e}")
+            query = f"%{q}%"
+            joins.append("LEFT JOIN entities eq ON p.id = eq.photo_id")
+            conditions.append("(p.description LIKE ? OR p.filename LIKE ? OR eq.entity_name LIKE ?)")
+            params.extend([query, query, query])
 
     # Filter by entity name
     if name:
@@ -388,3 +439,79 @@ async def get_gallery_years(db: sqlite3.Connection = Depends(get_db)) -> list[di
     """)
     years = [{"year": r[0], "count": r[1]} for r in cursor.fetchall() if r[0] and r[0].strip()]
     return years
+
+
+@router.get("/similar/{photo_id}")
+async def get_similar_photos(photo_id: int, db: sqlite3.Connection = Depends(get_db)) -> list[dict[str, Any]]:
+    """Finds visually/semantically similar photos using ChromaDB."""
+    try:
+        import core.chroma
+        from core.clip_model import get_clip_model
+        
+        # Try CLIP visual embeddings first
+        clip_model = get_clip_model()
+        if clip_model:
+            search_collection = core.chroma.get_clip_collection()
+            result = search_collection.get(ids=[str(photo_id)], include=["embeddings"])
+        else:
+            search_collection = core.chroma.get_photos_collection()
+            result = search_collection.get(ids=[str(photo_id)], include=["embeddings"])
+            
+        if result is None or result.get("embeddings") is None or len(result["embeddings"]) == 0:
+            # If visual was missing, fallback to textual for this photo
+            search_collection = core.chroma.get_photos_collection()
+            result = search_collection.get(ids=[str(photo_id)], include=["embeddings"])
+            
+        if result is None or result.get("embeddings") is None or len(result["embeddings"]) == 0:
+            raise HTTPException(status_code=404, detail="Semantic data not found for this photo")
+            
+        embedding = result["embeddings"][0]
+        
+        # Find 10 nearest neighbors (plus 1 to exclude itself), then filter by distance
+        similar = search_collection.query(query_embeddings=[embedding], n_results=10)
+        
+        if similar is None or similar.get("ids") is None or len(similar["ids"]) == 0 or len(similar["ids"][0]) == 0:
+            return []
+            
+        raw_ids = similar["ids"][0]
+        distances = similar.get("distances", [[0] * len(raw_ids)])[0]
+        
+        # Similar photos should be relatively close
+        used_threshold = 0.9 if getattr(search_collection, "name", "") == "clip_collection" else 1.25
+        filtered_ids = [int(raw_ids[i]) for i in range(len(raw_ids)) if distances[i] < used_threshold]
+        
+        similar_ids = [i for i in filtered_ids if i != photo_id][:5]
+        
+        if not similar_ids:
+            return []
+            
+        # Fetch the metadata from SQLite
+        cursor = db.cursor()
+        placeholders = ",".join(["?"] * len(similar_ids))
+        cursor.execute(f"""
+            SELECT id, filepath, filename, description, date_taken, date_created, date_modified 
+            FROM photos 
+            WHERE id IN ({placeholders}) AND status = 'processed'
+        """, similar_ids)
+        
+        results = cursor.fetchall()
+        
+        return [
+            {
+                "id": row[0],
+                "filepath": row[1],
+                "filename": row[2],
+                "description": row[3],
+                "date_taken": row[4],
+                "date_created": row[5],
+                "date_modified": row[6],
+            }
+            for row in results
+        ]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error finding similar photos: {e}")
+        raise HTTPException(status_code=500, detail="Failed to search for similar photos")
+

@@ -140,10 +140,10 @@ def test_delete_entity(client, mock_db_file):
     """Test deleting an entity."""
     seed_test_database(mock_db_file)
 
-    # The endpoint takes the entity_name in the URL
-    response = client.delete("/api/entities/Fido")
+    # The endpoint takes the entity_id in the URL
+    response = client.delete("/api/entities/id/1")
     assert response.status_code == 200
-    assert "deleted" in response.json()
+    assert "deleted_id" in response.json()
 
     # Verify DB directly
     conn = sqlite3.connect(mock_db_file)

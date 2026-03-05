@@ -8,6 +8,8 @@ from datetime import datetime
 # Global structural properties
 SCAN_STATE = "idle"  # idle, scanning, paused
 IGNORE_SCREENSHOTS = False
+USE_OLLAMA = True
+USE_CLIP = True
 scan_logs: deque[dict[str, str]] = deque(maxlen=200)
 
 current_scan_total = 0

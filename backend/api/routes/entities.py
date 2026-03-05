@@ -91,19 +91,19 @@ async def name_main_entity(req: UpdateEntityRequest, db: sqlite3.Connection = De
     return {"success": True, "updated": old_name, "to": new_name}
 
 
-@router.delete("/entities/{entity_name}")
-async def delete_main_entity(entity_name: str, db: sqlite3.Connection = Depends(get_db)) -> dict[str, Any]:
-    """Deletes all entities in the MAIN db matching the specific name."""
+@router.delete("/entities/id/{entity_id}")
+async def delete_main_entity(entity_id: int, db: sqlite3.Connection = Depends(get_db)) -> dict[str, Any]:
+    """Deletes a specific entity instance from a photo in the MAIN db."""
     cursor = db.cursor()
-    cursor.execute("DELETE FROM entities WHERE entity_name = ?", (entity_name,))
+    cursor.execute("DELETE FROM entities WHERE id = ?", (entity_id,))
     db.commit()
 
-    # We must globally clear the gallery LRU cache when a name is dropped
+    # We must globally clear the gallery LRU cache when an entity is dropped
     from api.routes.gallery import _compute_gallery_filters
 
     _compute_gallery_filters.cache_clear()
 
-    return {"success": True, "deleted": entity_name}
+    return {"success": True, "deleted_id": entity_id}
 
 
 @router.post("/test/entities/name")
@@ -154,12 +154,12 @@ async def name_test_entity(req: UpdateEntityRequest) -> dict[str, Any]:
     return {"success": True, "updated": old_name, "to": new_name}
 
 
-@router.delete("/test/entities/{entity_name}")
-async def delete_test_entity(entity_name: str) -> dict[str, Any]:
-    """Deletes all entities in the TEST db matching the specific name."""
+@router.delete("/test/entities/id/{entity_id}")
+async def delete_test_entity(entity_id: int) -> dict[str, Any]:
+    """Deletes a specific entity instance from a photo in the TEST db."""
     conn = sqlite3.connect(DB_TEST_FILE)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM entities WHERE entity_name = ?", (entity_name,))
+    cursor.execute("DELETE FROM entities WHERE id = ?", (entity_id,))
     conn.commit()
     conn.close()
-    return {"success": True, "deleted": entity_name}
+    return {"success": True, "deleted_id": entity_id}

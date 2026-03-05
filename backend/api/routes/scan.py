@@ -45,6 +45,8 @@ async def scan_directory(
     cursor = db.cursor()
 
     state.IGNORE_SCREENSHOTS = req.ignore_screenshots
+    state.USE_OLLAMA = getattr(req, "use_ollama", True)
+    state.USE_CLIP = getattr(req, "use_clip", True)
 
     if req.force_rescan:
         state.add_log(f"Force Rescan enabled. Purging older gallery metadata for: {req.directory_path}")
@@ -155,8 +157,8 @@ async def scan_single(
         )
         history = []
         for h_id, h_model, h_desc in cursor.fetchall():
-            cursor.execute("SELECT entity_type, entity_name, bounding_box FROM entities WHERE photo_id = ?", (h_id,))
-            h_ents = [{"type": e[0], "name": e[1], "bounding_box": e[2]} for e in cursor.fetchall()]
+            cursor.execute("SELECT id, entity_type, entity_name, bounding_box FROM entities WHERE photo_id = ?", (h_id,))
+            h_ents = [{"id": e[0], "type": e[1], "name": e[2], "bounding_box": e[3]} for e in cursor.fetchall()]
             history.append({"photo_id": h_id, "ai_model": h_model, "description": h_desc, "entities": h_ents})
 
         return {
@@ -243,7 +245,8 @@ async def scan_single(
                         "INSERT INTO entities (photo_id, entity_type, entity_name) VALUES (?, ?, ?)",
                         (photo_id, "pet", f"Unknown {pet.title()}"),
                     )
-                    entities_list.append({"name": f"Unknown {pet.title()}", "type": "pet"})
+                    pet_id = cursor.lastrowid
+                    entities_list.append({"id": pet_id, "name": f"Unknown {pet.title()}", "type": "pet"})
 
         # Face Extraction
         if DEEPFACE_AVAILABLE:
@@ -268,7 +271,8 @@ async def scan_single(
                         "INSERT INTO entities (photo_id, entity_type, entity_name, bounding_box, embedding) VALUES (?, ?, ?, ?, ?)",
                         (photo_id, "person", matched_name, json.dumps(facial_area), json.dumps(embedding)),
                     )
-                    entities_list.append({"name": matched_name, "type": "person", "bounding_box": facial_area})
+                    person_id = cursor.lastrowid
+                    entities_list.append({"id": person_id, "name": matched_name, "type": "person", "bounding_box": facial_area})
 
         db.commit()
 
@@ -291,8 +295,8 @@ async def scan_single(
         )
         history = []
         for h_id, h_model, h_desc in cursor.fetchall():
-            cursor.execute("SELECT entity_type, entity_name, bounding_box FROM entities WHERE photo_id = ?", (h_id,))
-            h_ents = [{"type": e[0], "name": e[1], "bounding_box": e[2]} for e in cursor.fetchall()]
+            cursor.execute("SELECT id, entity_type, entity_name, bounding_box FROM entities WHERE photo_id = ?", (h_id,))
+            h_ents = [{"id": e[0], "type": e[1], "name": e[2], "bounding_box": e[3]} for e in cursor.fetchall()]
             history.append({"photo_id": h_id, "ai_model": h_model, "description": h_desc, "entities": h_ents})
 
         return {

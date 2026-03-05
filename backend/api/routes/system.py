@@ -11,6 +11,8 @@ from typing import Any
 import requests
 from fastapi import APIRouter, HTTPException
 
+import core.chroma as chroma
+
 import core.state as state
 from backup_db import backup_database
 import core.config as config
@@ -43,6 +45,26 @@ async def clean_database(req: DatabaseCleanRequest) -> dict[str, Any]:
         cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('entities', 'photos', 'scan_history')")
         conn.commit()
         conn.close()
+
+        # If cleaning the main database, also wipe the ChromaDB collections to stay in sync
+        if req.target == "main":
+            try:
+                chroma_client = chroma.get_chroma_client()
+                try:
+                    chroma_client.delete_collection("photos_semantic_collection")
+                except Exception:
+                    pass
+                try:
+                    chroma_client.delete_collection("faces_collection")
+                except Exception:
+                    pass
+                try:
+                    chroma_client.delete_collection("clip_collection")
+                except Exception:
+                    pass
+                state.add_log("ChromaDB vector collections successfully wiped.")
+            except Exception as e:
+                state.add_log(f"Warning: Failed to wipe ChromaDB collections: {e}")
 
         # Invalidate the gallery filter cache so the UI updates
         from api.routes.gallery import _compute_gallery_filters

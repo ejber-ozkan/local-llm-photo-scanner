@@ -106,13 +106,13 @@ export default function Identify() {
         }
     };
 
-    const handleDeleteEntity = async (entityName: string) => {
+    const handleDeleteEntity = async (entityId: number) => {
         try {
-            await axios.delete(`${API_BASE_URL}/api/entities/${encodeURIComponent(entityName)}`);
+            await axios.delete(`${API_BASE_URL}/api/entities/id/${entityId}`);
             // Remove from modal list
-            setPhotoEntities(prev => prev.filter(e => e.name !== entityName));
+            setPhotoEntities(prev => prev.filter(e => e.id !== entityId));
             // Remove from main unidentified list
-            setEntities(prev => prev.filter(e => e.name !== entityName));
+            setEntities(prev => prev.filter(e => e.id !== entityId));
             setConfirmDelete(null);
         } catch (err) {
             console.error(err);
@@ -356,10 +356,10 @@ export default function Identify() {
             <ConfirmDialog
                 open={confirmDelete !== null}
                 title="Delete Entity"
-                message={confirmDelete ? <>Are you sure you want to delete <strong className="text-white">{confirmDelete.name}</strong>? This will remove all instances of this entity from every photo.</> : ''}
+                message={confirmDelete ? <>Are you sure you want to delete <strong className="text-white">{confirmDelete.name}</strong> from this photo?</> : ''}
                 confirmLabel="Delete"
                 variant="danger"
-                onConfirm={() => { if (confirmDelete) handleDeleteEntity(confirmDelete.name); }}
+                onConfirm={() => { if (confirmDelete) handleDeleteEntity(confirmDelete.id); }}
                 onCancel={() => setConfirmDelete(null)}
             />
         </div>

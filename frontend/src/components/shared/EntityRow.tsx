@@ -6,7 +6,7 @@ import ConfirmDialog from './ConfirmDialog';
 interface EntityRowProps {
     ent: { type: string; name: string; bounding_box?: string; id?: number };
     onRename: (oldName: string, newName: string) => Promise<void>;
-    onDelete: (name: string) => Promise<void>;
+    onDelete: (id: number, name: string) => Promise<void>;
     onMouseEnter: () => void;
     onMouseLeave: () => void;
     /** 'compact' = Gallery inline row; 'card' = ScanTest card style */
@@ -106,10 +106,10 @@ const EntityRow = React.memo(function EntityRow({
                 <ConfirmDialog
                     open={confirmDelete}
                     title="Delete Entity"
-                    message={<>Are you sure you want to delete <strong className="text-white">{ent.name}</strong>? This will remove all instances of this entity from every photo.</>}
+                    message={<>Are you sure you want to delete <strong className="text-white">{ent.name}</strong> from this photo?</>}
                     confirmLabel="Delete"
                     variant="danger"
-                    onConfirm={() => { setConfirmDelete(false); onDelete(ent.name); }}
+                    onConfirm={() => { setConfirmDelete(false); if (ent.id !== undefined) onDelete(ent.id, ent.name); }}
                     onCancel={() => setConfirmDelete(false)}
                 />
             </div>
@@ -179,10 +179,10 @@ const EntityRow = React.memo(function EntityRow({
             <ConfirmDialog
                 open={confirmDelete}
                 title="Delete Entity"
-                message={<>Are you sure you want to delete <strong className="text-white">{ent.name}</strong>? This will remove all instances of this entity from every photo.</>}
+                message={<>Are you sure you want to delete <strong className="text-white">{ent.name}</strong> from this photo?</>}
                 confirmLabel="Delete"
                 variant="danger"
-                onConfirm={() => { setConfirmDelete(false); onDelete(ent.name); }}
+                onConfirm={() => { setConfirmDelete(false); if (ent.id !== undefined) onDelete(ent.id, ent.name); }}
                 onCancel={() => setConfirmDelete(false)}
             />
         </>

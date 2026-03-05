@@ -8,6 +8,8 @@ import type { ScanStatus, ScanHistoryItem } from '../types';
 export default function SettingsPage() {
     const [path, setPath] = useState('');
     const [ignoreScreenshots, setIgnoreScreenshots] = useState(false);
+    const [useOllama, setUseOllama] = useState(true);
+    const [useClip, setUseClip] = useState(true);
     const [apiError, setApiError] = useState('');
     const [appVersion, setAppVersion] = useState('0.0.0');
 
@@ -199,7 +201,13 @@ export default function SettingsPage() {
     const executeScan = async (force: boolean) => {
         setApiError('');
         try {
-            await axios.post(`${API_BASE_URL}/api/scan`, { directory_path: path.trim(), force_rescan: force, ignore_screenshots: ignoreScreenshots });
+            await axios.post(`${API_BASE_URL}/api/scan`, {
+                directory_path: path.trim(),
+                force_rescan: force,
+                ignore_screenshots: ignoreScreenshots,
+                use_ollama: useOllama,
+                use_clip: useClip
+            });
             setPath('');
             setIsHistoryOpen(false); // Close history so user can see it processing
             setIsLogOpen(true);
@@ -308,18 +316,49 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
-                    {/* Ignore Screenshots Checkbox */}
-                    <div className="flex items-center gap-3 bg-[#111] p-4 rounded-xl border border-gray-800">
-                        <input
-                            type="checkbox"
-                            id="ignoreScreenshots"
-                            checked={ignoreScreenshots}
-                            onChange={(e) => setIgnoreScreenshots(e.target.checked)}
-                            className="w-5 h-5 text-primary border-gray-700 rounded focus:ring-primary focus:ring-offset-gray-900 bg-[#161616]"
-                        />
-                        <label htmlFor="ignoreScreenshots" className="text-sm text-gray-300 font-medium cursor-pointer flex-1">
-                            Ignore Screenshots <span className="text-gray-500 font-normal ml-1">(Skips files with "screenshot" in name or AI description)</span>
-                        </label>
+                    {/* Checkboxes Row */}
+                    <div className="flex flex-col gap-3">
+                        {/* Use Ollama Checkbox */}
+                        <div className="flex items-center gap-3 bg-[#111] p-4 rounded-xl border border-gray-800">
+                            <input
+                                type="checkbox"
+                                id="useOllama"
+                                checked={useOllama}
+                                onChange={(e) => setUseOllama(e.target.checked)}
+                                className="w-5 h-5 text-primary border-gray-700 rounded focus:ring-primary focus:ring-offset-gray-900 bg-[#161616]"
+                            />
+                            <label htmlFor="useOllama" className="text-sm text-gray-300 font-medium cursor-pointer flex-1">
+                                Generate Ollama Text Descriptions <span className="text-gray-500 font-normal ml-1">(Slower, but enables text-based photo details. Used as fallback for missing explicit tags)</span>
+                            </label>
+                        </div>
+
+                        {/* Use CLIP Checkbox */}
+                        <div className="flex items-center gap-3 bg-[#111] p-4 rounded-xl border border-gray-800">
+                            <input
+                                type="checkbox"
+                                id="useClip"
+                                checked={useClip}
+                                onChange={(e) => setUseClip(e.target.checked)}
+                                className="w-5 h-5 text-primary border-gray-700 rounded focus:ring-primary focus:ring-offset-gray-900 bg-[#161616]"
+                            />
+                            <label htmlFor="useClip" className="text-sm text-gray-300 font-medium cursor-pointer flex-1">
+                                Generate CLIP Visual Embeddings <span className="text-gray-500 font-normal ml-1">(Instantaneous. Powers pure text-to-image semantic search perfectly without an LLM)</span>
+                            </label>
+                        </div>
+
+                        {/* Ignore Screenshots Checkbox */}
+                        <div className="flex items-center gap-3 bg-[#111] p-4 rounded-xl border border-gray-800">
+                            <input
+                                type="checkbox"
+                                id="ignoreScreenshots"
+                                checked={ignoreScreenshots}
+                                onChange={(e) => setIgnoreScreenshots(e.target.checked)}
+                                className="w-5 h-5 text-primary border-gray-700 rounded focus:ring-primary focus:ring-offset-gray-900 bg-[#161616]"
+                            />
+                            <label htmlFor="ignoreScreenshots" className="text-sm text-gray-300 font-medium cursor-pointer flex-1">
+                                Ignore Screenshots <span className="text-gray-500 font-normal ml-1">(Skips files with "screenshot" in name or AI description)</span>
+                            </label>
+                        </div>
                     </div>
 
                     {/* Scan History Collapsible */}

@@ -66,8 +66,8 @@ def test_background_processor_success(mock_db_file, test_image, mock_ollama, mon
     monkeypatch.setattr("deepface.DeepFace.represent", fake_represent)
     monkeypatch.setattr("deepface.DeepFace.find", fake_find)
     monkeypatch.setattr("services.scan_worker.DEEPFACE_AVAILABLE", True)
-    monkeypatch.setattr("services.scan_worker.ACTIVE_OLLAMA_MODEL", "mock_model")
-    monkeypatch.setattr("services.scan_worker.OLLAMA_URL", "http://localhost:11434/api/generate")
+    monkeypatch.setattr("core.config.ACTIVE_OLLAMA_MODEL", "mock_model")
+    monkeypatch.setattr("core.config.OLLAMA_URL", "http://localhost:11434/api/generate")
     monkeypatch.setattr("core.state.SCAN_STATE", "running")
 
     # 3. Call background_processor synchronously for testing

@@ -23,6 +23,7 @@ except ImportError:
 import core.state as state
 import core.config as config
 from core.config import DB_FILE
+import core.chroma
 from database_setup import find_best_face_match
 from services.image_service import extract_exif_for_filters, process_image_with_ollama
 
@@ -97,8 +98,13 @@ def background_processor() -> None:
             state.add_log(f"Error checking duplicate for {filepath}: {e}")
 
         # 1. Process with Ollama for description
-        ai_response = process_image_with_ollama(filepath, config.OLLAMA_URL, config.ACTIVE_OLLAMA_MODEL)
-        description = ai_response if ai_response else ""
+        if state.USE_OLLAMA:
+            state.add_log(f"Running Ollama description on: {filepath}")
+            ai_response = process_image_with_ollama(filepath, config.OLLAMA_URL, config.ACTIVE_OLLAMA_MODEL)
+            description = ai_response if ai_response else ""
+        else:
+            ai_response = ""
+            description = ""
 
         if state.IGNORE_SCREENSHOTS and description and ("screenshot" in description.lower() or description.upper().startswith("SCREENSHOT")):
             state.add_log(f"Skipping AI-detected screenshot/document: {filepath}")
@@ -142,6 +148,38 @@ def background_processor() -> None:
             ),
         )
         conn.commit()  # Commit immediately so description is saved even if DeepFace fails
+
+        # Insert description into ChromaDB for semantic search
+        if description:
+            try:
+                photos_collection = core.chroma.get_photos_collection()
+                photos_collection.upsert(
+                    documents=[description],
+                    metadatas=[{"photo_id": photo_id}],
+                    ids=[str(photo_id)]
+                )
+            except Exception as e:
+                state.add_log(f"Error inserting description into ChromaDB for {filepath}: {e}")
+
+        # Insert native image embedding into ChromaDB via CLIP
+        if state.USE_CLIP:
+            try:
+                from core.clip_model import get_clip_model
+                from PIL import Image
+                clip_model = get_clip_model()
+                if clip_model:
+                    state.add_log(f"Generating CLIP embedding for: {filepath}")
+                    img = Image.open(filepath)
+                    # Convert to normalized vector
+                    image_embedding = clip_model.encode(img, normalize_embeddings=True).tolist()
+                    clip_collection = core.chroma.get_clip_collection()
+                    clip_collection.upsert(
+                        embeddings=[image_embedding],
+                        metadatas=[{"photo_id": photo_id}],
+                        ids=[str(photo_id)]
+                    )
+            except Exception as e:
+                state.add_log(f"Error generating CLIP embedding for {filepath}: {e}")
 
         # Parse pet extraction from the strict 'Entities: [list]' format
         try:
@@ -261,6 +299,17 @@ def background_processor() -> None:
                                 json.dumps(embedding),
                             ),
                         )
+                        entity_id = cursor.lastrowid
+                        
+                        try:
+                            faces_collection = core.chroma.get_faces_collection()
+                            faces_collection.upsert(
+                                embeddings=[embedding],
+                                metadatas=[{"photo_id": photo_id, "entity_id": entity_id, "entity_name": matched_name}],
+                                ids=[str(entity_id)]
+                            )
+                        except Exception as e:
+                            state.add_log(f"Error inserting face embedding into ChromaDB for {filepath}: {e}")
             except ValueError:
                 # No face found
                 state.add_log(f"No face found in {filepath}")

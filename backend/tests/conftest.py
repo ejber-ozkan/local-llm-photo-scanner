@@ -113,3 +113,14 @@ def mock_deepface(monkeypatch):
     monkeypatch.setattr("deepface.DeepFace.find", fake_find)
 
     return True
+
+@pytest.fixture(autouse=True)
+def mock_chromadb(monkeypatch):
+    """Provides an EphemeralClient for ChromaDB during tests to prevent disk writes."""
+    import chromadb
+    from core.chroma import set_chroma_client_for_testing
+
+    client = chromadb.EphemeralClient()
+    set_chroma_client_for_testing(client)
+    
+    return client

@@ -95,7 +95,7 @@ export interface TestResult {
     photo_id: number;
     filename: string;
     description: string;
-    entities: { type: string; name: string; bounding_box?: string }[];
+    entities: { id: number; type: string; name: string; bounding_box?: string }[];
     metadata: Record<string, string>;
     gps_lat?: number;
     gps_lon?: number;
@@ -104,6 +104,6 @@ export interface TestResult {
         photo_id: number;
         ai_model: string;
         description: string;
-        entities: { type: string; name: string; bounding_box?: string }[];
+        entities: { id: number; type: string; name: string; bounding_box?: string }[];
     }[];
 }

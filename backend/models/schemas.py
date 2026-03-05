@@ -13,6 +13,8 @@ class ScanRequest(BaseModel):
     directory_path: str
     force_rescan: bool = False
     ignore_screenshots: bool = False
+    use_ollama: bool = True
+    use_clip: bool = True
 
 
 class SettingsUpdateRequest(BaseModel):

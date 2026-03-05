@@ -1,4 +1,5 @@
 import base64
+import os
 from datetime import datetime
 from typing import Any
 
@@ -136,6 +137,16 @@ def extract_exif_for_filters(filepath: str) -> dict[str, str | float | None]:
                         result[k] = None
     except Exception:
         pass
+        
+    # User Request: If date_taken is missing, fallback to the file's modification date
+    if not result["date_taken"]:
+        try:
+            mtime = os.path.getmtime(filepath)
+            # Format as standard EXIF format: YYYY:MM:DD HH:MM:SS
+            result["date_taken"] = datetime.fromtimestamp(mtime).strftime("%Y:%m:%d %H:%M:%S")
+        except Exception:
+            pass
+            
     return result
 
 

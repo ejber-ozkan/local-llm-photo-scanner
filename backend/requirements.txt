@@ -13,3 +13,5 @@ numpy<2
 ruff
 mypy
 types-requests
+chromadb
+sentence-transformers

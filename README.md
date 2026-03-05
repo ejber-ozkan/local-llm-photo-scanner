@@ -1,4 +1,4 @@
-# Local LLM Photo Scanner v1.6
+# Local AI Photo Gallery v2.0
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
@@ -9,6 +9,8 @@ The application intelligently scans your local directories, processing images us
 - **Natural Language Search**: Quickly find images by searching for descriptions like "a dog in a park" or "a person wearing a red shirt".
 - **Facial & Entity Clustering**: Identifies and clusters faces across your dataset, allowing you to attach real names to recognized individuals and pets. Entities can be renamed or deleted inline from the Gallery popup and the Scan & Test panel.
 - **Duplicate & Screenshot Filter**: Native pre-processing hashes your images to automatically quarantine identical files and screenshots from your main, pristine gallery. Inspect and manage duplicates separately in the **Review Duplicates** tab.
+- **CLIP Visual Search Engine**: Harness the power of OpenAI's CLIP model (via `sentence-transformers`) for instantaneous, text-to-image semantic search. The backend converts images directly into 512-dimensional vector math without requiring text descriptions, allowing you to seamlessly find what you're looking for with pinpoint precision.
+- **Find Visually Similar Photos**: Instantly discover photos physically or contextually resembling each other using spatial coordinate matching via the CLIP engine—without relying on text interpretation.
 - **Multi-Model AI Tracking**: Each photo records which Ollama vision model generated its description. You can switch the active model at any time and re-scan directories.
 - **AI Model Comparison (Scan & Test)**: Upload a single photo directly and test it against any available vision model. Scan the same image with different models side-by-side to compare quality and accuracy.
 - **Force Rescan**: Rescan a previously scanned directory to refresh AI descriptions and face data. A confirmation dialog warns you before overwriting existing metadata.
@@ -26,9 +28,9 @@ The application intelligently scans your local directories, processing images us
 
 ## Screenshots
 
-| Gallery & Timeline                                                                                                   | Single Image Testing & QA                                                                              |
+| Gallery & Visual Search                                                                                              | Single Image Testing & QA                                                                              |
 | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| ![Gallery View — filtering, timeline, and sorting](docs/screenshots/screenshot_gallery_view.png)                     | ![Test Scan — single image AI evaluation](docs/screenshots/screenshot_test_scan.png)                   |
+| ![Gallery View — Visual CLIP Search in Action](docs/screenshots/screenshot_clip_visual_search.png)                   | ![Test Scan — single image AI evaluation](docs/screenshots/screenshot_test_scan.png)                   |
 | **Scan & Settings**                                                                                                  | **Database, Themes & Danger Zone**                                                                     |
 | ![Scan & Settings — directory scanner, progress, AI engine selection](docs/screenshots/screenshot_settings_scan.png) | ![Appearance, backup/restore and database management](docs/screenshots/screenshot_settings_themes.png) |
 

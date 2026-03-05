@@ -64,6 +64,22 @@ export default function Gallery() {
         }
     };
 
+    const findSimilar = async (photoId: number) => {
+        setLoading(true);
+        closeModal();
+        try {
+            const res = await axios.get(`${API_BASE_URL}/api/gallery/similar/${photoId}`);
+            setPhotos(res.data);
+            setQuery(''); // Clear manual query as we are showing similarity results
+            clearFilters(); // Clear standard filters to ensure we see all semantic matches
+        } catch (err) {
+            console.error(err);
+            toastError('Failed to find similar photos');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchFilterOptions = async () => {
         try {
             const res = await axios.get(`${API_BASE_URL}/api/gallery/filters`);
@@ -196,12 +212,12 @@ export default function Gallery() {
         }
     }, [toastError]);
 
-    const handleDeleteEntity = useCallback(async (entityName: string) => {
+    const handleDeleteEntity = useCallback(async (entityId: number) => {
         try {
-            await axios.delete(`${API_BASE_URL}/api/entities/${encodeURIComponent(entityName)}`);
+            await axios.delete(`${API_BASE_URL}/api/entities/id/${entityId}`);
             setSelectedPhoto(prev => prev ? {
                 ...prev,
-                entities: prev.entities.filter(e => e.name !== entityName)
+                entities: prev.entities.filter(e => e.id !== entityId)
             } : null);
             fetchFilterOptions();
         } catch (err) {
@@ -275,7 +291,7 @@ export default function Gallery() {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             className="block w-full pl-12 pr-4 py-4 border-none rounded-2xl bg-app-panel backdrop-blur-xl text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary shadow-2xl transition-all"
-                            placeholder="Search by description, person, pet, or filename..."
+                            placeholder="✨ Semantic Search: 'sleepy dog', 'red umbrella', or exact names..."
                         />
                         <button type="submit" className="hidden" />
                     </form>
@@ -463,9 +479,11 @@ export default function Gallery() {
                                                 <img src={`${API_BASE_URL}/api/image/${photo.id}?t=${timestamp}`} alt={photo.filename}
                                                     className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                                                    <p className="text-white text-sm font-medium leading-relaxed drop-shadow-md">
-                                                        {photo.description || 'Processing description...'}
-                                                    </p>
+                                                    {photo.description && (
+                                                        <p className="text-white text-sm font-medium leading-relaxed drop-shadow-md">
+                                                            {photo.description}
+                                                        </p>
+                                                    )}
                                                     <p className="text-gray-400 text-xs mt-2 truncate">{photo.filename}</p>
                                                 </div>
                                             </div>
@@ -558,6 +576,14 @@ export default function Gallery() {
                                                     </span>
                                                 </div>
                                             </div>
+
+                                            <button
+                                                onClick={() => findSimilar(selectedPhoto.id)}
+                                                className="w-full py-3 bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/40 hover:to-blue-500/40 border border-purple-500/30 rounded-xl text-purple-300 font-semibold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(168,85,247,0.15)] hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] mt-1 mb-2"
+                                            >
+                                                <Sparkles className="w-5 h-5" /> 🪄 Find Visually Similar Photos
+                                            </button>
+
                                             {selectedPhoto.description && (
                                                 <div className="bg-[#111] border border-gray-800 rounded-xl p-4 relative">
                                                     {selectedPhoto.ai_model && (

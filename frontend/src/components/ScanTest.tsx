@@ -136,14 +136,14 @@ export default function ScanTest() {
         }
     };
 
-    const handleDeleteEntity = async (entityName: string) => {
+    const handleDeleteEntity = async (entityId: number) => {
         setActionLoading(true);
         try {
-            await axios.delete(`${API_BASE_URL}/api/test/entities/${encodeURIComponent(entityName)}`);
+            await axios.delete(`${API_BASE_URL}/api/test/entities/id/${entityId}`);
             if (result) {
                 setResult({
                     ...result,
-                    entities: result.entities.filter(e => e.name !== entityName)
+                    entities: result.entities.filter(e => e.id !== entityId)
                 });
             }
         } catch (err) {
