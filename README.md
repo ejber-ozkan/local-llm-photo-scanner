@@ -36,6 +36,37 @@ The application intelligently scans your local directories, processing images us
 
 ---
 
+## Technology Architecture & Stack
+
+### Frontend Stack
+*   **React 18**: The core UI library used for building interactive interfaces.
+*   **Vite**: An ultra-fast build tool and development server.
+*   **TypeScript**: Provides static typing for safer, more robust code across all components and API schemas.
+*   **Tailwind CSS**: Used extensively for rapid, utility-first styling and managing the app's diverse localized theme palette.
+*   **Axios**: For managing all asynchronous REST requests to the Python backend.
+*   **Frontend Testing**: 
+    *   **Vitest**: A blazing fast unit test framework powered by Vite.
+    *   **React Testing Library (RTL)**: Used to test the React components in a user-centric way.
+    *   **MSW (Mock Service Worker)**: Mocks backend API network calls to test frontend isolation cleanly.
+
+### Backend Stack
+*   **Python 3.10+**: The language powering all API, database, and background tasks.
+*   **FastAPI**: A modern, exceedingly fast web framework for building APIs with Python and automatic interactive validation (Swagger UI/Pydantic schemas).
+*   **SQLite3**: Used broadly as a scalable, file-based relational database for storing standardized image metadata, configurations, and AI-generated textual descriptions.
+*   **ChromaDB**: An open-source vector database specifically used to store, query, and threshold our 512-dimensional CLIP visual embeddings for semantic image-to-image math.
+*   **Sentence-Transformers (OpenAI CLIP)**: Direct integration of `clip-ViT-B-32` into memory to translate image pixels seamlessly into queryable geometric spaces without textual intermediaries.
+*   **DeepFace**: Manages facial extraction, clustering, and identification (facial embeddings) to consistently tag entities across disparate pictures.
+*   **Pillow (PIL)**: Used securely to process, resize, extract Exif configurations, and stream bytes out to the interface.
+*   **Backend Testing**:
+    *   **Pytest**: Robust, fully-featured python testing framework for orchestrating endpoints and testing core state manipulation.
+    *   **Pytest-Cov**: Used closely with Pytest to ensure we maintain our target of >80% test coverage across routing modules and workers.
+    *   **Pytest-Asyncio**: Validates asynchronous concurrent network operations properly map responses.
+
+### Local AI Integrations
+*   **Ollama**: A lightweight local LLM runner processing raw images through models like `qwen3-vl` or `llama3.2-vision` to write rich, descriptive text about standard photographs in the background.
+
+---
+
 ## Prerequisites
 
 Before running the application, ensure you have the following installed on your system (compatible with Windows 11 and Ubuntu/Linux):
