@@ -5,24 +5,27 @@ The application intelligently scans your local directories, processing images us
 
 ## Features
 
+### v2.0 Features
+- **CLIP Visual Search Engine**: Harness the power of OpenAI's CLIP model (via `sentence-transformers`) for instantaneous, text-to-image semantic search. The backend converts images directly into 512-dimensional vector math without requiring text descriptions, allowing you to seamlessly find what you're looking for with pinpoint precision.
+- **Hybrid Semantic & Keyword Search**: Combines ChromaDB semantic vector matching with precise text keyword searches to ensure named entities and visual elements are both found in a single query.
+- **Find Visually Similar Photos**: Instantly discover photos physically or contextually resembling each other using spatial coordinate matching via the CLIP engine—without relying on text interpretation.
+- **Advanced Database Management**: Create timestamped backups of your main gallery database from the Settings page and restore to any version with one click. Securely wipe the test sandbox or the entire primary gallery DB using protected UI buttons.
+- **Custom Themes & Appearance**: Choose from 6 built-in colour themes (Twilight Purple, Crimson Sun, Citrus Olive, Ocean Mint, Sapphire Blue, Magenta Rose) plus a Light / Dark mode toggle. Preferences are saved automatically and applied instantly on next load with no flash.
+- **Multi-Model AI Tracking & Comparison**: Each photo records which Ollama vision model generated its description. You can switch the active model at any time. Upload a single photo directly in the "Scan & Test" tab to compare output from different models side-by-side.
+- **Frontend Performance Optimizations**: Component decomposition, `useMemo`/`useCallback` hooks, code-splitting with `React.lazy`/`Suspense`, and `ErrorBoundary` implementations for a highly responsive and robust UI structure.
+- **In-App Notifications**: All action feedback (backup created, restore complete, entity errors) uses styled in-app toast notifications — no more browser alert pop-ups.
+- **Interactive Timeline & Detailed Sorting**: Sort photos by Date Taken, Date Created, Date Modified, or Filename. A vertical year timeline on the right side of the gallery lets you jump instantly to any year.
+
+### v1.x Features
 - **Privacy-First Processing**: All photo scanning, metadata generation, and facial recognition occur entirely on your local machine. No data is sent to the cloud.
-- **Natural Language Search**: Quickly find images by searching for descriptions like "a dog in a park" or "a person wearing a red shirt".
+- **Natural Language Search**: Quickly find images by searching for descriptions like "a dog in a park".
 - **Facial & Entity Clustering**: Identifies and clusters faces across your dataset, allowing you to attach real names to recognized individuals and pets. Entities can be renamed or deleted inline from the Gallery popup and the Scan & Test panel.
 - **Duplicate & Screenshot Filter**: Native pre-processing hashes your images to automatically quarantine identical files and screenshots from your main, pristine gallery. Inspect and manage duplicates separately in the **Review Duplicates** tab.
-- **CLIP Visual Search Engine**: Harness the power of OpenAI's CLIP model (via `sentence-transformers`) for instantaneous, text-to-image semantic search. The backend converts images directly into 512-dimensional vector math without requiring text descriptions, allowing you to seamlessly find what you're looking for with pinpoint precision.
-- **Find Visually Similar Photos**: Instantly discover photos physically or contextually resembling each other using spatial coordinate matching via the CLIP engine—without relying on text interpretation.
-- **Multi-Model AI Tracking**: Each photo records which Ollama vision model generated its description. You can switch the active model at any time and re-scan directories.
-- **AI Model Comparison (Scan & Test)**: Upload a single photo directly and test it against any available vision model. Scan the same image with different models side-by-side to compare quality and accuracy.
 - **Force Rescan**: Rescan a previously scanned directory to refresh AI descriptions and face data. A confirmation dialog warns you before overwriting existing metadata.
 - **Background Scan Controls**: Pause, resume, or cancel any in-progress background scan without losing already-processed results. Live log output streams in-app so you can see exactly what the AI is processing.
 - **Scan History Engine**: Previously scanned directories are listed for quick re-selection, showing the last scanned date.
-- **Gallery Sorting & Timeline**: Sort photos by Date Taken, Date Created, Date Modified, or Filename (ascending or descending). A vertical year timeline on the right side of the gallery lets you jump instantly to any year.
 - **Gallery Filters**: Filter photos by entity name, entity type (person / pet), camera model, faces-only, or unidentified faces.
-- **Database Backup & Restore**: Create timestamped backups of your main gallery database from the Settings page and restore to any version with one click.
-- **Safe Database Management**: The advanced settings panel lets you wipe the Sandbox Test DB or the Main Gallery DB with multi-step confirmation protection.
-- **Custom Themes & Appearance**: Choose from 6 built-in colour themes (Twilight Purple, Crimson Sun, Citrus Olive, Ocean Mint, Sapphire Blue, Magenta Rose) plus a Light / Dark mode toggle — all from the Settings page. Preferences are saved automatically and applied instantly on next load with no flash.
 - **FastAPI Backend**: A performant Python/FastAPI backend handling SQLite storage, background asynchronous image processing, and secure file serving.
-- **In-App Notifications**: All action feedback (backup created, restore complete, entity errors) uses styled in-app toast notifications — no more browser alert pop-ups.
 
 ---
 
