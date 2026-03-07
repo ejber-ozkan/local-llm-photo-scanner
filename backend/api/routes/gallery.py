@@ -183,9 +183,12 @@ async def search_photos(
                 chroma_ids = [int(raw_ids[i]) for i in range(len(raw_ids)) if distances[i] < used_threshold]
                 
                 if chroma_ids:
+                    query = f"%{q}%"
+                    joins.append("LEFT JOIN entities eq ON p.id = eq.photo_id")
                     placeholders = ",".join(["?"] * len(chroma_ids))
-                    conditions.append(f"p.id IN ({placeholders})")
+                    conditions.append(f"(p.id IN ({placeholders}) OR p.description LIKE ? OR p.filename LIKE ? OR eq.entity_name LIKE ?)")
                     params.extend(chroma_ids)
+                    params.extend([query, query, query])
                 else:
                     # No good semantic matches below the threshold, fallback to standard SQLite search
                     query = f"%{q}%"
