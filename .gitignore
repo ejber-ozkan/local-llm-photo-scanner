@@ -29,6 +29,7 @@ yarn-error.log*
 *.sqlite
 *.sqlite3
 *.db-journal
+backend/chroma_data/
 backend/uploads/
 backend/test_duplicates_dir/
 test_duplicates_dir/
