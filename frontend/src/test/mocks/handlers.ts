@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { MOCK_APP_VERSION } from './version';
 
 const BASE = 'http://localhost:8000';
 
@@ -155,7 +156,7 @@ export const handlers = [
     }),
 
     http.get(`${BASE}/api/version`, () => {
-        return HttpResponse.json({ version: '2.0.1' });
+        return HttpResponse.json({ version: MOCK_APP_VERSION });
     }),
 
     http.get(`${BASE}/api/scan/status`, () => {

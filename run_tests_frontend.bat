@@ -1,6 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
-set VERSION=2.0.1
+set "ROOT_DIR=%~dp0"
+set /p VERSION=<"%ROOT_DIR%VERSION"
 
 echo ====================================================
 echo    Frontend Test Runner  v%VERSION%
@@ -8,18 +9,18 @@ echo ====================================================
 echo.
 
 :: 1. Check if frontend node_modules exists
-if not exist "frontend\node_modules" (
+if not exist "%ROOT_DIR%frontend\node_modules" (
     echo [!] Frontend dependencies not found.
     echo [*] Running npm install...
-    cd frontend
+    cd /d "%ROOT_DIR%frontend"
     call npm install
-    cd ..
+    cd /d "%ROOT_DIR%"
 )
 
 echo [*] Running frontend tests...
 echo.
 
-cd frontend
+cd /d "%ROOT_DIR%frontend"
 call npx vitest run --reporter=verbose %*
 
 echo.

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import SettingsPage from '../SettingsPage';
+import { MOCK_APP_VERSION } from '../../test/mocks/version';
 
 function renderSettings() {
     return render(
@@ -72,8 +73,9 @@ describe('SettingsPage', () => {
 
     it('displays the app version', async () => {
         renderSettings();
+        const versionPattern = new RegExp(MOCK_APP_VERSION.replaceAll('.', '\\.'));
         await waitFor(() => {
-            expect(screen.getByText(/2\.0\.1/)).toBeInTheDocument();
+            expect(screen.getByText(versionPattern)).toBeInTheDocument();
         });
     });
 

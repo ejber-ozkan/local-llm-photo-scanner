@@ -1,11 +1,11 @@
-# Local AI Photo Gallery v2.0.1
+# Local AI Photo Gallery v2.0.2
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
 
 ## Features
 
-### v2.0.1 Features
+### v2.0.2 Features
 - **CLIP Visual Search Engine**: Harness the power of OpenAI's CLIP model (via `sentence-transformers`) for instantaneous, text-to-image semantic search. The backend converts images directly into 512-dimensional vector math without requiring text descriptions, allowing you to seamlessly find what you're looking for with pinpoint precision.
 - **Hybrid Semantic & Keyword Search**: Combines ChromaDB semantic vector matching with precise text keyword searches to ensure named entities and visual elements are both found in a single query.
 - **Find Visually Similar Photos**: Instantly discover photos physically or contextually resembling each other using spatial coordinate matching via the CLIP engine—without relying on text interpretation.
@@ -287,6 +287,23 @@ The script will automatically install `node_modules` if they don't exist. You ca
 cd frontend
 npm test          # interactive watch mode
 npm run test:run  # single run (CI mode)
+```
+
+### 9. Versioning
+
+The repository version is sourced from the root [`VERSION`](VERSION) file.
+
+- Runtime and shell scripts read directly from `VERSION`.
+- Frontend package metadata, README headings, and version test mocks are updated via the release helper:
+
+```bash
+python scripts/bump_version.py 2.0.2
+```
+
+You can also verify everything is aligned without changing files:
+
+```bash
+python scripts/bump_version.py --check
 ```
 
 ---

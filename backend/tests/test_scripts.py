@@ -1,6 +1,8 @@
 import contextlib
+import json
 import os
 import runpy
+from pathlib import Path
 
 
 def test_backup_restore_scripts(mock_db_file, monkeypatch):
@@ -73,3 +75,38 @@ def test_test_duplicates_script(mock_db_file, monkeypatch):
 
     with contextlib.suppress(SystemExit):
         runpy.run_path(os.path.join(os.path.dirname(__file__), "..", "test_duplicates.py"))
+
+
+def test_version_metadata_is_aligned():
+    root = Path(__file__).resolve().parents[2]
+    version = (root / "VERSION").read_text(encoding="utf-8").strip()
+
+    import core.config
+
+    package_json = json.loads((root / "frontend" / "package.json").read_text(encoding="utf-8"))
+    package_lock = json.loads((root / "frontend" / "package-lock.json").read_text(encoding="utf-8"))
+    mock_version_file = (root / "frontend" / "src" / "test" / "mocks" / "version.ts").read_text(encoding="utf-8")
+
+    assert core.config.VERSION == version
+    assert package_json["version"] == version
+    assert package_lock["version"] == version
+    assert f'"{version}"' in mock_version_file
+
+
+def test_bump_version_check_passes():
+    root = Path(__file__).resolve().parents[2]
+    script = root / "scripts" / "bump_version.py"
+
+    import subprocess
+    import sys
+
+    completed = subprocess.run(
+        [sys.executable, str(script), "--check"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "Version metadata aligned" in completed.stdout

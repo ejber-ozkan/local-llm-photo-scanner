@@ -1,5 +1,6 @@
 #!/bin/bash
-VERSION="2.0.1"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="$(tr -d '\r\n' < "$SCRIPT_DIR/VERSION")"
 
 echo "===================================================="
 echo "   Frontend Test Runner  v$VERSION"
@@ -7,16 +8,16 @@ echo "===================================================="
 echo ""
 
 # 1. Check if frontend node_modules exists
-if [ ! -d "frontend/node_modules" ]; then
+if [ ! -d "$SCRIPT_DIR/frontend/node_modules" ]; then
     echo "[!] Frontend dependencies not found."
     echo "[*] Running npm install..."
-    (cd frontend && npm install)
+    (cd "$SCRIPT_DIR/frontend" && npm install)
 fi
 
 echo "[*] Running frontend tests..."
 echo ""
 
-cd frontend
+cd "$SCRIPT_DIR/frontend"
 npx vitest run --reporter=verbose "$@"
 
 echo ""

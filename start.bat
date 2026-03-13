@@ -1,28 +1,29 @@
 @echo off
 setlocal enabledelayedexpansion
-set VERSION=2.0.1
+set "ROOT_DIR=%~dp0"
+set /p VERSION=<"%ROOT_DIR%VERSION"
 
 echo ====================================================
 echo    Local LLM Photo Scanner v%VERSION%
 echo ====================================================
 
 :: 1. Check if backend venv exists
-if not exist "backend\venv" (
+if not exist "%ROOT_DIR%backend\venv" (
     echo [!] First time setup detected: Backend virtual environment missing.
     echo [*] Creating virtual environment...
-    python -m venv backend\venv
+    python -m venv "%ROOT_DIR%backend\venv"
     echo [*] Installing backend dependencies...
-    call backend\venv\Scripts\activate.bat
-    pip install -r backend\requirements.txt
+    call "%ROOT_DIR%backend\venv\Scripts\activate.bat"
+    pip install -r "%ROOT_DIR%backend\requirements.txt"
 )
 
 :: 2. Check if frontend node_modules exists
-if not exist "frontend\node_modules" (
+if not exist "%ROOT_DIR%frontend\node_modules" (
     echo [!] First time setup detected: Frontend dependencies missing.
     echo [*] Running npm install...
-    cd frontend
+    cd /d "%ROOT_DIR%frontend"
     call npm install
-    cd ..
+    cd /d "%ROOT_DIR%"
 )
 
 :: 3. Clean up ports
@@ -37,7 +38,7 @@ FOR /F "tokens=4,5" %%i IN ('netstat -aon ^| findstr "LISTENING" ^| findstr ":51
 )
 
 :: 4. Get Local IP Address
-set LOCAL_IP=1.8.0.0.1
+set LOCAL_IP=127.0.0.1
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
     set temp_ip=%%a
     set LOCAL_IP=!temp_ip:~1!
@@ -57,9 +58,9 @@ echo.
 
 :: 5. Start services
 echo [*] Starting Backend...
-start cmd /k "cd backend && call venv\Scripts\activate.bat && uvicorn main:app --host 0.0.0.0 --port 8000"
+start cmd /k "cd /d \"%ROOT_DIR%backend\" && call venv\Scripts\activate.bat && uvicorn main:app --host 0.0.0.0 --port 8000"
 
 echo [*] Starting Frontend...
-start cmd /k "cd frontend && npm run dev -- --host"
+start cmd /k "cd /d \"%ROOT_DIR%frontend\" && npm run dev -- --host"
 
 echo Done. Keep this window open or check the secondary windows for logs.

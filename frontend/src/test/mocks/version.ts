@@ -1,0 +1,1 @@
+export const MOCK_APP_VERSION = "2.0.2";

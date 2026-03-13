@@ -3,12 +3,20 @@ Configuration constants and global environment states for the application.
 """
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-VERSION = "2.0.1"
+
+def _read_app_version() -> str:
+    """Load the application version from the repository root VERSION file."""
+    version_file = Path(__file__).resolve().parents[2] / "VERSION"
+    return version_file.read_text(encoding="utf-8").strip()
+
+
+VERSION = _read_app_version()
 
 # Directories
 BACKUPS_DIR = "backups"

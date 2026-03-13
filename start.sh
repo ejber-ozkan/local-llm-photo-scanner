@@ -1,25 +1,26 @@
 #!/bin/bash
-VERSION="2.0.1"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="$(tr -d '\r\n' < "$SCRIPT_DIR/VERSION")"
 
 echo "===================================================="
 echo "   Local LLM Photo Scanner v$VERSION"
 echo "===================================================="
 
 # 1. Check if backend venv exists
-if [ ! -d "backend/venv" ]; then
+if [ ! -d "$SCRIPT_DIR/backend/venv" ]; then
     echo "[!] First time setup detected: Backend virtual environment missing."
     echo "[*] Creating virtual environment..."
-    python3 -m venv backend/venv
+    python3 -m venv "$SCRIPT_DIR/backend/venv"
     echo "[*] Installing backend dependencies..."
-    . backend/venv/bin/activate
-    pip install -r backend/requirements.txt
+    . "$SCRIPT_DIR/backend/venv/bin/activate"
+    pip install -r "$SCRIPT_DIR/backend/requirements.txt"
 fi
 
 # 2. Check if frontend node_modules exists
-if [ ! -d "frontend/node_modules" ]; then
+if [ ! -d "$SCRIPT_DIR/frontend/node_modules" ]; then
     echo "[!] First time setup detected: Frontend dependencies missing."
     echo "[*] Running npm install..."
-    (cd frontend && npm install)
+    (cd "$SCRIPT_DIR/frontend" && npm install)
 fi
 
 # 3. Clean up ports
@@ -58,8 +59,8 @@ trap cleanup INT TERM
 
 # 5. Start services
 echo "[*] Starting Backend..."
-(cd backend && . venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000) &
+(cd "$SCRIPT_DIR/backend" && . venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000) &
 BACKEND_PID=$!
 
 echo "[*] Starting Frontend..."
-cd frontend && npm run dev -- --host
+cd "$SCRIPT_DIR/frontend" && npm run dev -- --host
