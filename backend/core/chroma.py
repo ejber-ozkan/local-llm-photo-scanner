@@ -9,6 +9,12 @@ from chromadb.config import Settings
 import core.state as state
 
 _chroma_client = None
+CHROMA_DIR_NAME = "chroma_data"
+
+
+def get_chroma_data_dir() -> str:
+    """Return the filesystem path used by the persistent Chroma client."""
+    return os.path.join(os.getcwd(), CHROMA_DIR_NAME)
 
 def get_chroma_client() -> ClientAPI:
     """
@@ -21,7 +27,7 @@ def get_chroma_client() -> ClientAPI:
         # Avoid creating the actual persistent folder during test runs if the 
         # config is somehow not mocked yet. We rely on conftest.py to 
         # override this for tests.
-        chroma_db_dir = os.path.join(os.getcwd(), "chroma_data")
+        chroma_db_dir = get_chroma_data_dir()
         os.makedirs(chroma_db_dir, exist_ok=True)
         
         try:
@@ -64,3 +70,9 @@ def set_chroma_client_for_testing(client: ClientAPI):
     """Allows injecting an EphemeralClient for unit testing."""
     global _chroma_client
     _chroma_client = client
+
+
+def reset_chroma_client() -> None:
+    """Drop the cached client so future calls reopen the active Chroma store."""
+    global _chroma_client
+    _chroma_client = None

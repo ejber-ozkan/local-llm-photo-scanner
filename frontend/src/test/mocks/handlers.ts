@@ -155,7 +155,7 @@ export const handlers = [
     }),
 
     http.get(`${BASE}/api/version`, () => {
-        return HttpResponse.json({ version: '1.0.0' });
+        return HttpResponse.json({ version: '2.0.1' });
     }),
 
     http.get(`${BASE}/api/scan/status`, () => {

@@ -120,6 +120,7 @@ async def trigger_restore(req: RestoreRequest) -> dict[str, Any]:
     try:
         success = restore_database(req.filename)
         if success:
+            chroma.reset_chroma_client()
             # Since restore drops all entities, we must inevitably clear our LRU caches
             from api.routes.gallery import _compute_gallery_filters
 

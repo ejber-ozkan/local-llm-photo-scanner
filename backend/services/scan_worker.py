@@ -28,6 +28,13 @@ from database_setup import find_best_face_match
 from services.image_service import extract_exif_for_filters, process_image_with_ollama
 
 
+def _clear_gallery_filters_cache() -> None:
+    """Invalidate gallery filter cache after worker mutations become visible."""
+    from api.routes.gallery import clear_gallery_filters_cache
+
+    clear_gallery_filters_cache()
+
+
 def background_processor() -> None:
     """Background task to find pending photos and process them.
 
@@ -70,6 +77,7 @@ def background_processor() -> None:
                     (photo_id,),
                 )
                 conn.commit()
+                _clear_gallery_filters_cache()
                 continue
 
         # 0. Check for Duplicates
@@ -89,6 +97,7 @@ def background_processor() -> None:
                     (file_size, file_hash, photo_id),
                 )
                 conn.commit()
+                _clear_gallery_filters_cache()
                 continue
 
             cursor.execute(
@@ -113,6 +122,7 @@ def background_processor() -> None:
                 (photo_id,),
             )
             conn.commit()
+            _clear_gallery_filters_cache()
             continue
 
         # Extract EXIF for filter columns
@@ -318,6 +328,7 @@ def background_processor() -> None:
                 print(f"DeepFace processing error for {filepath}: {e}")
 
         conn.commit()
+        _clear_gallery_filters_cache()
 
     state.add_log("Background processor finished queue.")
     state.current_scan_total = 0

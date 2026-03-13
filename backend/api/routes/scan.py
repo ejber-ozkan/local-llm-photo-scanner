@@ -32,6 +32,13 @@ router = APIRouter()
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".heic"}
 
 
+def _clear_gallery_filters_cache() -> None:
+    """Invalidate gallery filter cache after scan-side data changes."""
+    from api.routes.gallery import clear_gallery_filters_cache
+
+    clear_gallery_filters_cache()
+
+
 @router.post("")
 async def scan_directory(
     req: ScanRequest, background_tasks: BackgroundTasks, db: sqlite3.Connection = Depends(get_db)
@@ -58,6 +65,7 @@ async def scan_directory(
         # Delete the photos themselves
         cursor.execute("DELETE FROM photos WHERE filepath LIKE ?", (f"{req.directory_path}%",))
         db.commit()
+        _clear_gallery_filters_cache()
 
     added_count = 0
     from datetime import datetime
@@ -354,8 +362,8 @@ async def control_scan(req: ScanControlRequest) -> dict[str, str]:
 
 
 @router.get("/status")
-async def get_test_status(db: sqlite3.Connection = Depends(get_test_db)) -> dict[str, Any]:
-    """Retrieves the current state of the database processing queue."""
+async def get_scan_status(db: sqlite3.Connection = Depends(get_db)) -> dict[str, Any]:
+    """Retrieve the current scan state and main gallery counts."""
     cursor = db.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM photos")

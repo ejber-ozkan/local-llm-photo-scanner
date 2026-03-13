@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-VERSION = "1.8.0"
+VERSION = "2.0.1"
 
 # Directories
 BACKUPS_DIR = "backups"

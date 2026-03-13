@@ -4,6 +4,7 @@ import shutil
 from datetime import datetime
 
 BACKUP_DIR = "backups"
+CHROMA_DIR = "chroma_data"
 DB_FILE = "photometadata.db"
 
 
@@ -23,6 +24,8 @@ def restore_database(backup_filename: str) -> bool:
     """
 
     backup_path = os.path.join(BACKUP_DIR, backup_filename)
+    backup_stem, _ = os.path.splitext(backup_filename)
+    chroma_backup_path = os.path.join(BACKUP_DIR, f"{backup_stem}_chroma")
 
     # 1. Verification
     if not os.path.exists(backup_path):
@@ -37,10 +40,19 @@ def restore_database(backup_filename: str) -> bool:
             os.makedirs(BACKUP_DIR)
         shutil.copy2(DB_FILE, safety_path)
         print(f"Created safety copy of current DB at: {safety_path}")
+    if os.path.exists(CHROMA_DIR):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        chroma_safety_path = os.path.join(BACKUP_DIR, f"pre_restore_safety_{timestamp}_chroma")
+        shutil.copytree(CHROMA_DIR, chroma_safety_path)
+        print(f"Created safety copy of current Chroma data at: {chroma_safety_path}")
 
     # 3. Restore
     try:
         shutil.copy2(backup_path, DB_FILE)
+        if os.path.exists(CHROMA_DIR):
+            shutil.rmtree(CHROMA_DIR)
+        if os.path.exists(chroma_backup_path):
+            shutil.copytree(chroma_backup_path, CHROMA_DIR)
         print(f"Success! Database restored from: {backup_filename}")
         return True
     except Exception as e:

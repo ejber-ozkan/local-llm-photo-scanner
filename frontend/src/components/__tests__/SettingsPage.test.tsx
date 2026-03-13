@@ -73,7 +73,7 @@ describe('SettingsPage', () => {
     it('displays the app version', async () => {
         renderSettings();
         await waitFor(() => {
-            expect(screen.getByText(/1\.0\.0/)).toBeInTheDocument();
+            expect(screen.getByText(/2\.0\.1/)).toBeInTheDocument();
         });
     });
 

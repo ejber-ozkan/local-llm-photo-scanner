@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, Response
 from PIL import Image
 
-from core.config import DB_FILE
+from core.config import DB_FILE, DB_TEST_FILE
 from core.database import get_db
 
 # Register HEIC/HEIF support with Pillow
@@ -22,6 +22,11 @@ except ImportError:
 router = APIRouter()
 
 HEIC_EXTENSIONS = {".heic", ".heif"}
+
+
+def clear_gallery_filters_cache() -> None:
+    """Invalidate cached gallery filter metadata after photo/entity changes."""
+    _compute_gallery_filters.cache_clear()
 
 
 def _serve_image(filepath: str, headers: dict[str, str]) -> Response:
@@ -56,12 +61,15 @@ def _serve_image(filepath: str, headers: dict[str, str]) -> Response:
 @router.get("/image/{photo_id}", response_model=None)
 async def get_image(photo_id: int) -> Response:
     """Returns the actual image file for a given photo ID."""
-    # First check main DB
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT filepath FROM photos WHERE id = ?", (photo_id,))
-    row = cursor.fetchone()
-    conn.close()
+    row = None
+    for db_path in (DB_FILE, DB_TEST_FILE):
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT filepath FROM photos WHERE id = ?", (photo_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            break
 
     # Force browser to never aggressive cache, preventing ID collisions after DB wipes
     headers = {

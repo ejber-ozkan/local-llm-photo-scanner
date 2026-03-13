@@ -4,6 +4,7 @@ import sqlite3
 import pytest
 
 from services.scan_worker import background_processor
+from api.routes.gallery import _compute_gallery_filters
 
 
 @pytest.fixture
@@ -129,3 +130,22 @@ def test_background_processor_corrupted_file(mock_db_file, tmp_path, monkeypatch
     conn.close()
 
     assert status == "processed"  # It finishes Ollama and EXIF then crashes on deepface, so it stays processed
+
+
+def test_background_processor_clears_gallery_filter_cache(mock_db_file, test_image, mock_ollama, monkeypatch):
+    """Processing a pending image should invalidate cached gallery filters."""
+    _compute_gallery_filters.cache_clear()
+    initial_filters = _compute_gallery_filters(mock_db_file)
+    assert initial_filters["total_photos"] == 0
+
+    seed_db_for_processing(mock_db_file, test_image)
+
+    monkeypatch.setattr("services.scan_worker.DEEPFACE_AVAILABLE", False)
+    monkeypatch.setattr("core.config.ACTIVE_OLLAMA_MODEL", "mock_model")
+    monkeypatch.setattr("core.config.OLLAMA_URL", "http://localhost:11434/api/generate")
+    monkeypatch.setattr("core.state.SCAN_STATE", "running")
+
+    background_processor()
+
+    refreshed_filters = _compute_gallery_filters(mock_db_file)
+    assert refreshed_filters["total_photos"] == 1

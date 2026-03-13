@@ -3,6 +3,7 @@ import shutil
 from datetime import datetime
 
 BACKUP_DIR = "backups"
+CHROMA_DIR = "chroma_data"
 DB_FILE = "photometadata.db"
 
 
@@ -26,9 +27,12 @@ def backup_database() -> str | bool:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_filename = f"photometadata_backup_{timestamp}.db"
     backup_path = os.path.join(BACKUP_DIR, backup_filename)
+    chroma_backup_path = os.path.join(BACKUP_DIR, f"photometadata_backup_{timestamp}_chroma")
 
     try:
         shutil.copy2(DB_FILE, backup_path)
+        if os.path.exists(CHROMA_DIR):
+            shutil.copytree(CHROMA_DIR, chroma_backup_path)
         print(f"Success! Database backed up to: {backup_path}")
         return backup_path
     except Exception as e:

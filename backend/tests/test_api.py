@@ -91,6 +91,35 @@ def test_get_filters(client, mock_db_file):
     assert data["names"][0]["name"] == "Fido"
 
 
+def test_force_rescan_clears_gallery_filter_cache(client, mock_db_file, tmp_path):
+    """Force rescan should invalidate cached gallery filter metadata immediately."""
+    seed_test_database(mock_db_file)
+
+    cached = client.get("/api/gallery/filters")
+    assert cached.status_code == 200
+    assert cached.json()["names"][0]["name"] == "Fido"
+
+    scan_dir = tmp_path / "rescan_target"
+    scan_dir.mkdir()
+
+    conn = sqlite3.connect(mock_db_file)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE photos SET filepath = ? WHERE id = 1", (str(scan_dir / "photo1.jpg"),))
+    cursor.execute("UPDATE photos SET filepath = ? WHERE id = 2", (str(scan_dir / "photo2.jpg"),))
+    conn.commit()
+    conn.close()
+
+    response = client.post(
+        "/api/scan",
+        json={"directory_path": str(scan_dir), "force_rescan": True, "ignore_screenshots": False},
+    )
+    assert response.status_code == 200
+
+    refreshed = client.get("/api/gallery/filters")
+    assert refreshed.status_code == 200
+    assert refreshed.json()["names"] == []
+
+
 def test_start_scan_invalid_path(client):
     """Test that scanning a non-existent directory returns 400."""
     response = client.post("/api/scan", json={"directory_path": "/fake/non/existent/path"})

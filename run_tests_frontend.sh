@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.8.0"
+VERSION="2.0.1"
 
 echo "===================================================="
 echo "   Frontend Test Runner  v$VERSION"
