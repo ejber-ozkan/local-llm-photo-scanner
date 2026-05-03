@@ -27,7 +27,8 @@ def init_single_db(db_path: str) -> None:
     Args:
         db_path (str): The file path to the SQLite database to initialize.
     """
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
     cursor = conn.cursor()
     # Table for Photos
     cursor.execute("""
@@ -98,7 +99,9 @@ def get_connection(use_test_db: bool = False) -> sqlite3.Connection:
     Returns:
         sqlite3.Connection: An open connection to the target SQLite database.
     """
-    return sqlite3.connect(DB_TEST_FILE if use_test_db else DB_FILE)
+    conn = sqlite3.connect(DB_TEST_FILE if use_test_db else DB_FILE, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    return conn
 
 
 def find_best_face_match(embedding: list[float], conn: sqlite3.Connection) -> str | None:

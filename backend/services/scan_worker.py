@@ -43,7 +43,8 @@ def background_processor() -> None:
     description analysis via Ollama. It saves the final metadata and updates
     the status to 'processed' or 'error'.
     """
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
     cursor = conn.cursor()
 
     while True:

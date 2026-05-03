@@ -58,9 +58,9 @@ echo.
 
 :: 5. Start services
 echo [*] Starting Backend...
-start cmd /k "cd /d \"%ROOT_DIR%backend\" && call venv\Scripts\activate.bat && uvicorn main:app --host 0.0.0.0 --port 8000"
+start "Backend" cmd /k "cd /d "%ROOT_DIR%backend" && call venv\Scripts\activate.bat && uvicorn main:app --host 0.0.0.0 --port 8000"
 
 echo [*] Starting Frontend...
-start cmd /k "cd /d \"%ROOT_DIR%frontend\" && npm run dev -- --host"
+start "Frontend" cmd /k "cd /d "%ROOT_DIR%frontend" && npm run dev -- --host"
 
 echo Done. Keep this window open or check the secondary windows for logs.
