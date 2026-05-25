@@ -24,7 +24,7 @@ describe('Gallery', () => {
     it('renders the search input', () => {
         renderGallery();
         expect(
-            screen.getByPlaceholderText(/search by description/i)
+            screen.getByPlaceholderText(/semantic search/i)
         ).toBeInTheDocument();
     });
 
@@ -160,18 +160,17 @@ describe('Gallery', () => {
 
     // ── Year Timeline ──────────────────────────────────────────────────
 
-    it('renders year timeline with years from API', async () => {
+    it('renders year timeline for visible media groups', async () => {
         renderGallery();
 
         await waitFor(() => {
             expect(screen.getByAltText('beach.jpg')).toBeInTheDocument();
         });
 
-        // Year labels are present
+        // Markers are derived from the photos currently displayed.
         await waitFor(() => {
             expect(screen.getByText('2024')).toBeInTheDocument();
             expect(screen.getByText('2023')).toBeInTheDocument();
-            expect(screen.getByText('2022')).toBeInTheDocument();
         });
     });
 
@@ -181,7 +180,7 @@ describe('Gallery', () => {
         const user = userEvent.setup();
         renderGallery();
 
-        const input = screen.getByPlaceholderText(/search by description/i);
+        const input = screen.getByPlaceholderText(/semantic search/i);
         await user.type(input, 'sunset{Enter}');
 
         // The search just triggers a re-fetch — verify input value was set

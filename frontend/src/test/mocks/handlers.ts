@@ -171,6 +171,18 @@ export const handlers = [
         return HttpResponse.json({ history: [] });
     }),
 
+    http.get(`${BASE}/api/folder-scan/history`, () => {
+        return HttpResponse.json({ history: [] });
+    }),
+
+    http.get(`${BASE}/api/folder-scan/status`, () => {
+        return HttpResponse.json({ state: 'idle', scan_total: 0, scan_processed: 0 });
+    }),
+
+    http.get(`${BASE}/api/folder-scan/logs`, () => {
+        return HttpResponse.json({ logs: [] });
+    }),
+
     http.get(`${BASE}/api/database/backups`, () => {
         return HttpResponse.json({ backups: [] });
     }),
@@ -231,5 +243,9 @@ export const handlers = [
     // Duplicates
     http.get(`${BASE}/api/duplicates`, () => {
         return HttpResponse.json(mockDuplicates);
+    }),
+
+    http.get(`${BASE}/api/skipped`, () => {
+        return HttpResponse.json([]);
     }),
 ];

@@ -197,3 +197,79 @@ def test_get_duplicates(client, mock_db_file, dummy_img):
     data = resp.json()
     assert len(data) > 0
     assert data[0]["hash"] == "hash123"
+
+
+def test_open_system_file_and_location(client, monkeypatch):
+    import os
+    import subprocess
+    import sys
+
+    # Mock path existence
+    monkeypatch.setattr(os.path, "exists", lambda p: True)
+
+    # Mock subprocess.run and os.startfile
+    run_called = []
+    startfile_called = []
+
+    def mock_run(args, **kwargs):
+        run_called.append(args)
+        class MockCompletedProcess:
+            returncode = 0
+        return MockCompletedProcess()
+
+    def mock_startfile(path):
+        startfile_called.append(path)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    if hasattr(os, "startfile"):
+        monkeypatch.setattr(os, "startfile", mock_startfile)
+
+    # Test open-file
+    resp = client.get("/api/system/open-file?path=/dummy/path/to/photo.jpg")
+    assert resp.status_code == 200
+    assert resp.json()["success"] is True
+
+    # Check that it either called startfile or subprocess.run depending on OS
+    if sys.platform == "win32":
+        assert len(startfile_called) > 0 or len(run_called) > 0
+    else:
+        assert len(run_called) > 0
+
+    # Reset tracking lists
+    run_called.clear()
+    startfile_called.clear()
+
+    # Test open-location
+    resp = client.get("/api/system/open-location?path=/dummy/path/to/photo.jpg")
+    assert resp.status_code == 200
+    assert resp.json()["success"] is True
+
+    # Verify that the correct arguments were passed
+    if sys.platform == "win32":
+        # Check either startfile or explorer.exe was invoked
+        if run_called:
+            assert "explorer.exe" in run_called[0][0]
+            assert "/select," in run_called[0][1]
+    elif sys.platform == "darwin":
+        assert run_called[0] == ["open", "-R", os.path.abspath("/dummy/path/to/photo.jpg")]
+    else:
+        assert run_called[0] == ["xdg-open", os.path.dirname(os.path.abspath("/dummy/path/to/photo.jpg"))]
+
+    # Test path not found
+    monkeypatch.setattr(os.path, "exists", lambda p: False)
+    resp = client.get("/api/system/open-location?path=/nonexistent/file.jpg")
+    assert resp.status_code == 404
+
+
+def test_check_ffmpeg_frontend_route_alias(client, monkeypatch):
+    """The frontend checks FFmpeg availability via the /api/system route."""
+
+    def mock_check_ffmpeg_available():
+        return {"available": True, "path": "C:\\ProgramData\\chocolatey\\bin\\ffmpeg.exe", "version": "ffmpeg version test"}
+
+    monkeypatch.setattr("core.ffmpeg_check.check_ffmpeg_available", mock_check_ffmpeg_available)
+
+    resp = client.get("/api/system/check-ffmpeg")
+
+    assert resp.status_code == 200
+    assert resp.json()["available"] is True

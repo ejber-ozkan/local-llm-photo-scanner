@@ -107,3 +107,109 @@ export interface TestResult {
         entities: { id: number; type: string; name: string; bounding_box?: string }[];
     }[];
 }
+
+// Local Folders view & Non-AI scanner
+export interface LocalMediaItem {
+    id: number;
+    filepath: string;
+    filename: string;
+    parent_path: string;
+    file_size: number;
+    file_hash: string;
+    duplicate_count?: number;
+    media_type: 'image' | 'video';
+    date_taken?: string;
+    date_modified?: string;
+    date_created?: string;
+    date_fallback?: string;
+    year?: number;
+    month?: number;
+    day?: number;
+    width?: number;
+    height?: number;
+    duration?: number;
+    codec?: string;
+    validation_status?: 'valid' | 'invalid_media_stub' | 'unvalidated';
+    validation_error?: string;
+    frame_rate?: number;
+    bit_rate?: number;
+    camera_make?: string;
+    camera_model?: string;
+    lens_model?: string;
+    exposure_time?: string;
+    f_number?: number;
+    iso?: number;
+    focal_length?: number;
+    gps_lat?: number;
+    gps_lon?: number;
+    scanned_at?: string;
+}
+
+export interface FolderExplorerResponse {
+    current_path: string;
+    parent_path: string | null;
+    directories: string[];
+    files: LocalMediaItem[];
+}
+
+export interface DateDrilldownItem {
+    label: string;
+    value: number;
+    count: number;
+}
+
+export interface FolderScanStatus {
+    state: 'idle' | 'running' | 'paused';
+    scan_total: number;
+    scan_processed: number;
+}
+
+export interface DuplicateReportFile {
+    id: number;
+    filepath: string;
+    filename: string;
+    parent_path: string;
+    file_size: number;
+    file_hash: string;
+    media_type: 'image' | 'video';
+    validation_status?: 'valid' | 'invalid_media_stub' | 'unvalidated';
+    validation_error?: string;
+    date_taken?: string;
+    date_modified?: string;
+    date_created?: string;
+    date_fallback?: string;
+    year?: number;
+    month?: number;
+    day?: number;
+    scanned_at?: string;
+}
+
+export interface DuplicateReportGroup {
+    match_type: 'exact_hash' | 'invalid_media_stub';
+    file_hash: string;
+    count: number;
+    total_bytes: number;
+    wasted_bytes: number;
+    files: DuplicateReportFile[];
+}
+
+export interface DuplicateReportResponse {
+    match_type: 'exact_hash' | 'invalid_media_stub';
+    available_match_types: string[];
+    future_match_types: string[];
+    summary: {
+        group_count: number;
+        file_count: number;
+        total_bytes: number;
+        wasted_bytes: number;
+    };
+    pagination: {
+        page: number;
+        page_size: number;
+        total_groups: number;
+        total_pages: number;
+        has_next: boolean;
+        has_previous: boolean;
+    };
+    groups: DuplicateReportGroup[];
+}

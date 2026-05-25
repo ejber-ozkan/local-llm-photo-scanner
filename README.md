@@ -1,11 +1,15 @@
-# Local AI Photo Gallery v2.0.2
+# Local AI Photo Gallery v3.0.0
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
 
 ## Features
 
-### v2.0.2 Features
+### v3.0.0 Features
+- **Local Folder Explorer**: Scan image and video libraries without AI processing, then browse indexed files by folder or timeline while retaining each real file path in the library.
+- **Reliable Duplicate Review**: Export exact-hash duplicate reports to CSV, display clickable duplicate-count badges on media cards, and keep ordinary timeline totals focused on genuine media files.
+- **Invalid Video Stub Detection**: Videos without a decodable media stream are classified as invalid media stubs and surfaced through a separate timeline/report category instead of being treated as ordinary duplicates.
+- **Video Playback & Transcoding**: Preview supported video files in-app and optionally use FFmpeg to transcode legacy formats for browser playback.
 - **CLIP Visual Search Engine**: Harness the power of OpenAI's CLIP model (via `sentence-transformers`) for instantaneous, text-to-image semantic search. The backend converts images directly into 512-dimensional vector math without requiring text descriptions, allowing you to seamlessly find what you're looking for with pinpoint precision.
 - **Hybrid Semantic & Keyword Search**: Combines ChromaDB semantic vector matching with precise text keyword searches to ensure named entities and visual elements are both found in a single query.
 - **Find Visually Similar Photos**: Instantly discover photos physically or contextually resembling each other using spatial coordinate matching via the CLIP engine—without relying on text interpretation.
@@ -16,7 +20,7 @@ The application intelligently scans your local directories, processing images us
 - **In-App Notifications**: All action feedback (backup created, restore complete, entity errors) uses styled in-app toast notifications — no more browser alert pop-ups.
 - **Interactive Timeline & Detailed Sorting**: Sort photos by Date Taken, Date Created, Date Modified, or Filename. A vertical year timeline on the right side of the gallery lets you jump instantly to any year.
 
-### v1.x Features
+### Earlier Features
 - **Privacy-First Processing**: All photo scanning, metadata generation, and facial recognition occur entirely on your local machine. No data is sent to the cloud.
 - **Natural Language Search**: Quickly find images by searching for descriptions like "a dog in a park".
 - **Facial & Entity Clustering**: Identifies and clusters faces across your dataset, allowing you to attach real names to recognized individuals and pets. Entities can be renamed or deleted inline from the Gallery popup and the Scan & Test panel.
@@ -64,6 +68,7 @@ The application intelligently scans your local directories, processing images us
     *   **Pytest**: Robust, fully-featured python testing framework for orchestrating endpoints and testing core state manipulation.
     *   **Pytest-Cov**: Used closely with Pytest to ensure we maintain our target of >80% test coverage across routing modules and workers.
     *   **Pytest-Asyncio**: Validates asynchronous concurrent network operations properly map responses.
+*   **FFmpeg** *(optional)*: System-level binary used for real-time server-side video transcoding. Streams legacy formats (AVI, WMV, FLV, 3GP, MPG, DivX, RealMedia, etc.) as fragmented MP4 directly to the browser via a FastAPI `StreamingResponse` with no intermediate disk writes. Controlled by a Fast / Balanced / Quality preset toggle in the UI.
 
 ### Local AI Integrations
 *   **Ollama**: A lightweight local LLM runner processing raw images through models like `qwen3-vl` or `llama3.2-vision` to write rich, descriptive text about standard photographs in the background.
@@ -81,6 +86,18 @@ Before running the application, ensure you have the following installed on your 
     ```bash
     ollama run qwen3-vl:8b
     ```
+5.  **FFmpeg** *(Optional — required for in-browser playback of legacy video formats)*:
+    Install [FFmpeg](https://ffmpeg.org/download.html) and ensure the `ffmpeg` binary is on your system `PATH`.
+    Without it, files like `.avi`, `.wmv`, `.flv` will show an "Open in System Player" button instead of playing in-browser.
+
+    | Platform | Install Command |
+    |---|---|
+    | **Windows** | Download from [gyan.dev/ffmpeg/builds](https://www.gyan.dev/ffmpeg/builds/), extract, add the `bin/` folder to your `PATH` |
+    | **Linux (Ubuntu/Debian)** | `sudo apt install ffmpeg` |
+    | **Linux (Fedora/RHEL)** | `sudo dnf install ffmpeg` |
+    | **macOS** | `brew install ffmpeg` |
+
+    Verify it is working: `ffmpeg -version`
 
 ---
 
@@ -297,7 +314,7 @@ The repository version is sourced from the root [`VERSION`](VERSION) file.
 - Frontend package metadata, README headings, and version test mocks are updated via the release helper:
 
 ```bash
-python scripts/bump_version.py 2.0.2
+python scripts/bump_version.py 3.0.0
 ```
 
 You can also verify everything is aligned without changing files:

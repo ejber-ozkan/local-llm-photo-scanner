@@ -3,7 +3,7 @@ import axios from 'axios';
 import { FolderSearch, Settings as SettingsIcon, CheckCircle, AlertTriangle, Cpu, Terminal, ChevronDown, ChevronUp, Play, Pause, XCircle, Database, Trash2, Palette, Moon, Sun } from 'lucide-react';
 import { useToast, ToastContainer } from './Toast';
 import { API_BASE_URL } from '../config';
-import type { ScanStatus, ScanHistoryItem } from '../types';
+import type { ScanStatus, ScanHistoryItem, FolderScanStatus } from '../types';
 
 export default function SettingsPage() {
     const [path, setPath] = useState('');
@@ -17,6 +17,18 @@ export default function SettingsPage() {
     const [scanStatus, setScanStatus] = useState<ScanStatus>({
         state: 'idle', total_gallery: 0, total_duplicates: 0, scan_total: 0, scan_processed: 0
     });
+
+    // Folder Explorer non-AI scanner states
+    const [folderPath, setFolderPath] = useState('');
+    const [folderScanStatus, setFolderScanStatus] = useState<FolderScanStatus>({
+        state: 'idle', scan_total: 0, scan_processed: 0
+    });
+    const [folderScanHistory, setFolderScanHistory] = useState<ScanHistoryItem[]>([]);
+    const [isFolderHistoryOpen, setIsFolderHistoryOpen] = useState(false);
+    const [folderLogs, setFolderLogs] = useState<{ time: string, message: string }[]>([]);
+    const [isFolderLogOpen, setIsFolderLogOpen] = useState(false);
+    const folderLogsContainerRef = useRef<HTMLDivElement>(null);
+    const [extractFolderMetadata, setExtractFolderMetadata] = useState(true);
 
     // New state for Models
     const [models, setModels] = useState<{ name: string, is_vision: boolean }[]>([]);
@@ -33,7 +45,7 @@ export default function SettingsPage() {
     const logsContainerRef = useRef<HTMLDivElement>(null);
 
     // Confirm Modal State
-    const [confirmModal, setConfirmModal] = useState<{ target: 'main' | 'test' | 'restore' | 'rescan', step: 1 | 2, payload?: string } | null>(null);
+    const [confirmModal, setConfirmModal] = useState<{ target: 'main' | 'test' | 'restore' | 'rescan' | 'folder-rescan', step: 1 | 2, payload?: string } | null>(null);
 
     // Backup State
     const [backups, setBackups] = useState<{ filename: string, size: number, created: number }[]>([]);
@@ -104,7 +116,7 @@ export default function SettingsPage() {
         fetchVersion();
     }, []);
 
-    // Poll logs and status continuously
+    // Poll logs and status continuously for both scanners
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         interval = setInterval(async () => {
@@ -121,9 +133,23 @@ export default function SettingsPage() {
             } catch (err) {
                 // silently fail interval to prevent spam
             }
-        }, 5000);
+
+            try {
+                // Poll Folder Scan status
+                const folderStatusRes = await axios.get(`${API_BASE_URL}/api/folder-scan/status`);
+                setFolderScanStatus(folderStatusRes.data);
+
+                // If folder logs are open or scanner is active, fetch logs
+                if (folderStatusRes.data.state !== 'idle' || isFolderLogOpen) {
+                    const folderLogsRes = await axios.get(`${API_BASE_URL}/api/folder-scan/logs`);
+                    setFolderLogs(folderLogsRes.data.logs);
+                }
+            } catch (err) {
+                // silently fail to prevent spam
+            }
+        }, 3000);
         return () => clearInterval(interval);
-    }, [isLogOpen]);
+    }, [isLogOpen, isFolderLogOpen]);
 
     useEffect(() => {
         fetchModels();
@@ -139,10 +165,32 @@ export default function SettingsPage() {
         }
     };
 
+    const fetchFolderHistory = async () => {
+        try {
+            const res = await axios.get(`${API_BASE_URL}/api/folder-scan/history`);
+            setFolderScanHistory(res.data.history);
+        } catch (err) {
+            console.error("Failed to fetch folder scan history");
+        }
+    };
+
     useEffect(() => {
         fetchHistory();
+        fetchFolderHistory();
         fetchBackups();
     }, []);
+
+    useEffect(() => {
+        if (isLogOpen && logsContainerRef.current) {
+            logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+        }
+    }, [logs, isLogOpen]);
+
+    useEffect(() => {
+        if (isFolderLogOpen && folderLogsContainerRef.current) {
+            folderLogsContainerRef.current.scrollTop = folderLogsContainerRef.current.scrollHeight;
+        }
+    }, [folderLogs, isFolderLogOpen]);
 
     const fetchBackups = async () => {
         try {
@@ -218,6 +266,67 @@ export default function SettingsPage() {
         }
     };
 
+    const handleConfirmNext = () => {
+        if (!confirmModal) return;
+        if (confirmModal.target === 'main' && confirmModal.step === 1) {
+            setConfirmModal({ target: 'main', step: 2 });
+        } else if (confirmModal.target === 'restore') {
+            executeRestore(confirmModal.payload!);
+            setConfirmModal(null);
+        } else if (confirmModal.target === 'rescan') {
+            executeScan(true);
+            setConfirmModal(null);
+        } else if (confirmModal.target === 'folder-rescan') {
+            executeFolderScan(true);
+            setConfirmModal(null);
+        } else {
+            // Either test step 1, or main step 2. Execute.
+            executeCleanDatabase(confirmModal.target as 'main' | 'test');
+            setConfirmModal(null);
+        }
+    };
+
+    const handleFolderScan = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!folderPath.trim()) return;
+
+        // Check if this path was already scanned
+        const alreadyScanned = folderScanHistory.some(item => item.directory_path.toLowerCase() === folderPath.trim().toLowerCase());
+
+        if (alreadyScanned) {
+            setConfirmModal({ target: 'folder-rescan', step: 1, payload: folderPath.trim() });
+            return;
+        }
+
+        executeFolderScan(false);
+    };
+
+    const executeFolderScan = async (force: boolean) => {
+        setApiError('');
+        try {
+            await axios.post(`${API_BASE_URL}/api/folder-scan`, {
+                directory_path: folderPath.trim(),
+                force_rescan: force,
+                extract_metadata: extractFolderMetadata
+            });
+            setFolderPath('');
+            setIsFolderHistoryOpen(false);
+            setIsFolderLogOpen(true);
+            setConfirmModal(null);
+            fetchFolderHistory();
+        } catch (err: any) {
+            setApiError(err.response?.data?.detail || err.message || "Failed to start folder scan");
+        }
+    };
+
+    const handleFolderControlAction = async (action: 'pause' | 'resume' | 'cancel') => {
+        try {
+            await axios.post(`${API_BASE_URL}/api/folder-scan/control`, { action });
+        } catch (err: any) {
+            setApiError(err.message || `Failed to ${action} folder scan`);
+        }
+    };
+
     const handleControlAction = async (action: 'pause' | 'resume' | 'cancel') => {
         try {
             await axios.post(`${API_BASE_URL}/api/scan/control`, { action });
@@ -228,22 +337,6 @@ export default function SettingsPage() {
 
     const triggerCleanWarning = (target: 'main' | 'test') => {
         setConfirmModal({ target, step: 1 });
-    };
-
-    const handleConfirmNext = () => {
-        if (!confirmModal) return;
-        if (confirmModal.target === 'main' && confirmModal.step === 1) {
-            setConfirmModal({ target: 'main', step: 2 });
-        } else if (confirmModal.target === 'restore') {
-            executeRestore(confirmModal.payload!);
-            setConfirmModal(null);
-        } else if (confirmModal.target === 'rescan') {
-            executeScan(true);
-        } else {
-            // Either test step 1, or main step 2. Execute.
-            executeCleanDatabase(confirmModal.target as 'main' | 'test');
-            setConfirmModal(null);
-        }
     };
 
     const executeRestore = async (filename: string) => {
@@ -521,6 +614,189 @@ export default function SettingsPage() {
                 </div>
             </div>
 
+            {/* Folder Explorer Non-AI Scan Card */}
+            <div className="mt-8 bg-surface rounded-2xl p-8 shadow-2xl border border-[#262626]">
+                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                    <FolderSearch className="w-6 h-6 text-indigo-400" />
+                    Local Folder Scanner (Non-AI)
+                </h2>
+                <p className="text-gray-400 text-sm mb-6 -mt-4">
+                    Recursively scan local folders to extract basic media metadata.
+                    Uses exact file hashes for duplicate detection and dates based on filename or system properties.
+                    Runs instantly in the background without launching any local AI models.
+                </p>
+
+                <form onSubmit={handleFolderScan} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Scan Folder Path</label>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all cursor-text ${folderPath
+                                ? 'border-indigo-500 bg-indigo-500/5'
+                                : 'border-gray-700 bg-surface hover:border-gray-500'
+                                }`}
+                            onClick={() => {
+                                const input = document.getElementById('folder-path-input');
+                                if (input) input.focus();
+                            }}
+                        >
+                            <FolderSearch className={`w-8 h-8 mb-3 ${folderPath ? 'text-indigo-400' : 'text-gray-500'}`} />
+                            <input
+                                id="folder-path-input"
+                                type="text"
+                                value={folderPath}
+                                onChange={(e) => setFolderPath(e.target.value)}
+                                placeholder="Type or paste folder path to scan…"
+                                className="w-full bg-transparent text-center text-white font-mono text-sm placeholder-gray-500 focus:outline-none border-none"
+                            />
+                            <p className="text-xs text-gray-500 mt-3">
+                                {folderPath ? 'Folder and nested subfolders will be recursively indexed' : 'e.g. D:\\Photos\\2026 or /home/user/Pictures'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Extract Rich Metadata Checkbox */}
+                    <div className="flex items-center gap-3 bg-[#111] p-4 rounded-xl border border-gray-800">
+                        <input
+                            type="checkbox"
+                            id="extractFolderMetadata"
+                            checked={extractFolderMetadata}
+                            onChange={(e) => setExtractFolderMetadata(e.target.checked)}
+                            className="w-5 h-5 text-indigo-500 border-gray-700 rounded focus:ring-indigo-500 focus:ring-offset-gray-900 bg-[#161616]"
+                        />
+                        <label htmlFor="extractFolderMetadata" className="text-sm text-gray-300 font-medium cursor-pointer flex-1">
+                            Extract Rich Media Metadata <span className="text-gray-500 font-normal ml-1">(Parses dimensions, codecs, exposure details, ISO, and GPS locations in memory)</span>
+                        </label>
+                    </div>
+
+                    {/* Folder Scan History Collapsible */}
+                    {folderScanHistory.length > 0 && (
+                        <div className="mt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsFolderHistoryOpen(!isFolderHistoryOpen)}
+                                className="flex items-center justify-between w-full bg-[#161616] hover:bg-[#1a1a1a] border border-gray-800 rounded-lg px-4 py-2 transition-colors text-sm"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <FolderSearch className="w-4 h-4 text-indigo-400" />
+                                    <span className="font-medium text-gray-300">Recently Scanned Folders</span>
+                                </div>
+                                {isFolderHistoryOpen ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                            </button>
+
+                            {isFolderHistoryOpen && (
+                                <div className="bg-black border-x border-b border-gray-800 rounded-b-lg p-2 max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1 -mt-1 pt-3">
+                                    {folderScanHistory.map((item, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            onClick={() => setFolderPath(item.directory_path)}
+                                            className="text-left w-full hover:bg-[#1a1a1a] p-2 rounded text-xs text-gray-400 hover:text-gray-200 transition-colors flex justify-between items-center group"
+                                        >
+                                            <span className="truncate mr-4">{item.directory_path}</span>
+                                            <span className="text-[10px] text-gray-600 group-hover:text-gray-400 whitespace-nowrap">
+                                                {new Date(item.last_scanned).toLocaleDateString()}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {folderScanStatus.state === 'idle' ? (
+                        <button
+                            type="submit"
+                            disabled={!folderPath.trim()}
+                            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-400 text-white font-medium px-6 py-3 rounded-xl transition-colors flex items-center gap-2"
+                        >
+                            Start Non-AI Scan
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            {folderScanStatus.state === 'running' ? (
+                                <button type="button" onClick={() => handleFolderControlAction('pause')} className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 font-medium px-6 py-3 rounded-xl transition-colors flex items-center gap-2">
+                                    <Pause className="w-5 h-5" /> Pause Scan
+                                </button>
+                            ) : (
+                                <button type="button" onClick={() => handleFolderControlAction('resume')} className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-medium px-6 py-3 rounded-xl transition-colors flex items-center gap-2">
+                                    <Play className="w-5 h-5" /> Resume Scan
+                                </button>
+                            )}
+                            <button type="button" onClick={() => handleFolderControlAction('cancel')} className="bg-red-500/20 hover:bg-red-500/30 text-red-500 font-medium px-6 py-3 rounded-xl transition-colors flex items-center gap-2">
+                                <XCircle className="w-5 h-5" /> Cancel Scan
+                            </button>
+                        </div>
+                    )}
+                </form>
+
+                {/* Progress Indicators */}
+                {folderScanStatus.scan_total > 0 && folderScanStatus.state !== 'idle' && (
+                    <div className="mt-8 bg-[#111] p-6 rounded-xl border border-gray-800">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                {folderScanStatus.state === 'running' ? (
+                                    <><div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> Scanning Files...</>
+                                ) : folderScanStatus.state === 'paused' ? (
+                                    <><div className="w-2 h-2 rounded-full bg-yellow-500" /> Paused</>
+                                ) : (
+                                    <><div className="w-2 h-2 rounded-full bg-gray-500" /> Preparing</>
+                                )}
+                            </span>
+                            <span className="text-sm text-gray-400">
+                                {folderScanStatus.scan_processed} / {folderScanStatus.scan_total} ({folderScanStatus.scan_total > 0 ? Math.round((folderScanStatus.scan_processed / folderScanStatus.scan_total) * 100) : 0}%)
+                            </span>
+                        </div>
+                        <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
+                            <div
+                                className={`h-2.5 rounded-full transition-all duration-500 ${folderScanStatus.state === 'paused' ? 'bg-yellow-500' : 'bg-indigo-500'}`}
+                                style={{ width: `${folderScanStatus.scan_total > 0 ? (folderScanStatus.scan_processed / folderScanStatus.scan_total) * 100 : 0}%` }}
+                            ></div>
+                        </div>
+                        <div className="flex gap-6 mt-4 text-xs">
+                            <div className="flex flex-col">
+                                <span className="text-gray-500">Processed in Active Scan</span>
+                                <span className="text-white text-lg font-medium">{folderScanStatus.scan_processed}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-gray-500">Remaining in Queue</span>
+                                <span className="text-white text-lg font-medium">{folderScanStatus.scan_total - folderScanStatus.scan_processed}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Live Log Viewer for Folder Scan */}
+                <div className="mt-8">
+                    <button
+                        onClick={() => setIsFolderLogOpen(!isFolderLogOpen)}
+                        className="flex items-center justify-between w-full bg-[#161616] hover:bg-[#1a1a1a] border border-gray-800 rounded-t-xl px-4 py-3 transition-colors"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Terminal className="w-5 h-5 text-gray-400" />
+                            <span className="font-medium text-gray-300">Live Folder Scan Logs</span>
+                            {folderScanStatus.state === 'running' && <span className="ml-2 w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>}
+                        </div>
+                        {isFolderLogOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                    </button>
+
+                    {/* Collapsible Log Window */}
+                    {isFolderLogOpen && (
+                        <div ref={folderLogsContainerRef} className="bg-black border-x border-b border-gray-800 rounded-b-xl p-4 h-64 overflow-y-auto font-mono text-xs text-indigo-400 custom-scrollbar shadow-inner flex flex-col gap-1">
+                            {folderLogs.length === 0 ? (
+                                <p className="text-gray-600 italic">No logs available...</p>
+                            ) : (
+                                folderLogs.map((log, index) => (
+                                    <div key={index} className="break-all border-b border-gray-900 pb-1">
+                                        <span className="text-gray-500 mr-2">[{log.time}]</span>
+                                        {log.message}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div className="mt-8 bg-surface rounded-2xl p-8 shadow-2xl border border-[#262626]">
                 <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
                     <Cpu className="w-6 h-6 text-gray-400" />
@@ -705,6 +981,8 @@ export default function SettingsPage() {
                         <div className="text-gray-300 text-lg mb-8 leading-relaxed">
                             {confirmModal.target === 'rescan' ? (
                                 <p>You have already scanned <code className="text-blue-400 bg-[#161616] px-2 py-1 rounded break-all">{confirmModal.payload}</code> before.<br /><br />Do you want to <strong>Force Rescan</strong> it? This will re-analyze all images using the active AI models and overwrite any existing Face/Pet data.</p>
+                            ) : confirmModal.target === 'folder-rescan' ? (
+                                <p>You have already scanned folder <code className="text-blue-400 bg-[#161616] px-2 py-1 rounded break-all">{confirmModal.payload}</code> before.<br /><br />Do you want to <strong>Force Rescan</strong> it? This will clear older records for this folder and rebuild metadata from scratch.</p>
                             ) : confirmModal.target === 'restore' ? (
                                 <p>Are you sure you want to completely <strong>OVERWRITE</strong> the current database with the backup: <code className="text-red-400 bg-[#161616] px-2 py-1 rounded">{confirmModal.payload}</code>?</p>
                             ) : confirmModal.target === 'test' ? (
@@ -719,7 +997,7 @@ export default function SettingsPage() {
                             <button onClick={() => setConfirmModal(null)} className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-300 transition-colors">
                                 Cancel
                             </button>
-                            {confirmModal.target === 'rescan' ? (
+                            {confirmModal.target === 'rescan' || confirmModal.target === 'folder-rescan' ? (
                                 <button onClick={handleConfirmNext} className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 transition-colors flex items-center gap-2">
                                     <FolderSearch className="w-4 h-4" />
                                     Force Rescan

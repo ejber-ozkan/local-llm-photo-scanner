@@ -66,6 +66,51 @@ def init_single_db(db_path: str) -> None:
             last_scanned TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Table for Local Folder Media (Non-AI)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS local_media (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filepath TEXT UNIQUE,
+            filename TEXT,
+            parent_path TEXT,
+            file_size INTEGER,
+            file_hash TEXT,
+            media_type TEXT, -- 'image' or 'video'
+            validation_status TEXT NOT NULL DEFAULT 'unvalidated',
+            validation_error TEXT,
+            date_taken TEXT,
+            date_modified TEXT,
+            date_created TEXT,
+            date_fallback TEXT,
+            year INTEGER,
+            month INTEGER,
+            day INTEGER,
+            width INTEGER,
+            height INTEGER,
+            duration REAL,
+            codec TEXT,
+            frame_rate REAL,
+            bit_rate INTEGER,
+            camera_make TEXT,
+            camera_model TEXT,
+            lens_model TEXT,
+            exposure_time TEXT,
+            f_number REAL,
+            iso INTEGER,
+            focal_length REAL,
+            gps_lat REAL,
+            gps_lon REAL,
+            scanned_at TEXT
+        )
+    """)
+    # Table for folder scan history
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS folder_scan_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            directory_path TEXT UNIQUE,
+            last_scanned TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     # Migration: Add columns for filter support
     columns_to_add = [
         "date_taken TEXT",
@@ -85,6 +130,50 @@ def init_single_db(db_path: str) -> None:
     for col in columns_to_add:
         with contextlib.suppress(sqlite3.OperationalError):
             cursor.execute(f"ALTER TABLE photos ADD COLUMN {col}")
+
+    # Migration: Add columns for rich metadata to local_media
+    local_media_columns = [
+        "width INTEGER",
+        "height INTEGER",
+        "duration REAL",
+        "codec TEXT",
+        "frame_rate REAL",
+        "bit_rate INTEGER",
+        "camera_make TEXT",
+        "camera_model TEXT",
+        "lens_model TEXT",
+        "exposure_time TEXT",
+        "f_number REAL",
+        "iso INTEGER",
+        "focal_length REAL",
+        "gps_lat REAL",
+        "gps_lon REAL",
+        "validation_status TEXT NOT NULL DEFAULT 'unvalidated'",
+        "validation_error TEXT",
+    ]
+    for col in local_media_columns:
+        with contextlib.suppress(sqlite3.OperationalError):
+            cursor.execute(f"ALTER TABLE local_media ADD COLUMN {col}")
+
+    cursor.execute(
+        """
+        UPDATE local_media
+        SET validation_status = 'invalid_media_stub',
+            validation_error = 'File is too small to contain a decodable video stream.'
+        WHERE media_type = 'video'
+          AND file_size < 1024
+          AND validation_status = 'unvalidated'
+        """
+    )
+
+    # Indexes for folder browsing and duplicate reports. These are safe to
+    # create on existing databases and keep exact-hash reporting responsive.
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_local_media_file_hash ON local_media(file_hash)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_local_media_media_type ON local_media(media_type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_local_media_date_parts ON local_media(year, month, day)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_local_media_parent_path ON local_media(parent_path)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_photos_file_hash ON photos(file_hash)")
+
     conn.commit()
     conn.close()
 

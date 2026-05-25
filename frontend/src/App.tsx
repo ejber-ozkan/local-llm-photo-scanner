@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { Camera, Search, UserCheck, Settings, Copy, Loader2 } from 'lucide-react';
+import { Camera, Search, UserCheck, Settings, Copy, Loader2, FolderOpen } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // ── Lazy-loaded route components (bundle-dynamic-imports) ─────────────
@@ -9,6 +9,7 @@ const Identify = lazy(() => import('./components/Identify'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const ScanTest = lazy(() => import('./components/ScanTest'));
 const DuplicatesPage = lazy(() => import('./components/DuplicatesPage'));
+const FoldersPage = lazy(() => import('./components/FoldersPage'));
 
 // ── Lazy theme initialization (no-flicker, runs before first paint) ──
 // Uses an IIFE that fires synchronously during module evaluation
@@ -58,6 +59,10 @@ function App() {
               <Copy className="w-5 h-5 group-hover:text-primary transition-colors" />
               <span>Review Duplicates</span>
             </NavLink>
+            <NavLink to="/folders" className={navCls}>
+              <FolderOpen className="w-5 h-5 group-hover:text-primary transition-colors" />
+              <span>Folders</span>
+            </NavLink>
             <NavLink to="/test" className={navCls}>
               <Camera className="w-5 h-5 group-hover:text-primary transition-colors" />
               <span>Scan &amp; Test</span>
@@ -77,6 +82,10 @@ function App() {
                 <Route path="/" element={<Gallery />} />
                 <Route path="/identify" element={<Identify />} />
                 <Route path="/duplicates" element={<DuplicatesPage />} />
+                <Route path="/folders" element={<FoldersPage />} />
+                <Route path="/folders/:year" element={<FoldersPage />} />
+                <Route path="/folders/:year/:month" element={<FoldersPage />} />
+                <Route path="/folders/:year/:month/:day" element={<FoldersPage />} />
                 <Route path="/test" element={<ScanTest />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Routes>

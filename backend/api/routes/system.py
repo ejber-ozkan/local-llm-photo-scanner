@@ -28,7 +28,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".heic"}
 @router.post("/database/clean")
 async def clean_database(req: DatabaseCleanRequest) -> dict[str, Any]:
     """Obliterates the database schema and recreates empty tables."""
-    if state.SCAN_STATE == "running":
+    if state.SCAN_STATE == "running" or state.FOLDER_SCAN_STATE == "running":
         raise HTTPException(status_code=400, detail="Cannot clean database while a scan is running.")
 
     target_db = DB_FILE if req.target == "main" else DB_TEST_FILE
@@ -41,8 +41,16 @@ async def clean_database(req: DatabaseCleanRequest) -> dict[str, Any]:
         cursor.execute("DELETE FROM entities")
         cursor.execute("DELETE FROM photos")
         cursor.execute("DELETE FROM scan_history")
+        try:
+            cursor.execute("DELETE FROM local_media")
+            cursor.execute("DELETE FROM folder_scan_history")
+        except sqlite3.OperationalError:
+            pass
         # Reset auto-increment counters so IDs start from 1 again
-        cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('entities', 'photos', 'scan_history')")
+        cursor.execute("""
+            DELETE FROM sqlite_sequence
+            WHERE name IN ('entities', 'photos', 'scan_history', 'local_media', 'folder_scan_history')
+        """)
         conn.commit()
         conn.close()
 
@@ -201,3 +209,71 @@ async def update_settings_model(req: SettingsUpdateRequest) -> dict[str, Any]:
 async def get_version() -> dict[str, str]:
     """Retrieves the active application version strictly."""
     return {"version": VERSION}
+
+
+@router.get("/check-ffmpeg")
+@router.get("/system/check-ffmpeg")
+async def check_ffmpeg() -> dict:
+    """Checks whether FFmpeg is installed and available on the system PATH.
+
+    Returns a dict with:
+    - ``available``: bool — whether ffmpeg binary was found
+    - ``path``: str | None — absolute path to the binary
+    - ``version``: str | None — first line of ``ffmpeg -version`` output
+
+    The frontend calls this once on mount to decide whether to offer
+    in-browser transcoding for legacy video formats (AVI, WMV, FLV, etc.).
+    """
+    from core.ffmpeg_check import check_ffmpeg_available
+    return check_ffmpeg_available()
+
+
+@router.get("/system/open-file")
+async def open_system_file(path: str) -> dict[str, Any]:
+    """Attempts to open a file in the default OS-registered media player or explorer."""
+    import sys
+    import subprocess
+
+    normalized_path = os.path.abspath(path.strip())
+    if not os.path.exists(normalized_path):
+        raise HTTPException(status_code=404, detail="File path does not exist on disk.")
+
+    try:
+        if sys.platform == "win32":
+            os.startfile(normalized_path)
+        elif sys.platform == "darwin":
+            subprocess.run(["open", normalized_path], check=True)
+        else:
+            subprocess.run(["xdg-open", normalized_path], check=True)
+        return {"success": True, "message": f"Successfully launched system default application for: {normalized_path}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to open file: {str(e)}")
+
+
+@router.get("/system/open-location")
+async def open_system_location(path: str) -> dict[str, Any]:
+    """Attempts to open the parent folder of a file and highlight/select it in the native file explorer."""
+    import sys
+    import subprocess
+
+    normalized_path = os.path.abspath(path.strip())
+    if not os.path.exists(normalized_path):
+        raise HTTPException(status_code=404, detail="File path does not exist on disk.")
+
+    try:
+        if sys.platform == "win32":
+            # explorer.exe /select,path opens the folder and highlights/selects the file.
+            # Passing "/select," and path as separate arguments ensures Python quotes the path
+            # correctly but leaves the /select, flag unquoted, which explorer expects.
+            # We don't use check=True as explorer.exe can return 1 on success.
+            subprocess.run(["explorer.exe", "/select,", normalized_path])
+        elif sys.platform == "darwin":
+            # open -R path reveals the file in Finder
+            subprocess.run(["open", "-R", normalized_path], check=True)
+        else:
+            # Linux: open the parent directory
+            parent_dir = os.path.dirname(normalized_path)
+            subprocess.run(["xdg-open", parent_dir], check=True)
+        return {"success": True, "message": f"Successfully opened file location for: {normalized_path}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to open file location: {str(e)}")

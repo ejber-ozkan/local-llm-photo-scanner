@@ -17,6 +17,7 @@ describe('App', () => {
         expect(screen.getByText('Gallery')).toBeInTheDocument();
         expect(screen.getByText('Identify')).toBeInTheDocument();
         expect(screen.getByText('Review Duplicates')).toBeInTheDocument();
+        expect(screen.getByText('Folders')).toBeInTheDocument();
         expect(screen.getByText('Scan & Test')).toBeInTheDocument();
         expect(screen.getByText('Scan & Settings')).toBeInTheDocument();
     });
