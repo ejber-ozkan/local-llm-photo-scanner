@@ -1,11 +1,18 @@
-# Local AI Photo Gallery v3.0.0
+# Local AI Photo Gallery v3.1.0
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
 
 ## Features
 
-### v3.0.0 Features
+### v3.1.0 Features
+- **Durable Scan Sessions**: Pause and resume both AI and non-AI folder scans, including after closing and restarting the frontend/backend.
+- **Local Folder Explorer AI Actions**: Send a viewed folder image directly to Full AI or CLIP AI processing from the file information panel without leaving the current view.
+- **Live AI Queue Progress**: Folder image AI actions show an in-app progress popup that follows CLIP, DeepFace, and queue-completion log updates before fading away.
+- **Folder Image Preview Upgrades**: Open full-size images from the file information panel, and preview HEIC/HEIF files through in-memory conversion without creating local sidecar files.
+- **Bounded Video Validation**: Video probing now times out cleanly on bad or incomplete files so folder scans keep moving past broken media.
+
+### Earlier Features
 - **Local Folder Explorer**: Scan image and video libraries without AI processing, then browse indexed files by folder or timeline while retaining each real file path in the library.
 - **Reliable Duplicate Review**: Export exact-hash duplicate reports to CSV, display clickable duplicate-count badges on media cards, and keep ordinary timeline totals focused on genuine media files.
 - **Invalid Video Stub Detection**: Videos without a decodable media stream are classified as invalid media stubs and surfaced through a separate timeline/report category instead of being treated as ordinary duplicates.
@@ -19,8 +26,6 @@ The application intelligently scans your local directories, processing images us
 - **Frontend Performance Optimizations**: Component decomposition, `useMemo`/`useCallback` hooks, code-splitting with `React.lazy`/`Suspense`, and `ErrorBoundary` implementations for a highly responsive and robust UI structure.
 - **In-App Notifications**: All action feedback (backup created, restore complete, entity errors) uses styled in-app toast notifications — no more browser alert pop-ups.
 - **Interactive Timeline & Detailed Sorting**: Sort photos by Date Taken, Date Created, Date Modified, or Filename. A vertical year timeline on the right side of the gallery lets you jump instantly to any year.
-
-### Earlier Features
 - **Privacy-First Processing**: All photo scanning, metadata generation, and facial recognition occur entirely on your local machine. No data is sent to the cloud.
 - **Natural Language Search**: Quickly find images by searching for descriptions like "a dog in a park".
 - **Facial & Entity Clustering**: Identifies and clusters faces across your dataset, allowing you to attach real names to recognized individuals and pets. Entities can be renamed or deleted inline from the Gallery popup and the Scan & Test panel.
@@ -40,6 +45,12 @@ The application intelligently scans your local directories, processing images us
 | ![Gallery View — Visual CLIP Search in Action](docs/screenshots/screenshot_clip_visual_search.png)                   | ![Test Scan — single image AI evaluation](docs/screenshots/screenshot_test_scan.png)                   |
 | **Scan & Settings**                                                                                                  | **Database, Themes & Danger Zone**                                                                     |
 | ![Scan & Settings — directory scanner, progress, AI engine selection](docs/screenshots/screenshot_settings_scan.png) | ![Appearance, backup/restore and database management](docs/screenshots/screenshot_settings_themes.png) |
+
+| Local Folder Timeline Filters                                                                                      | Folder File Information & AI Actions                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| ![Local Folder Explorer timeline filters](docs/screenshots/folders_timeline_filters.png)                           | ![Folder file information and AI actions](docs/screenshots/folders_file_info_ai_actions.png)                             |
+| **Timeline Day Drilldown**                                                                                         |                                                                                                                          |
+| ![Local Folder Explorer timeline day drilldown](docs/screenshots/folders_timeline_days.png)                        |                                                                                                                          |
 
 ---
 

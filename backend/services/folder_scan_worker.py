@@ -6,12 +6,19 @@ import hashlib
 import os
 import re
 import sqlite3
+import subprocess
 import time
 from collections.abc import Generator
 from datetime import datetime
 from typing import Any
 
 import core.state as state
+from core.ffmpeg_check import get_ffmpeg_path
+from services.scan_sessions import (
+    create_scan_session,
+    set_session_status,
+    update_folder_session_counts,
+)
 
 
 def format_rational(val) -> float | None:
@@ -168,6 +175,7 @@ VALIDATION_VALID = "valid"
 VALIDATION_INVALID_STUB = "invalid_media_stub"
 VALIDATION_UNVALIDATED = "unvalidated"
 MIN_PLAUSIBLE_VIDEO_BYTES = 1024
+VIDEO_PROBE_TIMEOUT_SECONDS = 10
 
 
 def calculate_md5(filepath: str) -> str:
@@ -189,22 +197,43 @@ def validate_video_stream(filepath: str) -> tuple[str, str | None]:
         return VALIDATION_UNVALIDATED, f"Unable to inspect video file: {exc}"
 
     try:
-        import cv2
-    except Exception as exc:
+        ffmpeg_path = get_ffmpeg_path()
+    except RuntimeError as exc:
         return VALIDATION_UNVALIDATED, f"Video validation unavailable: {exc}"
 
-    capture = cv2.VideoCapture(filepath)
+    command = [
+        ffmpeg_path,
+        "-v",
+        "error",
+        "-nostdin",
+        "-i",
+        filepath,
+        "-map",
+        "0:v:0",
+        "-frames:v",
+        "1",
+        "-f",
+        "null",
+        "-",
+    ]
     try:
-        if not capture.isOpened():
-            return VALIDATION_INVALID_STUB, "No readable video stream found."
-
-        has_frame, frame = capture.read()
-        if not has_frame or frame is None or frame.size == 0:
-            return VALIDATION_INVALID_STUB, "No decodable video stream found."
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=VIDEO_PROBE_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return VALIDATION_UNVALIDATED, f"Video validation timed out after {VIDEO_PROBE_TIMEOUT_SECONDS} seconds."
     except Exception as exc:
         return VALIDATION_UNVALIDATED, f"Video validation failed: {exc}"
-    finally:
-        capture.release()
+
+    if result.returncode != 0:
+        error = (result.stderr or "").strip()
+        if not error:
+            error = "No readable video stream found."
+        return VALIDATION_INVALID_STUB, error[:500]
 
     return VALIDATION_VALID, None
 
@@ -369,7 +398,13 @@ def folder_scan_generator(directory_path: str) -> Generator[str, None, None]:
                 yield os.path.join(root, file)
 
 
-def background_folder_processor(directory_path: str, db_file: str, force_rescan: bool = False, extract_metadata: bool = False) -> None:
+def background_folder_processor(
+    directory_path: str,
+    db_file: str,
+    force_rescan: bool = False,
+    extract_metadata: bool = False,
+    session_id: int | None = None,
+) -> None:
     """Recursively scans a directory for images/videos in the background."""
     state.add_folder_log(f"Initiating recursive media scan for: {directory_path} (Extract Rich Metadata: {extract_metadata})")
 
@@ -382,24 +417,58 @@ def background_folder_processor(directory_path: str, db_file: str, force_rescan:
     conn.execute("PRAGMA journal_mode=WAL;")
     cursor = conn.cursor()
 
-    if force_rescan:
+    if session_id is not None:
+        row = cursor.execute(
+            """
+            SELECT root_path, force_rescan, extract_metadata
+            FROM scan_sessions
+            WHERE id = ?
+            """,
+            (session_id,),
+        ).fetchone()
+        if not row:
+            state.add_folder_log(f"Aborting scan. Session does not exist: {session_id}")
+            state.FOLDER_SCAN_STATE = "idle"
+            conn.close()
+            return
+        directory_path = row[0]
+        force_rescan = bool(row[1])
+        extract_metadata = bool(row[2])
+        set_session_status(conn, session_id, "running")
+
+    if session_id is None and force_rescan:
         state.add_folder_log(f"Force rescan enabled. Clearing existing folder metadata for: {directory_path}")
         cursor.execute("DELETE FROM local_media WHERE filepath LIKE ?", (f"{directory_path}%",))
         conn.commit()
 
-    # Pre-count matching files to set progress limit
-    state.add_folder_log("Counting media files...")
-    matching_files = []
-    for filepath in folder_scan_generator(directory_path):
-        if not force_rescan:
-            cursor.execute("SELECT id FROM local_media WHERE filepath = ?", (filepath,))
-            if cursor.fetchone():
-                continue
-        matching_files.append(filepath)
+    if session_id is None:
+        session_id = create_scan_session(
+            conn,
+            "folder",
+            directory_path,
+            force_rescan=force_rescan,
+            extract_metadata=extract_metadata,
+        )
 
-    total_count = len(matching_files)
+        # Pre-count matching files to set progress limit and persist the resume queue.
+        state.add_folder_log("Counting media files...")
+        for filepath in folder_scan_generator(directory_path):
+            if not force_rescan:
+                cursor.execute("SELECT id FROM local_media WHERE filepath = ?", (filepath,))
+                if cursor.fetchone():
+                    continue
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO folder_scan_queue (session_id, filepath, status)
+                VALUES (?, ?, 'pending')
+                """,
+                (session_id, filepath),
+            )
+        conn.commit()
+
+    total_count, processed_count = update_folder_session_counts(conn, session_id)
     state.folder_scan_total = total_count
-    state.folder_scan_processed = 0
+    state.folder_scan_processed = processed_count
 
     state.add_folder_log(f"Found {total_count} new/unprocessed media files.")
 
@@ -420,24 +489,58 @@ def background_folder_processor(directory_path: str, db_file: str, force_rescan:
             state.add_folder_log(f"Failed to record history: {e}")
 
         state.FOLDER_SCAN_STATE = "idle"
+        set_session_status(conn, session_id, "completed")
         conn.close()
         return
 
     state.FOLDER_SCAN_STATE = "running"
     scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    processed_count = 0
-    for filepath in matching_files:
+    while True:
         while state.FOLDER_SCAN_STATE == "paused":
+            set_session_status(conn, session_id, "paused")
             time.sleep(0.5)
 
         if state.FOLDER_SCAN_STATE == "idle":
-            state.add_folder_log("Scan cancelled by user.")
+            current_status = cursor.execute("SELECT status FROM scan_sessions WHERE id = ?", (session_id,)).fetchone()
+            if current_status and current_status[0] == "cancelled":
+                state.add_folder_log("Scan cancelled by user.")
+            else:
+                set_session_status(conn, session_id, "paused")
+                state.add_folder_log("Scan paused before all queued files were processed.")
             break
+
+        queue_row = cursor.execute(
+            """
+            SELECT id, filepath
+            FROM folder_scan_queue
+            WHERE session_id = ?
+              AND status = 'pending'
+            ORDER BY id ASC
+            LIMIT 1
+            """,
+            (session_id,),
+        ).fetchone()
+
+        if not queue_row:
+            set_session_status(conn, session_id, "completed")
+            break
+
+        queue_id, filepath = queue_row
+        cursor.execute(
+            """
+            UPDATE folder_scan_queue
+            SET status = 'processing', error = NULL
+            WHERE id = ?
+            """,
+            (queue_id,),
+        )
+        conn.commit()
 
         filename = os.path.basename(filepath)
         ext = os.path.splitext(filename)[1].lower()
         media_type = "image" if ext in IMAGE_EXTENSIONS else "video"
+        state.add_folder_log(f"[{state.folder_scan_processed + 1}/{total_count}] Processing: {filename}")
 
         try:
             file_size = os.path.getsize(filepath)
@@ -532,17 +635,34 @@ def background_folder_processor(directory_path: str, db_file: str, force_rescan:
                 ),
             )
 
-            processed_count += 1
+            cursor.execute(
+                """
+                UPDATE folder_scan_queue
+                SET status = 'processed', processed_at = CURRENT_TIMESTAMP, error = NULL
+                WHERE id = ?
+                """,
+                (queue_id,),
+            )
+            total_count, processed_count = update_folder_session_counts(conn, session_id)
+            state.folder_scan_total = total_count
             state.folder_scan_processed = processed_count
-
-            if processed_count % 10 == 0:
-                conn.commit()
 
             state.add_folder_log(f"[{processed_count}/{total_count}] Scanned: {filename} (Source: {date_fallback})")
             if validation_status == VALIDATION_INVALID_STUB:
                 state.add_folder_log(f"Classified invalid media stub: {filename} ({validation_error})")
 
         except Exception as e:
+            cursor.execute(
+                """
+                UPDATE folder_scan_queue
+                SET status = 'error', error = ?, processed_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (str(e), queue_id),
+            )
+            total_count, processed_count = update_folder_session_counts(conn, session_id)
+            state.folder_scan_total = total_count
+            state.folder_scan_processed = processed_count
             state.add_folder_log(f"Error processing file {filepath}: {str(e)}")
 
     conn.commit()
@@ -561,6 +681,8 @@ def background_folder_processor(directory_path: str, db_file: str, force_rescan:
     except Exception as e:
         state.add_folder_log(f"Failed to record scan history: {e}")
 
-    state.add_folder_log(f"Scan complete. Successfully processed {processed_count} files.")
-    state.FOLDER_SCAN_STATE = "idle"
+    final_status = cursor.execute("SELECT status FROM scan_sessions WHERE id = ?", (session_id,)).fetchone()
+    if final_status and final_status[0] == "completed":
+        state.add_folder_log(f"Scan complete. Successfully processed {processed_count} files.")
+        state.FOLDER_SCAN_STATE = "idle"
     conn.close()

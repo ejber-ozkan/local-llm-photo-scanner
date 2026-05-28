@@ -12,6 +12,7 @@ from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import FileResponse, Response, StreamingResponse
+from PIL import Image, ImageOps
 from pydantic import BaseModel
 
 import core.state as state
@@ -19,6 +20,14 @@ from core.config import DB_FILE
 from core.database import get_db
 from core.ffmpeg_check import get_ffmpeg_path, get_ffmpeg_preset
 from services.folder_scan_worker import background_folder_processor
+from services.scan_sessions import get_resumable_session, set_session_status
+
+try:
+    from pillow_heif import register_heif_opener
+
+    register_heif_opener()
+except ImportError:
+    pass
 
 router = APIRouter()
 
@@ -27,6 +36,13 @@ DUPLICATE_REPORT_INVALID_MEDIA_STUB = "invalid_media_stub"
 DUPLICATE_REPORT_CATEGORIES = {DUPLICATE_REPORT_MATCH_TYPE, DUPLICATE_REPORT_INVALID_MEDIA_STUB}
 DUPLICATE_REPORT_PAGE_SIZES = {10, 20, 50}
 DUPLICATE_REPORT_DEFAULT_PAGE_SIZE = 10
+HEIC_EXTENSIONS = {".heic", ".heif"}
+
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
 
 LOCAL_DUPLICATE_COUNT_SQL = """
 CASE
@@ -58,6 +74,39 @@ def _csv_safe_row(values: list[Any]) -> list[Any]:
         value.replace("\x00", "") if isinstance(value, str) else value
         for value in values
     ]
+
+
+def _ensure_scanned_media_access(normalized_path: str, db: sqlite3.Connection) -> None:
+    """Ensure a file belongs to a scanned dataset before serving it."""
+    cursor = db.cursor()
+    cursor.execute("SELECT 1 FROM local_media WHERE filepath = ? LIMIT 1", (normalized_path,))
+    in_local = cursor.fetchone()
+
+    if in_local:
+        return
+
+    cursor.execute("SELECT 1 FROM photos WHERE filepath = ? LIMIT 1", (normalized_path,))
+    in_gallery = cursor.fetchone()
+    if not in_gallery:
+        raise HTTPException(status_code=403, detail="Access denied: file is not in scanned directories.")
+
+
+def _serve_image_preview(filepath: str) -> Response:
+    """Serve browser-displayable image content, converting HEIC/HEIF to JPEG in memory."""
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext not in HEIC_EXTENSIONS:
+        return FileResponse(filepath, headers=NO_CACHE_HEADERS)
+
+    try:
+        with Image.open(filepath) as img:
+            img = ImageOps.exif_transpose(img)
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=90)
+        return Response(content=buffer.getvalue(), media_type="image/jpeg", headers=NO_CACHE_HEADERS)
+    except Exception as exc:
+        raise HTTPException(status_code=415, detail=f"Unable to convert HEIC/HEIF image for browser preview: {exc}") from exc
 
 
 class FolderScanRequest(BaseModel):
@@ -110,15 +159,25 @@ async def scan_folder(
 @router.get("/status")
 async def get_folder_scan_status() -> dict[str, Any]:
     """Retrieves current scan progress state, total file count, and processed counts."""
+    conn = sqlite3.connect(DB_FILE)
+    session = get_resumable_session(conn, "folder")
+    conn.close()
+    scan_state = state.FOLDER_SCAN_STATE
+    scan_total = state.folder_scan_total
+    scan_processed = state.folder_scan_processed
+    if session and state.FOLDER_SCAN_STATE == "idle":
+        scan_state = session["status"]
+        scan_total = session["total_count"]
+        scan_processed = session["processed_count"]
     return {
-        "state": state.FOLDER_SCAN_STATE,
-        "scan_total": state.folder_scan_total,
-        "scan_processed": state.folder_scan_processed,
+        "state": scan_state,
+        "scan_total": scan_total,
+        "scan_processed": scan_processed,
     }
 
 
 @router.post("/control")
-async def control_folder_scan(req: FolderScanControlRequest) -> dict[str, str]:
+async def control_folder_scan(req: FolderScanControlRequest, background_tasks: BackgroundTasks) -> dict[str, str]:
     """Pauses, resumes, or cancels/stops the active background directory scan."""
     action = req.action.lower().strip()
 
@@ -126,11 +185,48 @@ async def control_folder_scan(req: FolderScanControlRequest) -> dict[str, str]:
         if state.FOLDER_SCAN_STATE == "running":
             state.FOLDER_SCAN_STATE = "paused"
             state.add_folder_log("Scan execution paused by user.")
+        conn = sqlite3.connect(DB_FILE)
+        session = get_resumable_session(conn, "folder")
+        if session:
+            set_session_status(conn, session["id"], "paused")
+        conn.close()
     elif action == "resume":
-        if state.FOLDER_SCAN_STATE == "paused":
+        conn = sqlite3.connect(DB_FILE)
+        session = get_resumable_session(conn, "folder")
+        if session:
+            set_session_status(conn, session["id"], "running")
+            state.folder_scan_total = session["total_count"]
+            state.folder_scan_processed = session["processed_count"]
+            if state.FOLDER_SCAN_STATE in {"idle", "paused"}:
+                state.FOLDER_SCAN_STATE = "running"
+                background_tasks.add_task(
+                    background_folder_processor,
+                    session["root_path"],
+                    DB_FILE,
+                    session["force_rescan"],
+                    session["extract_metadata"],
+                    session["id"],
+                )
+        elif state.FOLDER_SCAN_STATE == "paused":
             state.FOLDER_SCAN_STATE = "running"
-            state.add_folder_log("Scan execution resumed by user.")
+        conn.close()
+        state.add_folder_log("Scan execution resumed by user.")
     elif action == "cancel":
+        conn = sqlite3.connect(DB_FILE)
+        session = get_resumable_session(conn, "folder")
+        if session:
+            set_session_status(conn, session["id"], "cancelled")
+            conn.execute(
+                """
+                UPDATE folder_scan_queue
+                SET status = 'skipped', processed_at = CURRENT_TIMESTAMP
+                WHERE session_id = ?
+                  AND status IN ('pending', 'processing')
+                """,
+                (session["id"],),
+            )
+            conn.commit()
+        conn.close()
         state.FOLDER_SCAN_STATE = "idle"
         state.folder_scan_total = 0
         state.folder_scan_processed = 0
@@ -912,19 +1008,22 @@ async def serve_local_media(path: str, db: sqlite3.Connection = Depends(get_db))
     if not os.path.exists(normalized_path):
         raise HTTPException(status_code=404, detail="File does not exist on disk.")
 
-    # Security check: Ensure the filepath is recognized by our datasets to prevent arbitrary local traversal
-    cursor = db.cursor()
-    cursor.execute("SELECT 1 FROM local_media WHERE filepath = ? LIMIT 1", (normalized_path,))
-    in_local = cursor.fetchone()
-
-    if not in_local:
-        cursor.execute("SELECT 1 FROM photos WHERE filepath = ? LIMIT 1", (normalized_path,))
-        in_gallery = cursor.fetchone()
-        if not in_gallery:
-            raise HTTPException(status_code=403, detail="Access denied: file is not in scanned directories.")
+    _ensure_scanned_media_access(normalized_path, db)
 
     # Return FileResponse which handles HTTP Range headers automatically (very critical for seekable video playback)
     return FileResponse(normalized_path)
+
+
+@router.get("/media-preview")
+async def serve_local_media_preview(path: str, db: sqlite3.Connection = Depends(get_db)) -> Response:
+    """Serve image previews in a browser-compatible format, including HEIC/HEIF conversion."""
+    normalized_path = os.path.abspath(path.strip())
+
+    if not os.path.exists(normalized_path):
+        raise HTTPException(status_code=404, detail="File does not exist on disk.")
+
+    _ensure_scanned_media_access(normalized_path, db)
+    return _serve_image_preview(normalized_path)
 
 
 # ---------------------------------------------------------------------------
@@ -1041,18 +1140,7 @@ async def transcode_video(
     if not os.path.exists(normalized_path):
         raise HTTPException(status_code=404, detail="File does not exist on disk.")
 
-    # Security: only serve files from our scanned datasets
-    cursor = db.cursor()
-    cursor.execute("SELECT 1 FROM local_media WHERE filepath = ? LIMIT 1", (normalized_path,))
-    in_local = cursor.fetchone()
-    if not in_local:
-        cursor.execute("SELECT 1 FROM photos WHERE filepath = ? LIMIT 1", (normalized_path,))
-        in_gallery = cursor.fetchone()
-        if not in_gallery:
-            raise HTTPException(
-                status_code=403,
-                detail="Access denied: file is not in scanned directories.",
-            )
+    _ensure_scanned_media_access(normalized_path, db)
 
     # Validate the file extension needs transcoding
     ext = os.path.splitext(normalized_path)[1].lower()

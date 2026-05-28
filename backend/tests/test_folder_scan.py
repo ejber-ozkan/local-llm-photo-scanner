@@ -1,9 +1,12 @@
 import os
 import sqlite3
-import sys
+import subprocess
 from datetime import datetime
 
 from database_setup import init_single_db
+import services.folder_scan_worker as folder_scan_worker
+from api.routes import folder_scan
+from services.scan_sessions import recover_interrupted_sessions
 from services.folder_scan_worker import background_folder_processor, extract_media_date, validate_video_stream
 
 
@@ -119,20 +122,177 @@ def test_validate_video_stream_rejects_empty_container_stub(tmp_path):
 
 
 def test_validate_video_stream_does_not_probe_tiny_container_stub(tmp_path, monkeypatch):
-    """Trivial container stubs are rejected without handing them to OpenCV."""
+    """Trivial container stubs are rejected without invoking FFmpeg."""
     stub_file = tmp_path / "empty.mp4"
     stub_file.write_bytes(b"\x00\x00\x00\x14ftypqt  \x00\x00\x02\x00qt  \x00\x00\x00\x08wide\x00\x00\x00\x00mdat")
 
-    class UnexpectedCv2:
-        @staticmethod
-        def VideoCapture(_filepath):
-            raise AssertionError("Tiny stubs should not be decoded.")
+    def fail_get_ffmpeg_path():
+        raise AssertionError("Tiny stubs should not be decoded.")
 
-    monkeypatch.setitem(sys.modules, "cv2", UnexpectedCv2)
+    monkeypatch.setattr(folder_scan_worker, "get_ffmpeg_path", fail_get_ffmpeg_path)
 
     validation_status, _ = validate_video_stream(str(stub_file))
 
     assert validation_status == "invalid_media_stub"
+
+
+def test_validate_video_stream_marks_ffmpeg_failure_as_invalid(tmp_path, monkeypatch):
+    """FFmpeg probe failures classify videos as invalid without blocking the scan."""
+    video_file = tmp_path / "broken.mov"
+    video_file.write_bytes(b"0" * 2048)
+
+    def fake_run(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="",
+            stderr="moov atom not found",
+        )
+
+    monkeypatch.setattr(folder_scan_worker, "get_ffmpeg_path", lambda: "ffmpeg")
+    monkeypatch.setattr(folder_scan_worker.subprocess, "run", fake_run)
+
+    validation_status, validation_error = validate_video_stream(str(video_file))
+
+    assert validation_status == "invalid_media_stub"
+    assert "moov atom not found" in validation_error
+
+
+def test_validate_video_stream_times_out_without_invalidating_media(tmp_path, monkeypatch):
+    """Slow probes are bounded so one awkward video cannot stall the whole scan."""
+    video_file = tmp_path / "slow.mov"
+    video_file.write_bytes(b"0" * 2048)
+
+    def fake_run(*_args, **_kwargs):
+        raise subprocess.TimeoutExpired(cmd="ffmpeg", timeout=10)
+
+    monkeypatch.setattr(folder_scan_worker, "get_ffmpeg_path", lambda: "ffmpeg")
+    monkeypatch.setattr(folder_scan_worker.subprocess, "run", fake_run)
+
+    validation_status, validation_error = validate_video_stream(str(video_file))
+
+    assert validation_status == "unvalidated"
+    assert "timed out" in validation_error.lower()
+
+
+def test_heic_preview_conversion_does_not_create_local_sidecar(tmp_path, monkeypatch):
+    """Folder image previews convert in memory without writing a local JPEG."""
+    from PIL import Image
+
+    heic_file = tmp_path / "IMG_0158.HEIC"
+    Image.new("RGB", (4, 4), color="blue").save(heic_file, "JPEG")
+    sidecar_file = tmp_path / "IMG_0158.HEIC.jpg"
+
+    monkeypatch.setattr(folder_scan, "HEIC_EXTENSIONS", {".heic"})
+
+    response = folder_scan._serve_image_preview(str(heic_file))
+
+    assert response.media_type == "image/jpeg"
+    assert response.body
+    assert not sidecar_file.exists()
+
+
+def test_database_migration_creates_durable_scan_tables(tmp_path):
+    """Database initialization adds persistent scan session and queue storage."""
+    db_file = tmp_path / "durable_scans.db"
+
+    init_single_db(str(db_file))
+
+    conn = sqlite3.connect(db_file)
+    tables = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('scan_sessions', 'folder_scan_queue')"
+        )
+    }
+    photo_columns = {row[1] for row in conn.execute("PRAGMA table_info(photos)")}
+    conn.close()
+
+    assert tables == {"scan_sessions", "folder_scan_queue"}
+    assert "scan_session_id" in photo_columns
+
+
+def test_folder_scan_can_resume_from_persisted_queue(mock_db_file, tmp_path, monkeypatch):
+    """A paused folder scan can continue from persisted queue rows after worker memory is gone."""
+    scan_dir = tmp_path / "resume_photos"
+    scan_dir.mkdir()
+    first = scan_dir / "first_2024-01-01.jpg"
+    second = scan_dir / "second_2024-01-02.jpg"
+    first.write_bytes(b"first image bytes")
+    second.write_bytes(b"second image bytes")
+
+    original_calculate_md5 = folder_scan_worker.calculate_md5
+    seen_files = []
+
+    def stop_after_first(filepath):
+        seen_files.append(filepath)
+        if len(seen_files) == 1:
+            folder_scan_worker.state.FOLDER_SCAN_STATE = "idle"
+        return original_calculate_md5(filepath)
+
+    monkeypatch.setattr(folder_scan_worker, "calculate_md5", stop_after_first)
+
+    background_folder_processor(str(scan_dir), mock_db_file, force_rescan=True)
+
+    conn = sqlite3.connect(mock_db_file)
+    session = conn.execute(
+        "SELECT id, status, total_count, processed_count FROM scan_sessions WHERE scan_type = 'folder'"
+    ).fetchone()
+    queue_statuses = [row[0] for row in conn.execute("SELECT status FROM folder_scan_queue ORDER BY filepath")]
+    media_count = conn.execute("SELECT COUNT(*) FROM local_media").fetchone()[0]
+    conn.close()
+
+    assert session is not None
+    assert session[1] == "paused"
+    assert session[2] == 2
+    assert session[3] == 1
+    assert queue_statuses.count("processed") == 1
+    assert queue_statuses.count("pending") == 1
+    assert media_count == 1
+
+    monkeypatch.setattr(folder_scan_worker, "calculate_md5", original_calculate_md5)
+    folder_scan_worker.state.FOLDER_SCAN_STATE = "running"
+    background_folder_processor(str(scan_dir), mock_db_file, session_id=session[0])
+
+    conn = sqlite3.connect(mock_db_file)
+    final_session = conn.execute("SELECT status, total_count, processed_count FROM scan_sessions WHERE id = ?", (session[0],)).fetchone()
+    final_queue_statuses = [row[0] for row in conn.execute("SELECT status FROM folder_scan_queue ORDER BY filepath")]
+    final_media_count = conn.execute("SELECT COUNT(*) FROM local_media").fetchone()[0]
+    conn.close()
+
+    assert final_session == ("completed", 2, 2)
+    assert final_queue_statuses == ["processed", "processed"]
+    assert final_media_count == 2
+
+
+def test_startup_recovery_marks_running_sessions_paused(mock_db_file):
+    """A backend restart leaves durable work resumable rather than pretending it is running."""
+    conn = sqlite3.connect(mock_db_file)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO scan_sessions (scan_type, root_path, status, total_count, processed_count)
+        VALUES ('folder', 'F:\\My Pictures', 'running', 2, 0)
+        """
+    )
+    session_id = cursor.lastrowid
+    cursor.execute(
+        """
+        INSERT INTO folder_scan_queue (session_id, filepath, status)
+        VALUES (?, 'F:\\My Pictures\\IMG_0158.HEIC', 'processing')
+        """,
+        (session_id,),
+    )
+    conn.commit()
+
+    recover_interrupted_sessions(conn)
+
+    session_status = conn.execute("SELECT status FROM scan_sessions WHERE id = ?", (session_id,)).fetchone()[0]
+    queue_status = conn.execute("SELECT status FROM folder_scan_queue WHERE session_id = ?", (session_id,)).fetchone()[0]
+    conn.close()
+
+    assert session_status == "paused"
+    assert queue_status == "pending"
 
 
 def test_database_migration_classifies_existing_tiny_video_stub(tmp_path):

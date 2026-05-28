@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.1.0] - 2026-05-28
+
+### Added
+
+- Durable scan sessions for pausing and resuming AI and non-AI folder scans after app restarts.
+- Full-size image viewing from the Local Folder Explorer file information panel.
+- Full AI and CLIP AI actions for viewed folder images, with live in-app queue progress updates.
+- In-memory HEIC/HEIF preview conversion for folder thumbnails and detail views without writing local sidecar files.
+- New Local Folder Explorer screenshots in the README.
+
+### Changed
+
+- Folder scans now persist their queue and session counts so interrupted scans can be resumed.
+- AI scanning can queue a single existing folder image while keeping the user on the current Explorer view.
+
+### Fixed
+
+- Video stream validation now uses a bounded FFmpeg probe so broken media cannot stall a folder scan indefinitely.
+
 ## [3.0.0] - 2026-05-25
 
 ### Added

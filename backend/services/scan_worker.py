@@ -26,6 +26,7 @@ from core.config import DB_FILE
 import core.chroma
 from database_setup import find_best_face_match
 from services.image_service import extract_exif_for_filters, process_image_with_ollama
+from services.scan_sessions import get_resumable_session, set_session_status
 
 
 def _clear_gallery_filters_cache() -> None:
@@ -46,19 +47,34 @@ def background_processor() -> None:
     conn = sqlite3.connect(DB_FILE, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL;")
     cursor = conn.cursor()
+    session = get_resumable_session(conn, "ai")
+    session_id = session["id"] if session else None
+    if session:
+        state.current_scan_total = session["total_count"]
+        state.current_scan_processed = session["processed_count"]
 
     while True:
         if state.SCAN_STATE == "idle":
             break
 
         if state.SCAN_STATE == "paused":
+            if session_id is not None:
+                set_session_status(conn, session_id, "paused")
             time.sleep(1)
             continue
 
-        cursor.execute("SELECT id, filepath FROM photos WHERE status = 'pending' LIMIT 1")
+        if session_id is not None:
+            cursor.execute(
+                "SELECT id, filepath FROM photos WHERE status = 'pending' AND scan_session_id = ? LIMIT 1",
+                (session_id,),
+            )
+        else:
+            cursor.execute("SELECT id, filepath FROM photos WHERE status = 'pending' LIMIT 1")
         pending_photo = cursor.fetchone()
 
         if not pending_photo:
+            if session_id is not None:
+                set_session_status(conn, session_id, "completed")
             state.SCAN_STATE = "idle"
             state.current_scan_total = 0
             state.current_scan_processed = 0
@@ -67,6 +83,16 @@ def background_processor() -> None:
         photo_id, filepath = pending_photo
         state.add_log(f"Processing: {filepath}")
         state.current_scan_processed += 1
+        if session_id is not None:
+            cursor.execute(
+                """
+                UPDATE scan_sessions
+                SET processed_count = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (state.current_scan_processed, session_id),
+            )
+            conn.commit()
 
         # 0. Check for Screenshots based on filename
         if state.IGNORE_SCREENSHOTS:

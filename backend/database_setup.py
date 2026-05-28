@@ -111,6 +111,34 @@ def init_single_db(db_path: str) -> None:
             last_scanned TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Durable scan sessions allow paused scans to survive application restarts.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scan_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            scan_type TEXT NOT NULL,
+            root_path TEXT NOT NULL,
+            force_rescan INTEGER NOT NULL DEFAULT 0,
+            extract_metadata INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'running',
+            total_count INTEGER NOT NULL DEFAULT 0,
+            processed_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            completed_at TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS folder_scan_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            filepath TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            error TEXT,
+            processed_at TEXT,
+            FOREIGN KEY(session_id) REFERENCES scan_sessions(id),
+            UNIQUE(session_id, filepath)
+        )
+    """)
     # Migration: Add columns for filter support
     columns_to_add = [
         "date_taken TEXT",
@@ -124,6 +152,7 @@ def init_single_db(db_path: str) -> None:
         "file_hash TEXT",
         "ai_model TEXT",
         "scanned_at TEXT",
+        "scan_session_id INTEGER",
     ]
     import contextlib
 
@@ -173,6 +202,9 @@ def init_single_db(db_path: str) -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_local_media_date_parts ON local_media(year, month, day)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_local_media_parent_path ON local_media(parent_path)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_photos_file_hash ON photos(file_hash)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_photos_scan_session ON photos(scan_session_id, status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scan_sessions_type_status ON scan_sessions(scan_type, status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_folder_scan_queue_session_status ON folder_scan_queue(session_id, status)")
 
     conn.commit()
     conn.close()

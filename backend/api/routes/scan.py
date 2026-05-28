@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import sqlite3
+from datetime import datetime
 from typing import Any
 
 import numpy as np
@@ -18,18 +19,29 @@ except ImportError:
     DEEPFACE_AVAILABLE = False
 import cv2
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 
+import core.config as config
 import core.state as state
 from core.config import OLLAMA_URL
 from core.database import get_db, get_test_db
 from database_setup import find_best_face_match
 from models.schemas import ScanControlRequest, ScanRequest
 from services.image_service import extract_all_exif, extract_exif_for_filters, process_image_with_ollama
+from services.scan_sessions import create_scan_session, get_resumable_session, set_session_status
 from services.scan_worker import background_processor
 
 router = APIRouter()
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".heic"}
+
+
+class ScanFileRequest(BaseModel):
+    """Payload to queue one existing local image for AI gallery processing."""
+
+    filepath: str
+    use_ollama: bool = True
+    use_clip: bool = True
 
 
 def _clear_gallery_filters_cache() -> None:
@@ -67,9 +79,15 @@ async def scan_directory(
         db.commit()
         _clear_gallery_filters_cache()
 
+    active_session = None if req.force_rescan else get_resumable_session(db, "ai")
+    session_id = active_session["id"] if active_session else create_scan_session(
+        db,
+        "ai",
+        req.directory_path,
+        force_rescan=req.force_rescan,
+    )
     added_count = 0
-    from datetime import datetime
-    
+
     # Generate exactly one timestamp for the entire folder scan
     scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -79,13 +97,23 @@ async def scan_directory(
                 full_path = os.path.join(root, file)
                 try:
                     cursor.execute(
-                        "INSERT INTO photos (filepath, filename, scanned_at) VALUES (?, ?, ?)",
-                        (full_path, file, scan_time)
+                        "INSERT INTO photos (filepath, filename, scanned_at, scan_session_id) VALUES (?, ?, ?, ?)",
+                        (full_path, file, scan_time, session_id)
                     )
                     added_count += 1
                 except sqlite3.IntegrityError:
                     pass  # Normal scan, skip existing files
 
+    db.commit()
+    existing_processed = active_session["processed_count"] if active_session else 0
+    cursor.execute(
+        """
+        UPDATE scan_sessions
+        SET total_count = total_count + ?, processed_count = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (added_count, existing_processed, session_id),
+    )
     db.commit()
 
     # Record scan history
@@ -109,14 +137,100 @@ async def scan_directory(
     if state.SCAN_STATE == "idle":
         state.current_scan_total = added_count
         state.current_scan_processed = 0
-        state.SCAN_STATE = "running"
-        background_tasks.add_task(background_processor)
-        state.add_log("Background processor tasked.")
+        if added_count > 0:
+            state.SCAN_STATE = "running"
+            background_tasks.add_task(background_processor)
+            state.add_log("Background processor tasked.")
+        else:
+            set_session_status(db, session_id, "completed")
     else:
         # Append to existing running scan
         state.current_scan_total += added_count
 
     return {"message": f"Scan complete. Added {added_count} new images to processing queue."}
+
+
+@router.post("/file")
+async def scan_file(
+    req: ScanFileRequest,
+    background_tasks: BackgroundTasks,
+    db: sqlite3.Connection = Depends(get_db),
+) -> dict[str, Any]:
+    """Queue one existing local image file for main AI gallery processing."""
+    normalized_path = os.path.abspath(req.filepath.strip())
+    if not os.path.exists(normalized_path):
+        raise HTTPException(status_code=404, detail="File does not exist on disk.")
+
+    ext = os.path.splitext(normalized_path)[1].lower()
+    if ext not in IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Only image files can be sent to AI processing.")
+
+    cursor = db.cursor()
+    cursor.execute("SELECT 1 FROM local_media WHERE filepath = ? LIMIT 1", (normalized_path,))
+    in_local_media = cursor.fetchone()
+    cursor.execute("SELECT id, status FROM photos WHERE filepath = ? LIMIT 1", (normalized_path,))
+    existing_photo = cursor.fetchone()
+    if not in_local_media and not existing_photo:
+        raise HTTPException(status_code=403, detail="Access denied: file is not in scanned folders.")
+
+    state.USE_OLLAMA = req.use_ollama
+    state.USE_CLIP = req.use_clip
+
+    active_session = get_resumable_session(db, "ai")
+    session_id = active_session["id"] if active_session else create_scan_session(
+        db,
+        "ai",
+        os.path.dirname(normalized_path),
+        force_rescan=False,
+    )
+
+    if existing_photo:
+        photo_id, status = existing_photo
+        if status in {"pending", "processing"}:
+            cursor.execute("UPDATE photos SET scan_session_id = ? WHERE id = ?", (session_id, photo_id))
+            queued_count = 0
+        elif status == "processed":
+            return {"message": "Image is already processed in the AI gallery.", "photo_id": photo_id, "status": status}
+        else:
+            cursor.execute(
+                """
+                UPDATE photos
+                SET status = 'pending', scan_session_id = ?, description = NULL
+                WHERE id = ?
+                """,
+                (session_id, photo_id),
+            )
+            queued_count = 1
+    else:
+        scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
+            """
+            INSERT INTO photos (filepath, filename, scanned_at, scan_session_id)
+            VALUES (?, ?, ?, ?)
+            """,
+            (normalized_path, os.path.basename(normalized_path), scan_time, session_id),
+        )
+        photo_id = cursor.lastrowid
+        queued_count = 1
+
+    cursor.execute(
+        """
+        UPDATE scan_sessions
+        SET total_count = total_count + ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (queued_count, session_id),
+    )
+    db.commit()
+
+    if state.SCAN_STATE == "idle":
+        state.current_scan_total = (active_session["total_count"] if active_session else 0) + queued_count
+        state.current_scan_processed = active_session["processed_count"] if active_session else 0
+        state.SCAN_STATE = "running"
+        background_tasks.add_task(background_processor)
+
+    state.add_log(f"Queued file for AI processing: {normalized_path}")
+    return {"message": "Image queued for AI processing.", "photo_id": photo_id, "status": "pending"}
 
 
 @router.post("/single")
@@ -325,7 +439,7 @@ async def scan_single(
 
 
 @router.post("/control")
-async def control_scan(req: ScanControlRequest) -> dict[str, str]:
+async def control_scan(req: ScanControlRequest, background_tasks: BackgroundTasks) -> dict[str, str]:
     """Dynamically interfaces with the global scanning queue.
 
     Permits pausing, resuming, or cancelling the background worker thread.
@@ -335,10 +449,25 @@ async def control_scan(req: ScanControlRequest) -> dict[str, str]:
         if state.SCAN_STATE == "running":
             state.SCAN_STATE = "paused"
             state.add_log("Scan paused.")
+        conn = sqlite3.connect(config.DB_FILE)
+        session = get_resumable_session(conn, "ai")
+        if session:
+            set_session_status(conn, session["id"], "paused")
+        conn.close()
     elif req.action == "resume":
-        if state.SCAN_STATE == "paused":
+        conn = sqlite3.connect(config.DB_FILE)
+        session = get_resumable_session(conn, "ai")
+        if session:
+            set_session_status(conn, session["id"], "running")
+            state.current_scan_total = session["total_count"]
+            state.current_scan_processed = session["processed_count"]
+            if state.SCAN_STATE in {"idle", "paused"}:
+                state.SCAN_STATE = "running"
+                background_tasks.add_task(background_processor)
+        elif state.SCAN_STATE == "paused":
             state.SCAN_STATE = "running"
-            state.add_log("Scan resumed.")
+        conn.close()
+        state.add_log("Scan resumed.")
     elif req.action == "cancel":
         state.SCAN_STATE = "idle"
         state.current_scan_total = 0
@@ -346,11 +475,14 @@ async def control_scan(req: ScanControlRequest) -> dict[str, str]:
 
         # We need a new connection since this is a quick action outside a Depends context for speed,
         # but optimally we'd inject it. For now, inline connection.
-        from core.config import DB_FILE
-
-        conn = sqlite3.connect(DB_FILE)
+        conn = sqlite3.connect(config.DB_FILE)
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM photos WHERE status = 'pending'")
+        session = get_resumable_session(conn, "ai")
+        if session:
+            set_session_status(conn, session["id"], "cancelled")
+            cursor.execute("DELETE FROM photos WHERE status = 'pending' AND scan_session_id = ?", (session["id"],))
+        else:
+            cursor.execute("DELETE FROM photos WHERE status = 'pending'")
         conn.commit()
         conn.close()
 
@@ -374,13 +506,21 @@ async def get_scan_status(db: sqlite3.Connection = Depends(get_db)) -> dict[str,
 
     cursor.execute("SELECT COUNT(*) FROM photos WHERE status = 'duplicate'")
     total_duplicates = cursor.fetchone()[0]
+    session = get_resumable_session(db, "ai")
+    scan_state = state.SCAN_STATE
+    scan_total = state.current_scan_total
+    scan_processed = state.current_scan_processed
+    if session and state.SCAN_STATE == "idle":
+        scan_state = session["status"]
+        scan_total = session["total_count"]
+        scan_processed = session["processed_count"]
 
     return {
-        "state": state.SCAN_STATE,
+        "state": scan_state,
         "total_gallery": total_gallery,
         "total_duplicates": total_duplicates,
-        "scan_total": state.current_scan_total,
-        "scan_processed": state.current_scan_processed,
+        "scan_total": scan_total,
+        "scan_processed": scan_processed,
     }
 
 

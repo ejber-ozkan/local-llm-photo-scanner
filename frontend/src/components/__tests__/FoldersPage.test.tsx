@@ -13,6 +13,8 @@ function renderFoldersPage(initialEntry = '/folders') {
         <MemoryRouter initialEntries={[initialEntry]}>
             <Routes>
                 <Route path="/folders/:year?/:month?/:day?" element={<FoldersPage />} />
+                <Route path="/" element={<div>Gallery Destination</div>} />
+                <Route path="/identify" element={<div>Identify Destination</div>} />
             </Routes>
         </MemoryRouter>
     );
@@ -89,6 +91,69 @@ describe('FoldersPage timeline', () => {
         expect(screen.queryByTitle('Compare Duplicates')).not.toBeInTheDocument();
         await userEvent.click(badge);
         expect(await screen.findByText(/copies in scanned folders/i)).toBeInTheDocument();
+    });
+
+    it('queues an opened folder image for full AI without leaving the current view', async () => {
+        let queuedPayload: any = null;
+        server.use(
+            http.get(`${BASE}/api/system/check-ffmpeg`, () => HttpResponse.json({ available: true })),
+            http.get(`${BASE}/api/scan/logs`, () => HttpResponse.json({
+                logs: [
+                    { time: '10:00:03 AM', message: 'Background processor finished queue.' },
+                    { time: '10:00:02 AM', message: 'Running DeepFace on: C:\\Photos\\ai-target.jpg' },
+                    { time: '10:00:01 AM', message: 'Generating CLIP embedding for: C:\\Photos\\ai-target.jpg' },
+                ],
+            })),
+            http.get(`${BASE}/api/scan/status`, () => HttpResponse.json({
+                state: 'idle',
+                total_gallery: 1,
+                total_duplicates: 0,
+                scan_total: 0,
+                scan_processed: 0,
+            })),
+            http.get(`${BASE}/api/folder-scan/dates`, ({ request }) => {
+                const params = new URL(request.url).searchParams;
+                if (!params.get('year')) return HttpResponse.json([{ label: 'Year2024', value: 2024, count: 1 }]);
+                if (!params.get('month')) return HttpResponse.json([{ label: 'Month5', value: 5, count: 1 }]);
+                if (!params.get('day')) return HttpResponse.json([{ label: 'Day24', value: 24, count: 1 }]);
+                return HttpResponse.json([{
+                    id: 1,
+                    filepath: 'C:\\Photos\\ai-target.jpg',
+                    filename: 'ai-target.jpg',
+                    parent_path: 'C:\\Photos',
+                    file_size: 100,
+                    file_hash: 'hash-ai',
+                    media_type: 'image',
+                    duplicate_count: 0,
+                    date_taken: '2024:05:24 10:00:00',
+                }]);
+            }),
+            http.post(`${BASE}/api/scan/file`, async ({ request }) => {
+                queuedPayload = await request.json();
+                return HttpResponse.json({ message: 'queued', photo_id: 99, status: 'pending' });
+            }),
+        );
+
+        renderFoldersPage();
+
+        await userEvent.click(await screen.findByText('Year2024'));
+        await userEvent.click(await screen.findByText('Month5'));
+        await userEvent.click(await screen.findByText('Day24'));
+        await userEvent.click(await screen.findByText('ai-target.jpg'));
+        await userEvent.click(await screen.findByRole('button', { name: /full ai/i }));
+
+        await waitFor(() => {
+            expect(queuedPayload).toEqual({
+                filepath: 'C:\\Photos\\ai-target.jpg',
+                use_ollama: true,
+                use_clip: true,
+            });
+        });
+        expect(await screen.findByText(/Generating CLIP embedding for:/)).toBeInTheDocument();
+        expect(await screen.findByText(/Running DeepFace on:/)).toBeInTheDocument();
+        expect(await screen.findByText('AI scan complete.')).toBeInTheDocument();
+        expect(screen.getByText('File Information')).toBeInTheDocument();
+        expect(screen.queryByText('Identify Destination')).not.toBeInTheDocument();
     });
 });
 

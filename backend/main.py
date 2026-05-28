@@ -10,8 +10,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.router import api_router
-from core.config import VERSION
+from core.config import DB_FILE, VERSION
 from database_setup import init_db
+from services.scan_sessions import recover_interrupted_sessions
 
 app = FastAPI(title="Local AI Photo Scanner API", version=VERSION)
 
@@ -35,6 +36,11 @@ app.include_router(api_router)
 async def startup_event() -> None:
     """Application startup hook triggering local database initialization."""
     init_db()
+    import sqlite3
+
+    conn = sqlite3.connect(DB_FILE)
+    recover_interrupted_sessions(conn)
+    conn.close()
 
 
 if __name__ == "__main__":

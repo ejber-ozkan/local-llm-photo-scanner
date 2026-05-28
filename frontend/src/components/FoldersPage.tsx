@@ -18,7 +18,11 @@ import {
     Clock,
     Filter,
     Zap,
-    Download
+    Download,
+    Maximize2,
+    Sparkles,
+    Loader2,
+    CheckCircle
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
@@ -168,6 +172,15 @@ export default function FoldersPage() {
         gallery_duplicates: any[];
     } | null>(null);
     const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
+    const [imageFullSize, setImageFullSize] = useState(false);
+    const [aiProgress, setAiProgress] = useState<{
+        active: boolean;
+        complete: boolean;
+        mode: 'full' | 'clip';
+        filepath: string;
+        lines: string[];
+        error?: string;
+    } | null>(null);
 
     const { toasts, dismiss, error: toastError, success: toastSuccess } = useToast();
     const filesContainerRef = useRef<HTMLDivElement>(null);
@@ -460,6 +473,94 @@ export default function FoldersPage() {
     // Serve URL source safely
     const getMediaUrl = (filepath: string) => {
         return `${API_BASE_URL}/api/folder-scan/media?path=${encodeURIComponent(filepath)}`;
+    };
+
+    const sendImageToAi = async (mode: 'full' | 'clip') => {
+        if (!selectedFile || selectedFile.media_type !== 'image') return;
+
+        const progressLabel = mode === 'full' ? 'Full AI' : 'CLIP AI';
+        setAiProgress({
+            active: true,
+            complete: false,
+            mode,
+            filepath: selectedFile.filepath,
+            lines: [`Queued ${progressLabel} for: ${selectedFile.filepath}`],
+        });
+
+        try {
+            const res = await axios.post(`${API_BASE_URL}/api/scan/file`, {
+                filepath: selectedFile.filepath,
+                use_ollama: mode === 'full',
+                use_clip: true
+            });
+            if (res.data?.status === 'processed') {
+                setAiProgress(prev => prev
+                    ? { ...prev, complete: true, lines: [...prev.lines, 'Image is already processed in the AI gallery.', 'AI scan complete.'] }
+                    : prev);
+            }
+        } catch (err: any) {
+            console.error(err);
+            setAiProgress(prev => prev
+                ? { ...prev, complete: true, error: err.response?.data?.detail || 'Failed to queue image for AI processing.' }
+                : prev);
+        }
+    };
+
+    useEffect(() => {
+        if (!aiProgress?.active || aiProgress.complete) return;
+
+        let cancelled = false;
+        const poll = async () => {
+            try {
+                const [logsRes, statusRes] = await Promise.all([
+                    axios.get(`${API_BASE_URL}/api/scan/logs`),
+                    axios.get(`${API_BASE_URL}/api/scan/status`),
+                ]);
+                if (cancelled) return;
+
+                const filepath = aiProgress.filepath;
+                const logMessages = [...(logsRes.data?.logs || [])]
+                    .reverse()
+                    .map((log: any) => String(log.message || ''))
+                    .filter((message: string) =>
+                        message.includes(filepath) ||
+                        message === 'Background processor finished queue.'
+                    );
+
+                setAiProgress(prev => {
+                    if (!prev || prev.complete) return prev;
+                    const merged = [...prev.lines];
+                    for (const message of logMessages) {
+                        if (!merged.includes(message)) merged.push(message);
+                    }
+                    const isIdle = statusRes.data?.state === 'idle';
+                    const finished = isIdle && merged.some(line => line === 'Background processor finished queue.');
+                    if (finished && !merged.includes('AI scan complete.')) {
+                        merged.push('AI scan complete.');
+                    }
+                    return { ...prev, lines: merged, complete: finished };
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        poll();
+        const id = window.setInterval(poll, 1500);
+        return () => {
+            cancelled = true;
+            window.clearInterval(id);
+        };
+    }, [aiProgress?.active, aiProgress?.complete, aiProgress?.filepath]);
+
+    useEffect(() => {
+        if (!aiProgress?.complete) return;
+        const id = window.setTimeout(() => setAiProgress(null), 4500);
+        return () => window.clearTimeout(id);
+    }, [aiProgress?.complete]);
+
+    const getMediaPreviewUrl = (filepath: string) => {
+        return `${API_BASE_URL}/api/folder-scan/media-preview?path=${encodeURIComponent(filepath)}`;
     };
 
     const getDuplicateReportCsvUrl = () => {
@@ -900,7 +1001,7 @@ export default function FoldersPage() {
                                                             onClick={() => setSelectedFile(file)}
                                                             onDuplicatesClick={(e) => openDuplicatesModal(e, file)}
                                                             showThumbnail={showThumbnails}
-                                                            getMediaUrl={getMediaUrl}
+                                                            getMediaUrl={getMediaPreviewUrl}
                                                         />
                                                     </div>
                                                 );
@@ -1034,7 +1135,7 @@ export default function FoldersPage() {
                                             onClick={() => setSelectedFile(file)}
                                             onDuplicatesClick={(e) => openDuplicatesModal(e, file)}
                                             showThumbnail={showThumbnails}
-                                            getMediaUrl={getMediaUrl}
+                                            getMediaUrl={getMediaPreviewUrl}
                                         />
                                     ))}
                                 </div>
@@ -1111,11 +1212,21 @@ export default function FoldersPage() {
                             {/* Main player asset */}
                             <div className="w-full h-full flex items-center justify-center min-h-0">
                                 {selectedFile.media_type === 'image' ? (
-                                    <img
-                                        src={getMediaUrl(selectedFile.filepath)}
-                                        alt={selectedFile.filename}
-                                        className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain rounded-lg shadow-2xl"
-                                    />
+                                    <div
+                                        className="relative flex items-center justify-center cursor-pointer group"
+                                        onClick={() => setImageFullSize(true)}
+                                    >
+                                        <img
+                                            src={getMediaPreviewUrl(selectedFile.filepath)}
+                                            alt={selectedFile.filename}
+                                            className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center rounded-lg">
+                                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white/80 text-sm bg-black/60 px-4 py-2 rounded-lg flex items-center gap-2">
+                                                <Maximize2 className="w-4 h-4" /> View Full Size
+                                            </span>
+                                        </div>
+                                    </div>
                                 ) : (
                                     // 3-path routing: native → transcode → OS fallback
                                     isNativelySupported(selectedFile.filename) ? (
@@ -1193,12 +1304,23 @@ export default function FoldersPage() {
                             {/* Close bar */}
                             <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#111]/40 shrink-0">
                                 <span className="font-bold text-sm text-gray-300 uppercase tracking-wider">File Information</span>
-                                <button
-                                    onClick={() => setSelectedFile(null)}
-                                    className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    {selectedFile.media_type === 'image' && (
+                                        <button
+                                            onClick={() => setImageFullSize(true)}
+                                            className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
+                                            title="View full size"
+                                        >
+                                            <Maximize2 className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => { setSelectedFile(null); setImageFullSize(false); }}
+                                        className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Attributes scroll */}
@@ -1390,6 +1512,26 @@ export default function FoldersPage() {
 
                                 {/* Duplicates & Location actions */}
                                 <div className="pt-6 border-t border-gray-800/60 flex flex-col gap-3">
+                                    {selectedFile.media_type === 'image' && (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => sendImageToAi('full')}
+                                                className="py-3 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md"
+                                                title="Queue with Ollama, DeepFace, and CLIP enabled"
+                                            >
+                                                <Sparkles className="w-4 h-4" />
+                                                Full AI
+                                            </button>
+                                            <button
+                                                onClick={() => sendImageToAi('clip')}
+                                                className="py-3 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md"
+                                                title="Queue with CLIP visual embeddings enabled"
+                                            >
+                                                <Zap className="w-4 h-4" />
+                                                CLIP AI
+                                            </button>
+                                        </div>
+                                    )}
                                     <button
                                         onClick={() => openInSystemExplorer(selectedFile.filepath)}
                                         className="w-full py-3 bg-gradient-to-r from-surface to-[#111] hover:from-gray-800 hover:to-gray-900 border border-gray-800 text-gray-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md"
@@ -1407,6 +1549,68 @@ export default function FoldersPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {imageFullSize && selectedFile && selectedFile.media_type === 'image' && (
+                <div
+                    className="fixed inset-0 bg-black z-[60] flex items-center justify-center cursor-zoom-out"
+                    onClick={() => setImageFullSize(false)}
+                >
+                    <img
+                        src={getMediaPreviewUrl(selectedFile.filepath)}
+                        alt={selectedFile.filename}
+                        className="max-w-full max-h-full object-contain"
+                    />
+                    <button
+                        onClick={() => setImageFullSize(false)}
+                        className="absolute top-6 right-6 text-white/60 hover:text-white bg-black/50 hover:bg-black/80 p-3 rounded-full transition-all"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-sm">Click anywhere to close</p>
+                </div>
+            )}
+
+            {aiProgress?.active && (
+                <div className="fixed bottom-6 right-6 z-[9998] w-[min(420px,calc(100vw-2rem))] rounded-2xl border border-blue-500/30 bg-[#10131a]/95 backdrop-blur-md shadow-2xl overflow-hidden">
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
+                        <div className="flex items-center gap-2 min-w-0">
+                            {aiProgress.complete ? (
+                                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                            ) : (
+                                <Loader2 className="w-5 h-5 text-blue-400 shrink-0 animate-spin" />
+                            )}
+                            <div className="min-w-0">
+                                <div className="text-sm font-semibold text-white">
+                                    {aiProgress.complete ? 'AI scan complete' : `${aiProgress.mode === 'full' ? 'Full AI' : 'CLIP AI'} processing`}
+                                </div>
+                                <div className="text-[10px] text-gray-500 truncate" title={aiProgress.filepath}>
+                                    {aiProgress.filepath}
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setAiProgress(null)}
+                            className="text-gray-500 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                            aria-label="Dismiss AI progress"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="px-4 py-3 max-h-48 overflow-y-auto custom-scrollbar">
+                        {aiProgress.error ? (
+                            <p className="text-sm text-red-300 leading-snug">{aiProgress.error}</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {aiProgress.lines.map((line, index) => (
+                                    <p key={`${line}-${index}`} className="text-xs text-gray-300 font-mono leading-snug break-words">
+                                        {line}
+                                    </p>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
