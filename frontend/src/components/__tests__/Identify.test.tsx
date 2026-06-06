@@ -96,7 +96,7 @@ describe('Identify', () => {
         expect(await screen.findByText('2 unknown')).toBeInTheDocument();
         expect(screen.getByText('Unknown Person 1, Unknown Pet 1')).toBeInTheDocument();
         expect(screen.getByText('2 unidentified entities')).toBeInTheDocument();
-        expect(screen.getAllByAltText('Entity context')).toHaveLength(1);
+        expect(await screen.findAllByAltText('Entity context')).toHaveLength(1);
     });
 
     it('opens a photo with person and pet entities and closes the modal', async () => {

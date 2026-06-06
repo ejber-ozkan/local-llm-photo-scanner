@@ -15,6 +15,8 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
     """
     conn = sqlite3.connect(DB_FILE, check_same_thread=False, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA cache_size=-64000;")
     try:
         yield conn
     finally:
@@ -28,6 +30,8 @@ def get_test_db() -> Generator[sqlite3.Connection, None, None]:
     """
     conn = sqlite3.connect(DB_TEST_FILE, check_same_thread=False, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA cache_size=-64000;")
     try:
         yield conn
     finally:

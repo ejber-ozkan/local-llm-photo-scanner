@@ -8,6 +8,7 @@ import type { Photo, PhotoDetail, FilterOptions } from '../types';
 import { formatDateGroup, getYearFromDate } from '../utils/dateFormatters';
 import EntityRow from './shared/EntityRow';
 import MetadataSection from './shared/MetadataSection';
+import LazyImage from './shared/LazyImage';
 
 export default function Gallery() {
     const [photos, setPhotos] = useState<Photo[]>([]);
@@ -476,8 +477,8 @@ export default function Gallery() {
                                             <div key={photo.id}
                                                 className="break-inside-avoid relative group rounded-xl overflow-hidden shadow-lg bg-surface hover:shadow-2xl transition-all duration-300 cursor-pointer"
                                                 onClick={() => openPhotoDetail(photo.id)}>
-                                                <img src={`${API_BASE_URL}/api/image/${photo.id}?t=${timestamp}`} alt={photo.filename}
-                                                    className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                                                <LazyImage src={`${API_BASE_URL}/api/image/${photo.id}?t=${timestamp}`} alt={photo.filename}
+                                                    className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500" />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                                                     {photo.description && (
                                                         <p className="text-white text-sm font-medium leading-relaxed drop-shadow-md">

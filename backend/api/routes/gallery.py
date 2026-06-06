@@ -71,9 +71,9 @@ async def get_image(photo_id: int) -> Response:
         if row:
             break
 
-    # Force browser to never aggressive cache, preventing ID collisions after DB wipes
+    # Allow browser cache validation via ETag, preventing stale images after wipes
     headers = {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Cache-Control": "no-cache",
         "Pragma": "no-cache",
         "Expires": "0",
     }

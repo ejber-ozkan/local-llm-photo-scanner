@@ -10,13 +10,13 @@ def seed_test_database(db_file):
     c = conn.cursor()
 
     c.execute(
-        "INSERT INTO photos (id, filepath, filename, description, status, date_created, date_modified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (1, "/tmp/photo1.jpg", "photo1.jpg", "A picture of a dog", "processed", "2025-01-01", "2025-01-01"),
+        "INSERT INTO photos (id, filepath, filename, description, status, date_created, date_modified, date_taken) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (1, "/tmp/photo1.jpg", "photo1.jpg", "A picture of a dog", "processed", "2025-01-01", "2025-01-01", "2025-01-01"),
     )
 
     c.execute(
-        "INSERT INTO photos (id, filepath, filename, description, status, date_created, date_modified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (2, "/tmp/photo2.jpg", "photo2.jpg", "A person in a park", "processed", "2024-06-15", "2024-06-15"),
+        "INSERT INTO photos (id, filepath, filename, description, status, date_created, date_modified, date_taken) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (2, "/tmp/photo2.jpg", "photo2.jpg", "A person in a park", "processed", "2024-06-15", "2024-06-15", "2024-06-15"),
     )
 
     c.execute(

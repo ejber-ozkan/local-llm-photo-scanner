@@ -29,6 +29,8 @@ def init_single_db(db_path: str) -> None:
     """
     conn = sqlite3.connect(db_path, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA cache_size=-64000;")
     cursor = conn.cursor()
     # Table for Photos
     cursor.execute("""
@@ -205,6 +207,10 @@ def init_single_db(db_path: str) -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_photos_scan_session ON photos(scan_session_id, status)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_scan_sessions_type_status ON scan_sessions(scan_type, status)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_folder_scan_queue_session_status ON folder_scan_queue(session_id, status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_entities_photo_id ON entities(photo_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_entities_entity_name ON entities(entity_name)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_entities_type_name ON entities(entity_type, entity_name)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_photos_status_date_taken ON photos(status, date_taken)")
 
     conn.commit()
     conn.close()
@@ -222,6 +228,8 @@ def get_connection(use_test_db: bool = False) -> sqlite3.Connection:
     """
     conn = sqlite3.connect(DB_TEST_FILE if use_test_db else DB_FILE, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA cache_size=-64000;")
     return conn
 
 

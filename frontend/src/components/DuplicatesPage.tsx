@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Copy, Trash2, ShieldAlert, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import type { DuplicateGroup } from '../types';
+import LazyImage from './shared/LazyImage';
 
 export default function DuplicatesPage() {
     const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
@@ -245,11 +246,10 @@ export default function DuplicatesPage() {
                                             {scanGroups.map((group) => (
                                                 <div key={group.hash} className="bg-surface rounded-xl overflow-hidden border border-[#333] hover:border-[#444] transition-all shadow-lg flex flex-col">
                                                     <div className="aspect-[4/3] relative bg-black">
-                                                        <img
+                                                        <LazyImage
                                                             src={`${API_BASE_URL}/api/image/${group.original.id}?t=${timestamp}`}
                                                             alt={group.original.filename}
-                                                            className="w-full h-full object-cover"
-                                                            loading="lazy"
+                                                            className="w-full h-full"
                                                         />
                                                         <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-red-400 border border-red-500/30 flex items-center space-x-1">
                                                             <Copy className="w-3 h-3" />
@@ -334,11 +334,10 @@ export default function DuplicatesPage() {
                                             {skippedItems.map((item) => (
                                                 <div key={item.id} className="bg-surface rounded-xl overflow-hidden border-2 border-red-900/40 hover:border-red-500/60 transition-all shadow-lg flex flex-col group/item">
                                                     <div className="aspect-[4/3] relative bg-black">
-                                                        <img
-                                                            src={`${API_BASE_URL}/api/image/${item.id}?t=${timestamp}`}
-                                                            alt={item.filename}
-                                                            className="w-full h-full object-cover opacity-60 group-hover/item:opacity-100 transition-opacity"
-                                                            loading="lazy"
+                                                        <LazyImage
+                                                             src={`${API_BASE_URL}/api/image/${item.id}?t=${timestamp}`}
+                                                             alt={item.filename}
+                                                             className="w-full h-full opacity-60 group-hover/item:opacity-100 transition-opacity"
                                                         />
                                                         <div className="absolute top-3 left-3 bg-red-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-white border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.5)]">
                                                             NOT IMPORTED

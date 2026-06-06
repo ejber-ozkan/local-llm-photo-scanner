@@ -1,13 +1,14 @@
 """
 Main entrypoint for the Local AI Photo Scanner backend application.
 
-This module initializes the FastAPI instance, mounts the CORS middleware
+This module initializes the FastAPI instance, mounts the CORS and GZip middleware
 for the frontend client, triggers database initialization callbacks, and
 includes the unified APIRouter containing all refactored domain routes.
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from api.router import api_router
 from core.config import DB_FILE, VERSION
@@ -15,6 +16,9 @@ from database_setup import init_db
 from services.scan_sessions import recover_interrupted_sessions
 
 app = FastAPI(title="Local AI Photo Scanner API", version=VERSION)
+
+# Enable Gzip compression for all responses > 1KB
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Define Cross-Origin Resource Sharing (CORS) Configuration
 origins = ["*"]

@@ -29,6 +29,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import type { LocalMediaItem, FolderExplorerResponse, DateDrilldownItem, DuplicateReportResponse } from '../types';
 import { useToast, ToastContainer } from './Toast';
+import LazyImage from './shared/LazyImage';
 
 // Lazy-load the Video.js v10 player so its bundle (~200KB) is only fetched
 // when the user first opens a video file — keeps initial page load lean.
@@ -47,6 +48,14 @@ export default function FoldersPage() {
     const [toDate, setToDate] = useState<string>('');
     const [mediaTypes, setMediaTypes] = useState<string>('all');
     const [fileNameQuery, setFileNameQuery] = useState<string>('');
+    const [debouncedFileNameQuery, setDebouncedFileNameQuery] = useState<string>('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedFileNameQuery(fileNameQuery);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [fileNameQuery]);
     const [showThumbnails, setShowThumbnails] = useState<boolean>(false);
 
     // FFmpeg transcoding state
@@ -188,7 +197,7 @@ export default function FoldersPage() {
 
     const { toasts, dismiss, error: toastError, success: toastSuccess } = useToast();
     const filesContainerRef = useRef<HTMLDivElement>(null);
-    const trimmedFileNameQuery = fileNameQuery.trim();
+    const trimmedFileNameQuery = debouncedFileNameQuery.trim();
     const searchingByFileName = trimmedFileNameQuery.length > 0;
 
     // Check FFmpeg availability once on mount
@@ -1843,10 +1852,9 @@ function FileCard({ file, onClick, onDuplicatesClick, onFolderClick, showThumbna
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors">
                         {showThumbnail ? (
-                            <img
+                            <LazyImage
                                 src={getMediaUrl(file.filepath)}
                                 alt={file.filename}
-                                loading="lazy"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                         ) : (

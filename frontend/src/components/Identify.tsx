@@ -4,6 +4,7 @@ import { UserCheck, Tag, Loader2, X, User, PawPrint, Check, Edit2, Trash2 } from
 import { API_BASE_URL } from '../config';
 import type { Entity, PhotoEntity, UniquePhoto } from '../types';
 import ConfirmDialog from './shared/ConfirmDialog';
+import LazyImage from './shared/LazyImage';
 
 export default function Identify() {
     const [entities, setEntities] = useState<Entity[]>([]);
@@ -189,10 +190,10 @@ export default function Identify() {
                             onClick={() => openModal(photo.photo_id)}
                         >
                             <div className="relative h-48 bg-black overflow-hidden flex items-center justify-center">
-                                <img
+                                <LazyImage
                                     src={`${API_BASE_URL}/api/image/${photo.photo_id}?t=${timestamp}`}
                                     alt="Entity context"
-                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                    className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity"
                                 />
                                 <div className="absolute top-3 left-3 bg-black/70 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-white border border-gray-600 flex items-center gap-2">
                                     <Tag className="w-3 h-3" />

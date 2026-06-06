@@ -14,3 +14,22 @@ afterEach(() => {
 
 // Clean up after all tests
 afterAll(() => server.close());
+
+// Mock IntersectionObserver globally in tests to immediately trigger visibility
+class GlobalMockIntersectionObserver {
+    observe(element: Element) {
+        if (this.callback) {
+            this.callback(
+                [{ isIntersecting: true, target: element } as unknown as IntersectionObserverEntry],
+                this as unknown as IntersectionObserver
+            );
+        }
+    }
+    unobserve() {}
+    disconnect() {}
+    callback: IntersectionObserverCallback;
+    constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+    }
+}
+globalThis.IntersectionObserver = GlobalMockIntersectionObserver as any;
