@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.3.0] - 2026-06-06
+
+### Added
+
+- Frontend lazy loading support using a new `<LazyImage />` component with skeleton placeholders and fade-in animations across `Gallery.tsx`, `FoldersPage.tsx`, `Identify.tsx`, and `DuplicatesPage.tsx`.
+- Gzip compression on the backend via FastAPI's `GZipMiddleware` for large JSON payloads.
+- New database indexes in SQLite schema:
+  - `idx_entities_photo_id` on `entities(photo_id)`
+  - `idx_entities_entity_name` on `entities(entity_name)`
+  - `idx_entities_type_name` on `entities(entity_type, entity_name)`
+  - `idx_photos_status_date_taken` on `photos(status, date_taken)`
+- Unit tests for `<LazyImage />` and global IntersectionObserver testing mocks in `setup.ts`.
+
+### Changed
+
+- Configured SQLite performance PRAGMAs (`synchronous = NORMAL` and `cache_size = -64000`) for database connections.
+- Enabled ETag caching for `/api/image/{photo_id}` by updating the Cache-Control header to enable browser caching.
+- Added 300ms input debouncing to the filename search query in Folder Explorer to reduce redundant database queries.
+
+### Fixed
+
+- Seeding issues in tests for `date_taken` sorting to ensure consistent results under new query indexing.
+
 ## [3.2.0] - 2026-06-06
 
 ### Added
