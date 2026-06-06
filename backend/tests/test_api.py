@@ -182,3 +182,103 @@ def test_delete_entity(client, mock_db_file):
     conn.close()
 
     assert row is None
+
+
+def test_get_image_not_found(client):
+    """Test getting an image that does not exist in DB."""
+    response = client.get("/api/image/999")
+    assert response.status_code == 404
+
+
+def test_get_image_jpeg_success(client, mock_db_file, tmp_path):
+    """Test serving a standard JPEG image."""
+    img_file = tmp_path / "test.jpg"
+    img_file.write_bytes(b"dummy jpeg content")
+
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO photos (id, filepath, filename, status) VALUES (?, ?, ?, ?)",
+        (10, str(img_file), "test.jpg", "processed")
+    )
+    conn.commit()
+    conn.close()
+
+    response = client.get("/api/image/10")
+    assert response.status_code == 200
+    assert response.content == b"dummy jpeg content"
+
+
+def test_get_image_heic_cached_success(client, mock_db_file, tmp_path):
+    """Test serving an HEIC image that already has a cached JPEG version."""
+    heic_file = tmp_path / "test.heic"
+    heic_file.write_bytes(b"dummy heic content")
+    
+    # Pre-cached JPEG conversion
+    cached_jpg = tmp_path / "test.heic.jpg"
+    cached_jpg.write_bytes(b"cached jpeg content")
+
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO photos (id, filepath, filename, status) VALUES (?, ?, ?, ?)",
+        (11, str(heic_file), "test.heic", "processed")
+    )
+    conn.commit()
+    conn.close()
+
+    response = client.get("/api/image/11")
+    assert response.status_code == 200
+    assert response.content == b"cached jpeg content"
+
+
+from unittest.mock import patch, MagicMock
+
+def test_get_image_heic_convert_on_the_fly(client, mock_db_file, tmp_path):
+    """Test serving an HEIC image triggering conversion on-the-fly."""
+    heic_file = tmp_path / "test2.heic"
+    heic_file.write_bytes(b"dummy heic content")
+
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO photos (id, filepath, filename, status) VALUES (?, ?, ?, ?)",
+        (12, str(heic_file), "test2.heic", "processed")
+    )
+    conn.commit()
+    conn.close()
+
+    mock_img = MagicMock()
+    
+    with patch("PIL.Image.open", return_value=mock_img):
+        # When mock_img.save is called, we write the fake file to disk
+        def write_fake_cache(dest_path, format=None, quality=None):
+            with open(dest_path, "wb") as f:
+                f.write(b"converted jpeg content")
+        
+        mock_img.save.side_effect = write_fake_cache
+
+        response = client.get("/api/image/12")
+        assert response.status_code == 200
+        assert response.content == b"converted jpeg content"
+        mock_img.save.assert_called_once()
+
+
+def test_get_image_heic_convert_error_fallback(client, mock_db_file, tmp_path):
+    """Test serving an HEIC image when conversion fails, falling back to original."""
+    heic_file = tmp_path / "test3.heic"
+    heic_file.write_bytes(b"raw heic data")
+
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO photos (id, filepath, filename, status) VALUES (?, ?, ?, ?)",
+        (13, str(heic_file), "test3.heic", "processed")
+    )
+    conn.commit()
+    conn.close()
+
+    with patch("PIL.Image.open", side_effect=Exception("conversion error")):
+        response = client.get("/api/image/13")
+        assert response.status_code == 200
+        assert response.content == b"raw heic data"

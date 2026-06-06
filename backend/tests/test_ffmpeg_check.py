@@ -1,4 +1,6 @@
 import os
+import sys
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -72,3 +74,60 @@ def test_get_ffmpeg_path_raises_when_not_found(monkeypatch):
 
     with pytest.raises(RuntimeError, match="FFmpeg is not installed"):
         ffmpeg_check.get_ffmpeg_path()
+
+
+def test_get_ffmpeg_preset():
+    assert ffmpeg_check.get_ffmpeg_preset("fast") == ("ultrafast", 28)
+    assert ffmpeg_check.get_ffmpeg_preset("balanced") == ("fast", 23)
+    assert ffmpeg_check.get_ffmpeg_preset("quality") == ("medium", 18)
+    assert ffmpeg_check.get_ffmpeg_preset("nonexistent") == ("fast", 23)
+
+
+def test_check_ffmpeg_available(monkeypatch):
+    # Case: Available
+    monkeypatch.setattr(ffmpeg_check, "get_ffmpeg_path", lambda: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(ffmpeg_check, "get_ffmpeg_version", lambda p: "ffmpeg version 6.0")
+    res = ffmpeg_check.check_ffmpeg_available()
+    assert res["available"] is True
+    assert res["path"] == "/usr/bin/ffmpeg"
+    assert res["version"] == "ffmpeg version 6.0"
+
+    # Case: Unavailable
+    def raise_err():
+        raise RuntimeError("not found")
+    monkeypatch.setattr(ffmpeg_check, "get_ffmpeg_path", raise_err)
+    res = ffmpeg_check.check_ffmpeg_available()
+    assert res["available"] is False
+    assert res["path"] is None
+
+
+def test_read_windows_path_entries_import_error(monkeypatch):
+    # Simulate winreg import error (e.g. on non-windows platforms)
+    monkeypatch.setattr(sys, "platform", "linux")
+    assert ffmpeg_check._read_windows_path_entries() == []
+
+
+def test_read_windows_path_entries_registry_success(monkeypatch):
+    mock_winreg = MagicMock()
+    mock_key = MagicMock()
+    mock_winreg.OpenKey.return_value.__enter__.return_value = mock_key
+    mock_winreg.QueryValueEx.return_value = (r"C:\RegistryPath1;C:\RegistryPath2", None)
+    
+    # We must patch sys.platform to win32 to execute registry path
+    monkeypatch.setattr(sys, "platform", "win32")
+    # Patch winreg module in sys.modules
+    monkeypatch.setitem(sys.modules, "winreg", mock_winreg)
+    
+    paths = ffmpeg_check._read_windows_path_entries()
+    assert r"C:\RegistryPath1" in paths
+    assert r"C:\RegistryPath2" in paths
+
+
+def test_read_windows_path_entries_registry_os_error(monkeypatch):
+    mock_winreg = MagicMock()
+    mock_winreg.OpenKey.side_effect = OSError("Access denied")
+    
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setitem(sys.modules, "winreg", mock_winreg)
+    
+    assert ffmpeg_check._read_windows_path_entries() == []

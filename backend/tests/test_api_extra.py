@@ -273,3 +273,313 @@ def test_check_ffmpeg_frontend_route_alias(client, monkeypatch):
 
     assert resp.status_code == 200
     assert resp.json()["available"] is True
+
+
+def test_database_clean_when_scan_running(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "running")
+    resp = client.post("/api/database/clean", json={"target": "test"})
+    assert resp.status_code == 400
+    assert "Cannot clean database" in resp.json()["detail"]
+
+
+def test_database_clean_when_target_not_found(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+    monkeypatch.setattr("api.routes.system.state.FOLDER_SCAN_STATE", "idle")
+    monkeypatch.setattr("os.path.exists", lambda p: False)
+    resp = client.post("/api/database/clean", json={"target": "invalid_target"})
+    assert resp.status_code == 404
+
+
+def test_database_clean_chromadb_exception(client, mock_db_file, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+    monkeypatch.setattr("api.routes.system.state.FOLDER_SCAN_STATE", "idle")
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+
+    def mock_get_chroma_client():
+        raise Exception("Chroma connection error")
+
+    monkeypatch.setattr("core.chroma.get_chroma_client", mock_get_chroma_client)
+
+    resp = client.post("/api/database/clean", json={"target": "main"})
+    assert resp.status_code == 200
+    assert "Main database cleaned successfully" in resp.json()["message"]
+
+
+def test_database_clean_sqlite3_exception(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+    monkeypatch.setattr("api.routes.system.state.FOLDER_SCAN_STATE", "idle")
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+
+    def mock_connect(*args, **kwargs):
+        raise sqlite3.Error("Mock DB Error")
+
+    monkeypatch.setattr(sqlite3, "connect", mock_connect)
+
+    resp = client.post("/api/database/clean", json={"target": "test"})
+    assert resp.status_code == 500
+
+
+def test_get_backups_directory_not_exists(client, monkeypatch):
+    monkeypatch.setattr("os.path.exists", lambda p: False)
+    resp = client.get("/api/database/backups")
+    assert resp.status_code == 200
+    assert resp.json() == {"backups": []}
+
+
+def test_trigger_backup_when_scan_running(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "running")
+    resp = client.post("/api/database/backup")
+    assert resp.status_code == 400
+
+
+def test_trigger_backup_exception(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+
+    def mock_backup():
+        raise Exception("Disk full")
+
+    monkeypatch.setattr("api.routes.system.backup_database", mock_backup)
+    resp = client.post("/api/database/backup")
+    assert resp.status_code == 500
+
+
+def test_trigger_restore_when_scan_running(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "running")
+    resp = client.post("/api/database/restore", json={"filename": "backup1.db"})
+    assert resp.status_code == 400
+
+
+def test_trigger_restore_failed_status(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+
+    def mock_restore(*args):
+        return False
+
+    monkeypatch.setattr("api.routes.system.restore_database", mock_restore)
+    resp = client.post("/api/database/restore", json={"filename": "backup1.db"})
+    assert resp.status_code == 500
+
+
+def test_trigger_restore_exception(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+
+    def mock_restore(*args):
+        raise Exception("Restore error")
+
+    monkeypatch.setattr("api.routes.system.restore_database", mock_restore)
+    resp = client.post("/api/database/restore", json={"filename": "backup1.db"})
+    assert resp.status_code == 500
+
+
+def test_get_ollama_models_not_found_or_error(client, monkeypatch):
+    import requests
+
+    def mock_get(*args, **kwargs):
+        class MockResponse:
+            status_code = 404
+            def json(self):
+                return {}
+        return MockResponse()
+
+    monkeypatch.setattr(requests, "get", mock_get)
+    resp = client.get("/api/models")
+    assert resp.status_code == 200
+    assert "active" in resp.json()
+
+    def mock_get_error(*args, **kwargs):
+        raise requests.exceptions.RequestException("Conn error")
+
+    monkeypatch.setattr(requests, "get", mock_get_error)
+    resp2 = client.get("/api/models")
+    assert resp2.status_code == 200
+    assert "active" in resp2.json()
+
+
+def test_open_system_file_and_location_unix_linux(client, monkeypatch):
+    import sys
+    import subprocess
+
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+    monkeypatch.setattr(sys, "platform", "linux")
+
+    run_called = []
+    def mock_run(args, **kwargs):
+        run_called.append(args)
+        class MockCompletedProcess:
+            returncode = 0
+        return MockCompletedProcess()
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    resp = client.get("/api/system/open-file?path=/dummy/photo.jpg")
+    assert resp.status_code == 200
+    assert "xdg-open" in run_called[0]
+
+    run_called.clear()
+    resp = client.get("/api/system/open-location?path=/dummy/photo.jpg")
+    assert resp.status_code == 200
+    assert "xdg-open" in run_called[0]
+
+
+def test_open_system_file_exception(client, monkeypatch):
+    import sys
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    if hasattr(os, "startfile"):
+        def mock_startfile(p):
+            raise OSError("Access denied")
+        monkeypatch.setattr(os, "startfile", mock_startfile)
+    else:
+        import subprocess
+        def mock_run(*args, **kwargs):
+            raise OSError("Subprocess failed")
+        monkeypatch.setattr(subprocess, "run", mock_run)
+
+    resp = client.get("/api/system/open-file?path=/dummy/photo.jpg")
+    assert resp.status_code == 500
+
+
+def test_open_system_location_exception(client, monkeypatch):
+    import sys
+    import subprocess
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    def mock_run(*args, **kwargs):
+        raise OSError("Explorer crashed")
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    resp = client.get("/api/system/open-location?path=/dummy/photo.jpg")
+    assert resp.status_code == 500
+
+
+def test_get_version(client):
+    resp = client.get("/api/version")
+    assert resp.status_code == 200
+    assert "version" in resp.json()
+
+
+def test_update_settings_model(client):
+    resp = client.post("/api/settings/model", json={"active_model": "new_ollama_model"})
+    assert resp.status_code == 200
+    assert resp.json()["active"] == "new_ollama_model"
+
+
+def test_database_clean_chromadb_delete_exceptions(client, mock_db_file, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+    monkeypatch.setattr("api.routes.system.state.FOLDER_SCAN_STATE", "idle")
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+
+    class MockChromaClient:
+        def delete_collection(self, name):
+            raise Exception("Delete failed")
+
+    monkeypatch.setattr("core.chroma.get_chroma_client", lambda: MockChromaClient())
+
+    resp = client.post("/api/database/clean", json={"target": "main"})
+    assert resp.status_code == 200
+    assert "Main database cleaned successfully" in resp.json()["message"]
+
+
+def test_trigger_backup_success(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+    monkeypatch.setattr("api.routes.system.backup_database", lambda: "mock_backup_file.db")
+    resp = client.post("/api/database/backup")
+    assert resp.status_code == 200
+    assert resp.json()["filename"] == "mock_backup_file.db"
+
+
+def test_get_ollama_models_success(client, monkeypatch):
+    import requests
+    def mock_get(*args, **kwargs):
+        class MockResponse:
+            status_code = 200
+            def json(self):
+                return {
+                    "models": [
+                        {"name": "llava:latest"},
+                        {"name": "llama3:latest"}
+                    ]
+                }
+        return MockResponse()
+    monkeypatch.setattr(requests, "get", mock_get)
+    resp = client.get("/api/models")
+    assert resp.status_code == 200
+    models = resp.json()["models"]
+    assert len(models) == 2
+    assert models[0]["is_vision"] is True
+    assert models[1]["is_vision"] is False
+
+
+def test_open_system_file_not_found(client, monkeypatch):
+    monkeypatch.setattr("os.path.exists", lambda p: False)
+    resp = client.get("/api/system/open-file?path=/nonexistent/file.jpg")
+    assert resp.status_code == 404
+
+
+def test_open_system_file_and_location_darwin(client, monkeypatch):
+    import sys
+    import subprocess
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+    monkeypatch.setattr(sys, "platform", "darwin")
+
+    run_called = []
+    def mock_run(args, **kwargs):
+        run_called.append(args)
+        class MockCompletedProcess:
+            returncode = 0
+        return MockCompletedProcess()
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    resp = client.get("/api/system/open-file?path=/dummy/photo.jpg")
+    assert resp.status_code == 200
+    assert run_called[0] == ["open", os.path.abspath("/dummy/photo.jpg")]
+
+    run_called.clear()
+    resp = client.get("/api/system/open-location?path=/dummy/photo.jpg")
+    assert resp.status_code == 200
+    assert run_called[0] == ["open", "-R", os.path.abspath("/dummy/photo.jpg")]
+
+
+def test_database_clean_sqlite3_operational_error(client, monkeypatch):
+    monkeypatch.setattr("api.routes.system.state.SCAN_STATE", "idle")
+    monkeypatch.setattr("api.routes.system.state.FOLDER_SCAN_STATE", "idle")
+    monkeypatch.setattr("os.path.exists", lambda p: True)
+
+    class MockCursor:
+        def __init__(self, orig_cursor):
+            self._orig = orig_cursor
+
+        def execute(self, sql, *args, **kwargs):
+            if "DELETE FROM local_media" in sql or "DELETE FROM folder_scan_history" in sql:
+                raise sqlite3.OperationalError("no such table")
+            return self._orig.execute(sql, *args, **kwargs)
+
+        def __getattr__(self, name):
+            return getattr(self._orig, name)
+
+    class MockConnection:
+        def __init__(self, orig_conn):
+            self._orig = orig_conn
+
+        def cursor(self):
+            return MockCursor(self._orig.cursor())
+
+        def __getattr__(self, name):
+            return getattr(self._orig, name)
+
+    orig_connect = sqlite3.connect
+    def mock_connect(*args, **kwargs):
+        conn = orig_connect(*args, **kwargs)
+        return MockConnection(conn)
+
+    monkeypatch.setattr(sqlite3, "connect", mock_connect)
+
+    resp = client.post("/api/database/clean", json={"target": "test"})
+    assert resp.status_code == 200
+    assert "cleaned successfully" in resp.json()["message"]
+
+

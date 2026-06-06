@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1] - 2026-06-06
+
+### Added
+
+- Comprehensive backend unit and integration test coverage for `services/scan_worker.py` and `api/routes/system.py` raising overall backend line coverage from 76% to 86%+.
+- Covered edge cases: state transitions, duplicate checks, third-party exceptions, and custom mock-cursors.
+
 ## [3.3.0] - 2026-06-06
 
 ### Added
