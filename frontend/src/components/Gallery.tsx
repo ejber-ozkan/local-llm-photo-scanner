@@ -414,8 +414,8 @@ export default function Gallery() {
                         {/* Dropdowns */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1.5 font-medium">Person / Pet Name</label>
-                                <select value={filterName} onChange={(e) => setFilterName(e.target.value)}
+                                <label htmlFor="gallery-filter-name" className="block text-xs text-gray-500 mb-1.5 font-medium">Person / Pet Name</label>
+                                <select id="gallery-filter-name" value={filterName} onChange={(e) => setFilterName(e.target.value)}
                                     className="w-full bg-[#111] border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all">
                                     <option value="">All names</option>
                                     {filterOptions?.names.map((n) => (
@@ -424,8 +424,8 @@ export default function Gallery() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1.5 font-medium">Camera / Device</label>
-                                <select value={filterCamera} onChange={(e) => setFilterCamera(e.target.value)}
+                                <label htmlFor="gallery-filter-camera" className="block text-xs text-gray-500 mb-1.5 font-medium">Camera / Device</label>
+                                <select id="gallery-filter-camera" value={filterCamera} onChange={(e) => setFilterCamera(e.target.value)}
                                     className="w-full bg-[#111] border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all">
                                     <option value="">All cameras</option>
                                     {filterOptions?.cameras.map((c) => (
@@ -556,7 +556,7 @@ export default function Gallery() {
                                         <button onClick={() => setFullSize(true)} className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors" title="View full size">
                                             <Maximize2 className="w-5 h-5" />
                                         </button>
-                                        <button onClick={closeModal} className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
+                                        <button onClick={closeModal} aria-label="Close photo detail" className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
                                             <X className="w-6 h-6" />
                                         </button>
                                     </div>

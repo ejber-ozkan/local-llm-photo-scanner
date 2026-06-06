@@ -62,6 +62,10 @@ docs/photovault/
 .gemini/
 skills-lock.json
 project_skills.md
+.claude/
+AGENTS.md
+CLAUDE.md
+plans
 
 # IDE / OS Files
 .vscode/
@@ -72,3 +76,11 @@ Desktop.ini
 
 # Explicitly excluded user files
 *NOT4GITHUB*
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+.beads-credential-key
+.beads/
+.claude/
+
+

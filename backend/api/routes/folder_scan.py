@@ -91,6 +91,53 @@ def _ensure_scanned_media_access(normalized_path: str, db: sqlite3.Connection) -
         raise HTTPException(status_code=403, detail="Access denied: file is not in scanned directories.")
 
 
+def _normalize_directory_path(path: str) -> str:
+    """Normalize a directory path string without touching the filesystem."""
+    return os.path.normpath(os.path.abspath(path.strip()))
+
+
+def _path_parts(path: str) -> tuple[str, list[str], str]:
+    """Split a normalized path into anchor, remaining path parts, and separator."""
+    normalized = os.path.normpath(path)
+    drive, tail = os.path.splitdrive(normalized)
+    separator = "\\" if "\\" in normalized else os.sep
+    anchor = drive + separator if drive else (separator if normalized.startswith(("/", "\\")) else "")
+    parts = [part for part in tail.replace("\\", "/").split("/") if part]
+    return anchor, parts, separator
+
+
+def _is_same_or_descendant_path(path: str, ancestor: str) -> bool:
+    """Return whether path is ancestor itself or a descendant, without stat calls."""
+    path_norm = os.path.normcase(os.path.normpath(path))
+    ancestor_norm = os.path.normcase(os.path.normpath(ancestor))
+    try:
+        return os.path.commonpath([path_norm, ancestor_norm]) == ancestor_norm
+    except ValueError:
+        return False
+
+
+def _immediate_child_path(parent: str, descendant: str) -> str | None:
+    """Return the first child folder below parent when descendant is inside parent."""
+    parent_anchor, parent_parts, separator = _path_parts(parent)
+    descendant_anchor, descendant_parts, descendant_separator = _path_parts(descendant)
+
+    if os.path.normcase(parent_anchor) != os.path.normcase(descendant_anchor):
+        return None
+
+    if len(descendant_parts) <= len(parent_parts):
+        return None
+
+    for parent_part, descendant_part in zip(parent_parts, descendant_parts):
+        if os.path.normcase(parent_part) != os.path.normcase(descendant_part):
+            return None
+
+    child_parts = descendant_parts[:len(parent_parts) + 1]
+    child_separator = separator if separator in parent else descendant_separator
+    if parent_anchor:
+        return parent_anchor + child_separator.join(child_parts)
+    return child_separator.join(child_parts)
+
+
 def _serve_image_preview(filepath: str) -> Response:
     """Serve browser-displayable image content, converting HEIC/HEIF to JPEG in memory."""
     ext = os.path.splitext(filepath)[1].lower()
@@ -260,39 +307,45 @@ async def explorer(path: str = "", db: sqlite3.Connection = Depends(get_db)) -> 
     """Hierarchical directory drilling-down explorer.
 
     If path is empty, lists the previously scanned root folders.
-    If path is specified, lists subfolders inside it (from filesystem) and media files (from DB).
+    If path is specified, lists indexed subfolders and media files from the database.
     """
+    cursor = db.cursor()
+    cursor.execute("SELECT directory_path FROM folder_scan_history ORDER BY last_scanned DESC")
+    scanned_roots = [_normalize_directory_path(row[0]) for row in cursor.fetchall()]
+
     if not path:
-        cursor = db.cursor()
-        cursor.execute("SELECT directory_path FROM folder_scan_history ORDER BY last_scanned DESC")
-        scanned_roots = [row[0] for row in cursor.fetchall()]
-        valid_roots = [r for r in scanned_roots if os.path.exists(r)]
         return {
             "current_path": "",
             "parent_path": None,
-            "directories": valid_roots,
+            "directories": scanned_roots,
             "files": []
         }
 
-    normalized_path = os.path.abspath(path.strip())
-    if not os.path.exists(normalized_path):
-        raise HTTPException(status_code=404, detail="Directory path not found on disk.")
+    normalized_path = _normalize_directory_path(path)
+    cursor.execute(
+        """
+        SELECT DISTINCT parent_path
+        FROM local_media
+        WHERE parent_path IS NOT NULL
+          AND parent_path != ''
+        """
+    )
+    indexed_media_folders = [_normalize_directory_path(row[0]) for row in cursor.fetchall()]
+    indexed_folders = scanned_roots + indexed_media_folders
+    path_known_to_index = any(
+        _is_same_or_descendant_path(candidate, normalized_path) or _is_same_or_descendant_path(normalized_path, candidate)
+        for candidate in indexed_folders
+    )
+    if not path_known_to_index:
+        raise HTTPException(status_code=404, detail="Directory path is not in scanned folder index.")
 
-    if not os.path.isdir(normalized_path):
-        raise HTTPException(status_code=400, detail="Specified path is not a directory.")
+    directories = {
+        child
+        for candidate in indexed_folders
+        if (child := _immediate_child_path(normalized_path, candidate)) is not None
+    }
 
-    # 1. Discover subdirectories from filesystem
-    directories = []
-    try:
-        for item in os.listdir(normalized_path):
-            full_item_path = os.path.join(normalized_path, item)
-            if os.path.isdir(full_item_path):
-                # Only include subdirectories that reside under the path
-                directories.append(full_item_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to read subdirectories: {str(e)}") from e
-    # 2. Query media files belonging directly to this directory from local_media table
-    cursor = db.cursor()
+    # Query media files belonging directly to this indexed directory.
     cursor.execute(
         f"""
         SELECT id, filepath, filename, parent_path, file_size, file_hash, media_type,
@@ -507,6 +560,7 @@ async def dates_explorer(
 @router.get("/search")
 async def search_local_media(
     q: str = "",
+    filename: str = "",
     date_from: str = "",
     date_to: str = "",
     media_type: str = "",
@@ -520,7 +574,11 @@ async def search_local_media(
     conditions = ["1=1"]
     params = []
 
-    if q:
+    if filename:
+        query_pattern = f"%{filename}%"
+        conditions.append("filename LIKE ?")
+        params.append(query_pattern)
+    elif q:
         query_pattern = f"%{q}%"
         conditions.append("(filename LIKE ? OR filepath LIKE ?)")
         params.extend([query_pattern, query_pattern])

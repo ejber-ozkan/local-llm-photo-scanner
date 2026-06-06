@@ -402,11 +402,11 @@ def seed_folders_test_db(db_file, scan_dir):
 
 
 def test_api_folder_scan_explorer(client, mock_db_file, tmp_path):
-    """Tests explorer endpoints for listing root folders and directory traversal."""
+    """Explorer lists only folders and files that were indexed in the database."""
     scan_dir = tmp_path / "vacation"
     scan_dir.mkdir()
-    sub_dir = scan_dir / "day1"
-    sub_dir.mkdir()
+    unscanned_sub_dir = scan_dir / "empty-live-folder"
+    unscanned_sub_dir.mkdir()
 
     seed_folders_test_db(mock_db_file, scan_dir)
 
@@ -420,7 +420,8 @@ def test_api_folder_scan_explorer(client, mock_db_file, tmp_path):
     response = client.get(f"/api/folder-scan/explorer?path={str(scan_dir)}")
     assert response.status_code == 200
     data = response.json()
-    assert str(sub_dir) in data["directories"]
+    assert str(unscanned_sub_dir) not in data["directories"]
+    assert data["directories"] == []
     assert len(data["files"]) == 1
     assert data["files"][0]["filename"] == "pic1.png"
 
@@ -502,6 +503,10 @@ def test_api_folder_scan_search_and_duplicates(client, mock_db_file, tmp_path):
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]["filename"] == "pic1.png"
+
+    response = client.get("/api/folder-scan/search?filename=photos")
+    assert response.status_code == 200
+    assert response.json() == []
 
     # Test Duplicates lookup
     response = client.get("/api/folder-scan/duplicates/1")

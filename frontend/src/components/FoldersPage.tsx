@@ -22,7 +22,8 @@ import {
     Maximize2,
     Sparkles,
     Loader2,
-    CheckCircle
+    CheckCircle,
+    Search
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
@@ -45,6 +46,7 @@ export default function FoldersPage() {
     const [fromDate, setFromDate] = useState<string>('');
     const [toDate, setToDate] = useState<string>('');
     const [mediaTypes, setMediaTypes] = useState<string>('all');
+    const [fileNameQuery, setFileNameQuery] = useState<string>('');
     const [showThumbnails, setShowThumbnails] = useState<boolean>(false);
 
     // FFmpeg transcoding state
@@ -135,6 +137,7 @@ export default function FoldersPage() {
         setToYearSelect('');
         setToMonthSelect('');
         setMediaTypes('all');
+        setFileNameQuery('');
         setShowThumbnails(false);
         setTranscodeQuality('balanced');
     };
@@ -155,6 +158,7 @@ export default function FoldersPage() {
     const [timelineDay, setTimelineDay] = useState<number | null>(null);
     const [timelineDrilldownItems, setTimelineDrilldownItems] = useState<DateDrilldownItem[]>([]);
     const [timelineFiles, setTimelineFiles] = useState<LocalMediaItem[]>([]);
+    const [fileNameResults, setFileNameResults] = useState<LocalMediaItem[]>([]);
 
     // Exact hash duplicate report states
     const [duplicateReport, setDuplicateReport] = useState<DuplicateReportResponse | null>(null);
@@ -184,6 +188,8 @@ export default function FoldersPage() {
 
     const { toasts, dismiss, error: toastError, success: toastSuccess } = useToast();
     const filesContainerRef = useRef<HTMLDivElement>(null);
+    const trimmedFileNameQuery = fileNameQuery.trim();
+    const searchingByFileName = trimmedFileNameQuery.length > 0;
 
     // Check FFmpeg availability once on mount
     useEffect(() => {
@@ -267,6 +273,27 @@ export default function FoldersPage() {
         }
     };
 
+    const fetchFileNameResults = async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            params.set('filename', trimmedFileNameQuery);
+            params.set('sort_by', 'filename');
+            params.set('sort_dir', 'asc');
+            if (fromDate) params.set('date_from', fromDate);
+            if (toDate) params.set('date_to', toDate);
+            if (mediaTypes === 'image' || mediaTypes === 'video') params.set('media_type', mediaTypes);
+
+            const res = await axios.get(`${API_BASE_URL}/api/folder-scan/search?${params.toString()}`);
+            setFileNameResults(res.data);
+        } catch (err) {
+            console.error(err);
+            toastError('Failed to search filenames.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
 
     // Trigger open file in native OS player
@@ -331,6 +358,12 @@ export default function FoldersPage() {
 
     // Handle updates when drilling timeline, changing viewMode or when filters change
     useEffect(() => {
+        if (searchingByFileName && viewMode !== 'duplicates') {
+            fetchFileNameResults();
+            return;
+        }
+
+        setFileNameResults([]);
         if (viewMode === 'explorer') {
             fetchExplorer(currentPath);
         } else if (viewMode === 'timeline') {
@@ -338,7 +371,7 @@ export default function FoldersPage() {
         } else {
             fetchDuplicateReport();
         }
-    }, [viewMode, currentPath, timelineYear, timelineMonth, timelineDay, fromDate, toDate, mediaTypes, duplicateCategory, duplicateReportPage, duplicateReportPageSize]);
+    }, [viewMode, currentPath, timelineYear, timelineMonth, timelineDay, fromDate, toDate, mediaTypes, duplicateCategory, duplicateReportPage, duplicateReportPageSize, trimmedFileNameQuery, searchingByFileName]);
 
     // Format byte sizes into readable form
     const formatBytes = (bytes: number): string => {
@@ -406,10 +439,11 @@ export default function FoldersPage() {
 
     // Active files list in current view (for player next/prev tracking)
     const activeFileList = useMemo(() => {
+        if (searchingByFileName && viewMode !== 'duplicates') return fileNameResults;
         if (viewMode === 'explorer') return explorerData.files;
         if (viewMode === 'timeline') return timelineFiles;
         return [];
-    }, [viewMode, explorerData.files, timelineFiles]);
+    }, [viewMode, explorerData.files, timelineFiles, fileNameResults, searchingByFileName]);
 
     // Groups active files by Year-Month to generate Date Slider notches
     const groupedFileDates = useMemo(() => {
@@ -627,7 +661,23 @@ export default function FoldersPage() {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Filename filter */}
+                    <div className="space-y-2">
+                        <label htmlFor="folder-filename-filter" className="block text-xs font-semibold text-gray-400">Filename</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                            <input
+                                id="folder-filename-filter"
+                                type="text"
+                                value={fileNameQuery}
+                                onChange={(e) => setFileNameQuery(e.target.value)}
+                                placeholder="Full or partial name"
+                                className="w-full pl-9 pr-3 py-2 bg-black/40 border border-gray-800 rounded-xl text-textMain placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-xs"
+                            />
+                        </div>
+                    </div>
+
                     {/* From Date filters */}
                     <div className="space-y-2">
                         <label className="block text-xs font-semibold text-gray-400">From Date</label>
@@ -934,6 +984,37 @@ export default function FoldersPage() {
                         <div className="flex justify-center items-center h-64">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
                         </div>
+                    ) : searchingByFileName && viewMode !== 'duplicates' ? (
+                        fileNameResults.length === 0 ? (
+                            <div className="text-center text-gray-500 mt-20 flex flex-col items-center">
+                                <Search className="w-16 h-16 mb-4 opacity-50 text-blue-400/40" />
+                                <p className="text-lg">No filenames match "{trimmedFileNameQuery}".</p>
+                                <p className="text-sm mt-2 text-gray-600">Try a shorter partial filename or clear the field.</p>
+                            </div>
+                        ) : (
+                            <div className="pb-10">
+                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <Search className="w-4 h-4" /> Filename Matches ({fileNameResults.length})
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1">
+                                    {fileNameResults.map((file) => (
+                                        <FileCard
+                                            key={file.id}
+                                            file={file}
+                                            onClick={() => setSelectedFile(file)}
+                                            onDuplicatesClick={(e) => openDuplicatesModal(e, file)}
+                                            onFolderClick={() => {
+                                                setFileNameQuery('');
+                                                setViewMode('explorer');
+                                                fetchExplorer(file.parent_path);
+                                            }}
+                                            showThumbnail={showThumbnails}
+                                            getMediaUrl={getMediaPreviewUrl}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )
                     ) : viewMode === 'explorer' ? (
                         /* File Explorer hierarchical lists */
                         explorerData.directories.length === 0 && explorerData.files.length === 0 ? (

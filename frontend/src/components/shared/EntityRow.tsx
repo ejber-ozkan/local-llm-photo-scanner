@@ -63,10 +63,10 @@ const EntityRow = React.memo(function EntityRow({
                                 autoFocus
                                 disabled={loading}
                             />
-                            <button onClick={handleSubmit} disabled={loading} className="text-green-500 hover:text-green-400 shrink-0 p-1">
+                            <button onClick={handleSubmit} disabled={loading} aria-label={`Save ${ent.name}`} className="text-green-500 hover:text-green-400 shrink-0 p-1">
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-5 h-5" />}
                             </button>
-                            <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} className="text-gray-500 hover:text-gray-400 shrink-0 p-1">
+                            <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} aria-label={`Cancel editing ${ent.name}`} className="text-gray-500 hover:text-gray-400 shrink-0 p-1">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -88,6 +88,7 @@ const EntityRow = React.memo(function EntityRow({
                     <div className="flex items-center gap-2 shrink-0 min-w-max ml-auto">
                         <button
                             onClick={() => setIsEditing(true)}
+                            aria-label={`Edit ${ent.name}`}
                             className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white transition-opacity p-2 shrink-0"
                             title="Rename person"
                         >
@@ -95,6 +96,7 @@ const EntityRow = React.memo(function EntityRow({
                         </button>
                         <button
                             onClick={() => setConfirmDelete(true)}
+                            aria-label={`Delete ${ent.name}`}
                             className="opacity-0 group-hover:opacity-100 text-red-500/70 hover:text-red-400 p-2 transition-opacity shrink-0"
                             title="Delete Entity"
                         >
@@ -138,10 +140,10 @@ const EntityRow = React.memo(function EntityRow({
                                 autoFocus
                                 disabled={loading}
                             />
-                            <button onClick={handleSubmit} disabled={loading} className="text-green-500 hover:text-green-400 shrink-0">
+                            <button onClick={handleSubmit} disabled={loading} aria-label={`Save ${ent.name}`} className="text-green-500 hover:text-green-400 shrink-0">
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                             </button>
-                            <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} className="text-gray-500 hover:text-gray-400 shrink-0">
+                            <button onClick={() => { setIsEditing(false); setEditName(ent.name); }} disabled={loading} aria-label={`Cancel editing ${ent.name}`} className="text-gray-500 hover:text-gray-400 shrink-0">
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
@@ -160,6 +162,7 @@ const EntityRow = React.memo(function EntityRow({
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 z-10 shrink-0">
                         <button
                             onClick={() => setIsEditing(true)}
+                            aria-label={`Edit ${ent.name}`}
                             className="text-gray-400 hover:text-white p-1"
                             title="Rename entity"
                         >
@@ -167,6 +170,7 @@ const EntityRow = React.memo(function EntityRow({
                         </button>
                         <button
                             onClick={() => setConfirmDelete(true)}
+                            aria-label={`Delete ${ent.name}`}
                             className="text-gray-400 hover:text-red-400 p-1"
                             title="Delete entity"
                         >

@@ -228,7 +228,7 @@ export default function Identify() {
                                 <h2 className="text-xl font-bold text-white">Identify People in Photo</h2>
                                 <p className="text-sm text-gray-400 mt-1">Hover over a name to highlight their face. Click to rename or delete.</p>
                             </div>
-                            <button onClick={closeModal} className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
+                            <button onClick={closeModal} aria-label="Close identify photo" className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
@@ -298,11 +298,12 @@ export default function Identify() {
                                                                     <button
                                                                         onClick={() => handleNameEntity(ent.id, ent.name, editName)}
                                                                         disabled={!editName.trim() || submitting === ent.id}
+                                                                        aria-label={`Save ${ent.name}`}
                                                                         className="text-green-500 hover:text-green-400 shrink-0 p-1"
                                                                     >
                                                                         {submitting === ent.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-5 h-5" />}
                                                                     </button>
-                                                                    <button onClick={() => setEditingId(null)} className="text-gray-500 hover:text-gray-400 shrink-0 p-1">
+                                                                    <button onClick={() => setEditingId(null)} aria-label={`Cancel editing ${ent.name}`} className="text-gray-500 hover:text-gray-400 shrink-0 p-1">
                                                                         <X className="w-5 h-5" />
                                                                     </button>
                                                                 </div>
@@ -326,6 +327,7 @@ export default function Identify() {
                                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                                                 <button
                                                                     onClick={() => { setEditingId(ent.id); setEditName(isUnknown ? '' : ent.name); }}
+                                                                    aria-label={`Edit ${ent.name}`}
                                                                     className="text-gray-400 hover:text-white p-2"
                                                                     title="Rename"
                                                                 >
@@ -333,6 +335,7 @@ export default function Identify() {
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setConfirmDelete(ent)}
+                                                                    aria-label={`Delete ${ent.name}`}
                                                                     className="text-gray-400 hover:text-red-400 p-2"
                                                                     title="Delete entity"
                                                                 >

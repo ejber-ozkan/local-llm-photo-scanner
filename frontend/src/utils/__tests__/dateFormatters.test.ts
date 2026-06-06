@@ -34,6 +34,16 @@ describe('formatDateGroup', () => {
     it('returns "Unknown Date" for malformed date', () => {
         expect(formatDateGroup('not-a-date')).toBe('Unknown Date');
     });
+
+    it('returns "Unknown Date" when date parsing throws', () => {
+        const throwingInput = {
+            replace: () => {
+                throw new Error('bad date value');
+            },
+        };
+
+        expect(formatDateGroup(throwingInput as unknown as string)).toBe('Unknown Date');
+    });
 });
 
 describe('getYearFromDate', () => {
