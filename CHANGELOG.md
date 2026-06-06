@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.2.0] - 2026-06-06
+
+### Added
+
+- Comprehensive behavior-focused tests for all major page components including `SettingsPage`, `FoldersPage`, `Gallery`, `Identify`, `DuplicatesPage`, `ScanTest`, and `VideoPlayer` (raising overall frontend line coverage to 85.41%).
+- Unit tests for reusable UI elements: `Toast`, `ErrorBoundary`, `ConfirmDialog`, `EntityRow`, and `dateFormatters` utility.
+- Vitest coverage threshold enforcement (85% lines, 83% statements, 79% functions, 76% branches) for product code.
+- Dedicated `filename` parameter to the backend search endpoint to support direct filename filtering.
+
+### Changed
+
+- Refactored Local Folder Explorer backend API (`/api/scan/explorer`) to serve folder lists from the database index, removing direct filesystem access and avoiding disk-read bottlenecks.
+- Updated CSS nesting settings in `postcss.config.js` to resolve Vite compiler warnings.
+
+### Fixed
+
+- Handled CLIP AI failure states gracefully in the frontend to avoid unhandled modal exceptions.
+
 ## [3.1.0] - 2026-05-28
 
 ### Added

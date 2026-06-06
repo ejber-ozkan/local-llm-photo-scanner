@@ -1,11 +1,11 @@
-# Local AI Photo Gallery v3.1.0
+# Local AI Photo Gallery v3.2.0
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
 
 ## Features
 
-### v3.1.0 Features
+### v3.2.0 Features
 - **Durable Scan Sessions**: Pause and resume both AI and non-AI folder scans, including after closing and restarting the frontend/backend.
 - **Local Folder Explorer AI Actions**: Send a viewed folder image directly to Full AI or CLIP AI processing from the file information panel without leaving the current view.
 - **Live AI Queue Progress**: Folder image AI actions show an in-app progress popup that follows CLIP, DeepFace, and queue-completion log updates before fading away.
