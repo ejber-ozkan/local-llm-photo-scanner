@@ -5,19 +5,24 @@ import runpy
 from pathlib import Path
 
 
-def test_backup_restore_scripts(mock_db_file, monkeypatch):
+def test_backup_restore_scripts(mock_db_file, monkeypatch, tmp_path):
     import backup_db
     import core.config
     import restore_db
 
+    backup_dir = tmp_path / "test_backups_dir"
+    chroma_dir = tmp_path / "test_chroma_data"
+
     # Override settings explicitly for exactly where mock_db_file points
     backup_db.DB_FILE = mock_db_file
-    backup_db.BACKUP_DIR = "test_backups_dir"
+    backup_db.BACKUP_DIR = str(backup_dir)
+    backup_db.CHROMA_DIR = str(chroma_dir)
     restore_db.DB_FILE = mock_db_file
-    restore_db.BACKUP_DIR = "test_backups_dir"
-    core.config.BACKUPS_DIR = "test_backups_dir"
+    restore_db.BACKUP_DIR = str(backup_dir)
+    restore_db.CHROMA_DIR = str(chroma_dir)
+    core.config.BACKUPS_DIR = str(backup_dir)
 
-    os.makedirs("test_backups_dir", exist_ok=True)
+    os.makedirs(backup_dir, exist_ok=True)
 
     # Run backup
     b_path = backup_db.backup_database()

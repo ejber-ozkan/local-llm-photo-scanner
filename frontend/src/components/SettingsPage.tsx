@@ -330,7 +330,7 @@ export default function SettingsPage() {
 
     const handleControlAction = async (action: 'pause' | 'resume' | 'cancel') => {
         try {
-            await axios.post(`${API_BASE_URL}/api/scan/control`, { action });
+            await axios.post(`${API_BASE_URL}/api/scan/control`, { action, active_model: activeModel });
         } catch (err: any) {
             setApiError(err.message || `Failed to ${action} scan`);
         }

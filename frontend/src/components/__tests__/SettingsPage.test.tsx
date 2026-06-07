@@ -355,6 +355,8 @@ describe('SettingsPage', () => {
 
     it('shows api error when scan control actions fail', async () => {
         vi.useFakeTimers();
+        localStorage.setItem('activeModel', 'llava:7b');
+        let controlPayload: any = null;
         server.use(
             http.get(`${BASE}/api/scan/status`, () => HttpResponse.json({
                 state: 'running',
@@ -363,7 +365,10 @@ describe('SettingsPage', () => {
                 scan_total: 10,
                 scan_processed: 2,
             })),
-            http.post(`${BASE}/api/scan/control`, () => HttpResponse.json({ detail: 'Control failed' }, { status: 500 })),
+            http.post(`${BASE}/api/scan/control`, async ({ request }) => {
+                controlPayload = await request.json();
+                return HttpResponse.json({ detail: 'Control failed' }, { status: 500 });
+            }),
         );
 
         renderSettings();
@@ -377,6 +382,9 @@ describe('SettingsPage', () => {
         const user = userEvent.setup();
         await user.click(pauseBtn);
 
+        await waitFor(() => {
+            expect(controlPayload).toEqual({ action: 'pause', active_model: 'llava:7b' });
+        });
         expect(await screen.findByText('Request failed with status code 500')).toBeInTheDocument();
     });
 

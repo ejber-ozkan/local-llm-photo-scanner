@@ -129,12 +129,15 @@ def test_scan_status_and_logs(client):
 
 
 def test_scan_control(client):
+    import core.config as config
+
     # Pause
     resp = client.post("/api/scan/control", json={"action": "pause"})
     assert resp.status_code == 200
     # Resume
-    resp = client.post("/api/scan/control", json={"action": "resume"})
+    resp = client.post("/api/scan/control", json={"action": "resume", "active_model": "qwen3-vl:8b"})
     assert resp.status_code == 200
+    assert config.ACTIVE_OLLAMA_MODEL == "qwen3-vl:8b"
     # Cancel
     resp = client.post("/api/scan/control", json={"action": "cancel"})
     assert resp.status_code == 200

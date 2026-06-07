@@ -41,6 +41,7 @@ class ScanControlRequest(BaseModel):
     """Payload dictating control signals ('pause', 'resume', 'cancel') to the scanner."""
 
     action: str
+    active_model: str | None = None
 
 
 class DatabaseCleanRequest(BaseModel):

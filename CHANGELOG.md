@@ -6,6 +6,7 @@
 
 - AI scan warm-up now uses the vision model selected in Settings instead of falling back to the backend default after a restart.
 - Local folder Full AI actions now pass the selected Ollama model through to the backend queue.
+- AI scan pause/resume/cancel controls now also pass the selected model so an existing paused queue can resume with the right Ollama model.
 - Ollama warm-up retries transient failures before pausing the queue.
 - Local timeline AI queue requests now declare their date/media filter fields in the backend request model.
 

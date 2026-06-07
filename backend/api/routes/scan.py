@@ -593,6 +593,8 @@ async def control_scan(req: ScanControlRequest, background_tasks: BackgroundTask
     Permits pausing, resuming, or cancelling the background worker thread.
     Cancelling flushes all pending uploads from the SQL store.
     """
+    _apply_active_scan_model(req.active_model)
+
     if req.action == "pause":
         if state.SCAN_STATE == "running":
             state.SCAN_STATE = "paused"
