@@ -19,6 +19,16 @@ def test_image(tmp_path):
     return file_path
 
 
+@pytest.fixture(autouse=True)
+def reset_scan_worker_flags(monkeypatch):
+    """Keep module-global scan flags isolated between worker tests."""
+    monkeypatch.setattr("services.scan_worker.state.USE_OLLAMA", False)
+    monkeypatch.setattr("services.scan_worker.state.USE_CLIP", False)
+    monkeypatch.setattr("services.scan_worker.state.IGNORE_SCREENSHOTS", False)
+    monkeypatch.setattr("services.scan_worker.state.SCAN_STATE", "idle")
+    monkeypatch.setattr("services.scan_worker.warm_ollama_model", lambda *args, **kwargs: True)
+
+
 def seed_db_for_processing(db_file, filepath):
     """Inserts a single file into the DB as pending."""
     conn = sqlite3.connect(db_file)
@@ -70,6 +80,7 @@ def test_background_processor_success(mock_db_file, test_image, mock_ollama, mon
     monkeypatch.setattr("core.config.ACTIVE_OLLAMA_MODEL", "mock_model")
     monkeypatch.setattr("core.config.OLLAMA_URL", "http://localhost:11434/api/generate")
     monkeypatch.setattr("core.state.SCAN_STATE", "running")
+    monkeypatch.setattr("core.state.USE_OLLAMA", True)
 
     # 3. Call background_processor synchronously for testing
     background_processor()
@@ -99,6 +110,51 @@ def test_background_processor_success(mock_db_file, test_image, mock_ollama, mon
     person_entities = [e for e in entities if e[0] == "person"]
     assert len(person_entities) == 1
     assert "Unknown Person" in person_entities[0][1]
+
+
+def test_background_processor_warms_ollama_before_processing(mock_db_file, test_image, monkeypatch):
+    seed_db_for_processing(mock_db_file, test_image)
+    calls = []
+
+    def fake_warm(*args, **kwargs):
+        calls.append("warm")
+        return True
+
+    def fake_process(*args, **kwargs):
+        calls.append("process")
+        return "Description: warmed. Entities: none"
+
+    monkeypatch.setattr("services.scan_worker.warm_ollama_model", fake_warm)
+    monkeypatch.setattr("services.scan_worker.process_image_with_ollama", fake_process)
+    monkeypatch.setattr("services.scan_worker.DEEPFACE_AVAILABLE", False)
+    monkeypatch.setattr("core.state.USE_OLLAMA", True)
+    monkeypatch.setattr("core.state.USE_CLIP", False)
+    monkeypatch.setattr("core.state.SCAN_STATE", "running")
+
+    background_processor()
+
+    assert calls[:2] == ["warm", "process"]
+
+
+def test_background_processor_pauses_when_ollama_warmup_fails(mock_db_file, test_image, monkeypatch):
+    import core.state as state
+
+    seed_db_for_processing(mock_db_file, test_image)
+
+    monkeypatch.setattr("services.scan_worker.warm_ollama_model", lambda *args, **kwargs: False)
+    monkeypatch.setattr("services.scan_worker.process_image_with_ollama", lambda *args, **kwargs: "should not run")
+    monkeypatch.setattr("core.state.USE_OLLAMA", True)
+    monkeypatch.setattr("core.state.USE_CLIP", False)
+    monkeypatch.setattr("core.state.SCAN_STATE", "running")
+
+    background_processor()
+
+    conn = sqlite3.connect(mock_db_file)
+    status = conn.execute("SELECT status FROM photos WHERE filepath = ?", (test_image,)).fetchone()[0]
+    conn.close()
+
+    assert status == "pending"
+    assert state.SCAN_STATE == "paused"
 
 
 def test_background_processor_corrupted_file(mock_db_file, tmp_path, monkeypatch):
@@ -144,6 +200,7 @@ def test_background_processor_clears_gallery_filter_cache(mock_db_file, test_ima
     monkeypatch.setattr("core.config.ACTIVE_OLLAMA_MODEL", "mock_model")
     monkeypatch.setattr("core.config.OLLAMA_URL", "http://localhost:11434/api/generate")
     monkeypatch.setattr("core.state.SCAN_STATE", "running")
+    monkeypatch.setattr("core.state.USE_OLLAMA", True)
 
     background_processor()
 
@@ -482,4 +539,3 @@ def test_scan_worker_deepface_import_warning(monkeypatch):
     # Restore
     monkeypatch.delitem(sys.modules, "deepface")
     importlib.reload(services.scan_worker)
-

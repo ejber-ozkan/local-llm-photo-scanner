@@ -86,6 +86,12 @@ def mock_ollama(monkeypatch):
             json={"response": "A simulated scene containing a dog and a person."},
             status=200,
         )
+        rsps.add(
+            responses.POST,
+            "http://localhost:11434/api/generate",
+            json={"response": "A simulated scene containing a dog and a person."},
+            status=200,
+        )
         yield rsps
 
 

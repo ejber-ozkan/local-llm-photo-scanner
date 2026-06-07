@@ -28,6 +28,8 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "127.0.0.1")
 OLLAMA_PORT = os.environ.get("OLLAMA_PORT", "11434")
 OLLAMA_URL = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}/api/generate"
 OLLAMA_MODELS_URL = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}/api/tags"
+OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE", "30m")
+OLLAMA_PRELOAD_TIMEOUT = int(os.environ.get("OLLAMA_PRELOAD_TIMEOUT", "180"))
 
 # System Config
 ACTIVE_OLLAMA_MODEL = "llama3.2-vision:latest"

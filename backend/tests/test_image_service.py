@@ -207,6 +207,34 @@ def test_process_image_with_ollama_success():
     with patch("services.image_service.encode_image_to_base64", return_value="encoded_data"):
         res = image_service.process_image_with_ollama("dummy.jpg", url, model)
         assert res == "Description: a cute dog. Entities: dog"
+        assert '"keep_alive": "30m"' in responses.calls[0].request.body.decode("utf-8")
+
+
+@responses.activate
+def test_warm_ollama_model_uses_keep_alive():
+    url = "http://localhost:11434/api/generate"
+
+    responses.add(
+        responses.POST,
+        url,
+        json={"done": True, "load_duration": 123},
+        status=200,
+    )
+
+    assert image_service.warm_ollama_model(url, "llava:13b", keep_alive="2h", timeout=5) is True
+    body = responses.calls[0].request.body.decode("utf-8")
+    assert '"model": "llava:13b"' in body
+    assert '"prompt": ""' in body
+    assert '"keep_alive": "2h"' in body
+
+
+@responses.activate
+def test_warm_ollama_model_failure_returns_false():
+    url = "http://localhost:11434/api/generate"
+
+    responses.add(responses.POST, url, status=500)
+
+    assert image_service.warm_ollama_model(url, "llava:13b", keep_alive="2h", timeout=5) is False
 
 
 @responses.activate

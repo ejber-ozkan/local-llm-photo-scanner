@@ -25,7 +25,7 @@ import core.config as config
 from core.config import DB_FILE
 import core.chroma
 from database_setup import find_best_face_match
-from services.image_service import extract_exif_for_filters, process_image_with_ollama
+from services.image_service import extract_exif_for_filters, process_image_with_ollama, warm_ollama_model
 from services.scan_sessions import get_resumable_session, set_session_status
 
 
@@ -52,6 +52,18 @@ def background_processor() -> None:
     if session:
         state.current_scan_total = session["total_count"]
         state.current_scan_processed = session["processed_count"]
+
+    if state.USE_OLLAMA:
+        state.add_log(f"Warming Ollama model before scan: {config.ACTIVE_OLLAMA_MODEL}")
+        if warm_ollama_model(config.OLLAMA_URL, config.ACTIVE_OLLAMA_MODEL):
+            state.add_log(f"Ollama model ready: {config.ACTIVE_OLLAMA_MODEL}")
+        else:
+            state.add_log(f"Ollama model warm-up failed; pausing AI scan before processing images: {config.ACTIVE_OLLAMA_MODEL}")
+            if session_id is not None:
+                set_session_status(conn, session_id, "paused")
+            state.SCAN_STATE = "paused"
+            conn.close()
+            return
 
     while True:
         if state.SCAN_STATE == "idle":

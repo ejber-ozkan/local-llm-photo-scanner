@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.6.0] - 2026-06-07
+
+### Added
+
+- AI scan Ollama warm-up step that preloads the active local vision model before processing queued images.
+- Configurable `OLLAMA_KEEP_ALIVE` and `OLLAMA_PRELOAD_TIMEOUT` backend settings for more reliable long-running local scans.
+- README guidance for Ollama model preloading, keep-alive values, and manual unload commands.
+
+### Changed
+
+- Ollama image-description requests now include `keep_alive` so the active model is less likely to unload between scan items.
+- AI scans pause before touching queued images if the Ollama warm-up request fails.
+
 ## [3.5.0] - 2026-06-07
 
 ### Added

@@ -1,9 +1,14 @@
-# Local AI Photo Gallery v3.5.0
+# Local AI Photo Gallery v3.6.0
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
 
 ## Features
+
+### v3.6.0 Features
+- **Ollama Scan Warm-Up**: AI scans now preload the selected Ollama vision model before processing the first image and pause safely if the model cannot be loaded.
+- **Ollama Keep-Alive Controls**: Backend Ollama requests include a configurable keep-alive value so large vision models are less likely to unload mid-scan.
+- **Ollama Setup Guidance**: README setup notes now include model preload and keep-alive options for long-running local scans.
 
 ### v3.5.0 Features
 - **Durable Scan Sessions**: Pause and resume both AI and non-AI folder scans, including after closing and restarting the frontend/backend.
@@ -162,6 +167,57 @@ To use the application, you need to run both the FastAPI backend and the React f
 
 ### 1. Ensure Ollama is Running
 Make sure the Ollama service is active. By default, it runs on `http://localhost:11434`.
+
+For AI scans, the backend now sends a preload request before processing the first image. By default, Ollama keeps a model loaded for only a short idle period, so this app also sends `keep_alive` with every Ollama request.
+
+Recommended app settings for long scans:
+
+**Windows PowerShell:**
+```powershell
+$env:OLLAMA_HOST = "127.0.0.1"
+$env:OLLAMA_PORT = "11434"
+$env:OLLAMA_KEEP_ALIVE = "30m"
+$env:OLLAMA_PRELOAD_TIMEOUT = "180"
+```
+
+**Linux/macOS:**
+```bash
+export OLLAMA_HOST=127.0.0.1
+export OLLAMA_PORT=11434
+export OLLAMA_KEEP_ALIVE=30m
+export OLLAMA_PRELOAD_TIMEOUT=180
+```
+
+Set `OLLAMA_KEEP_ALIVE` to a longer value such as `24h` for all-day scans, or `-1` if you want Ollama to keep the model loaded until you stop it manually. This uses more VRAM/RAM, but avoids the cold-start delay and reduces first-image failures on large vision models.
+
+You can also manually preload the default vision model before starting a scan:
+
+**Windows PowerShell:**
+```powershell
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:11434/api/generate" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"model":"llama3.2-vision:latest","prompt":"","stream":false,"keep_alive":"30m"}'
+```
+
+**Linux/macOS:**
+```bash
+curl http://127.0.0.1:11434/api/generate \
+  -d '{"model":"llama3.2-vision:latest","prompt":"","stream":false,"keep_alive":"30m"}'
+```
+
+To confirm what Ollama has loaded:
+
+```bash
+ollama ps
+```
+
+To unload a model manually:
+
+```bash
+ollama stop llama3.2-vision:latest
+```
 
 ### 2. Start using provided scripts (Recommended)
 

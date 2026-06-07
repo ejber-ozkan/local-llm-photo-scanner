@@ -7,6 +7,8 @@ import requests
 from PIL import Image
 from PIL.ExifTags import TAGS
 
+import core.config as config
+
 
 class ImageServiceError(Exception):
     """Base exception for errors originating from the image service module."""
@@ -253,6 +255,31 @@ def encode_image_to_base64(filepath: str) -> str:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
+def warm_ollama_model(
+    ollama_url: str,
+    model_to_use: str,
+    keep_alive: str | None = None,
+    timeout: int | None = None,
+) -> bool:
+    """Load an Ollama model before the first real image request."""
+    keep_alive_value = keep_alive or config.OLLAMA_KEEP_ALIVE
+    timeout_value = timeout or config.OLLAMA_PRELOAD_TIMEOUT
+    payload = {
+        "model": model_to_use,
+        "prompt": "",
+        "stream": False,
+        "keep_alive": keep_alive_value,
+    }
+
+    try:
+        response = requests.post(ollama_url, json=payload, timeout=timeout_value)
+        response.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"Error warming Ollama model '{model_to_use}': {e}")
+        return False
+
+
 def process_image_with_ollama(filepath: str, ollama_url: str, model_to_use: str) -> str | None:
     """Sends the image to local Ollama to get a description and pet entities.
 
@@ -279,7 +306,13 @@ def process_image_with_ollama(filepath: str, ollama_url: str, model_to_use: str)
             "Format the output strictly as: 'Description: [description]. Entities: [comma separated list of pet entities]'"
         )
 
-        payload = {"model": model_to_use, "prompt": prompt, "stream": False, "images": [base64_image]}
+        payload = {
+            "model": model_to_use,
+            "prompt": prompt,
+            "stream": False,
+            "images": [base64_image],
+            "keep_alive": config.OLLAMA_KEEP_ALIVE,
+        }
 
         response = requests.post(ollama_url, json=payload, timeout=60)
 
