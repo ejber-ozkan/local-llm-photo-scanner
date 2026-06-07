@@ -483,5 +483,60 @@
     "mtime": 1772377863.4540145,
     "ast_hash": "ff8d3341c0e7ec0de8f893416a54fb89",
     "semantic_hash": "ff8d3341c0e7ec0de8f893416a54fb89"
+  },
+  "backend/faces2_debug.json": {
+    "mtime": 1771634076.3016298,
+    "ast_hash": "542580d3a7c01467449b11035f405d20",
+    "semantic_hash": ""
+  },
+  "backend/faces2_retina_debug.json": {
+    "mtime": 1771634123.9993703,
+    "ast_hash": "3d9754e2a1bc23cb681847653e09ef48",
+    "semantic_hash": ""
+  },
+  "backend/faces_debug.json": {
+    "mtime": 1771632206.7404683,
+    "ast_hash": "9649ef14925aa2a28dff202c07034048",
+    "semantic_hash": ""
+  },
+  "CHANGELOG.md": {
+    "mtime": 1780847561.978324,
+    "ast_hash": "2d60378740c577650b48641261b6b0f4",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1780847550.5718331,
+    "ast_hash": "f1f04da431221b976752c0e932378957",
+    "semantic_hash": ""
+  },
+  "backend/mypy_output.txt": {
+    "mtime": 1772276180.2733042,
+    "ast_hash": "0985c12d23cedbb9af5339c7cac64f71",
+    "semantic_hash": ""
+  },
+  "backend/requirements.txt": {
+    "mtime": 1772876620.28938,
+    "ast_hash": "8c85f4cd77f8d56c900e5c2332b67402",
+    "semantic_hash": ""
+  },
+  "frontend/README.md": {
+    "mtime": 1771626925.0458236,
+    "ast_hash": "cac141da861c855e069a9c32557458ac",
+    "semantic_hash": ""
+  },
+  "frontend/index.html": {
+    "mtime": 1771772116.1022913,
+    "ast_hash": "163d0a4c331bbabac466990da20e7664",
+    "semantic_hash": ""
+  },
+  "frontend/public/vite.svg": {
+    "mtime": 1771626925.0755985,
+    "ast_hash": "8e3a10e157f75ada21ab742c022d5430",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/react.svg": {
+    "mtime": 1771626925.0615957,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": ""
   }
 }
