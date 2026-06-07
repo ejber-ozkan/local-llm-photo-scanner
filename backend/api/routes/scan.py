@@ -44,11 +44,62 @@ class ScanFileRequest(BaseModel):
     use_clip: bool = True
 
 
+class LocalDateScopeScanRequest(BaseModel):
+    """Payload to queue local folder images for a selected timeline date scope."""
+
+    year: int
+    month: int | None = None
+    day: int | None = None
+    use_ollama: bool = True
+    use_clip: bool = True
+    ignore_screenshots: bool = True
+    media_types: str = "all"
+    from_date: str = ""
+    to_date: str = ""
+
+
 def _clear_gallery_filters_cache() -> None:
     """Invalidate gallery filter cache after scan-side data changes."""
     from api.routes.gallery import clear_gallery_filters_cache
 
     clear_gallery_filters_cache()
+
+
+def _queue_image_path(
+    cursor: sqlite3.Cursor,
+    normalized_path: str,
+    session_id: int,
+    scan_time: str,
+) -> tuple[int | None, int, str]:
+    """Queue one image path in the AI gallery table and return its queue delta."""
+    cursor.execute("SELECT id, status FROM photos WHERE filepath = ? LIMIT 1", (normalized_path,))
+    existing_photo = cursor.fetchone()
+
+    if existing_photo:
+        photo_id, photo_status = existing_photo
+        if photo_status in {"pending", "processing"}:
+            cursor.execute("UPDATE photos SET scan_session_id = ? WHERE id = ?", (session_id, photo_id))
+            return photo_id, 0, photo_status
+        if photo_status == "processed":
+            return photo_id, 0, photo_status
+        cursor.execute(
+            """
+            UPDATE photos
+            SET status = 'pending', scan_session_id = ?, description = NULL
+            WHERE id = ?
+            """,
+            (session_id, photo_id),
+        )
+        return photo_id, 1, "pending"
+
+    cursor.execute(
+        """
+        INSERT INTO photos (filepath, filename, scanned_at, scan_session_id)
+        VALUES (?, ?, ?, ?)
+        """,
+        (normalized_path, os.path.basename(normalized_path), scan_time, session_id),
+    )
+    return cursor.lastrowid, 1, "pending"
 
 
 @router.post("")
@@ -184,34 +235,10 @@ async def scan_file(
         force_rescan=False,
     )
 
-    if existing_photo:
-        photo_id, status = existing_photo
-        if status in {"pending", "processing"}:
-            cursor.execute("UPDATE photos SET scan_session_id = ? WHERE id = ?", (session_id, photo_id))
-            queued_count = 0
-        elif status == "processed":
-            return {"message": "Image is already processed in the AI gallery.", "photo_id": photo_id, "status": status}
-        else:
-            cursor.execute(
-                """
-                UPDATE photos
-                SET status = 'pending', scan_session_id = ?, description = NULL
-                WHERE id = ?
-                """,
-                (session_id, photo_id),
-            )
-            queued_count = 1
-    else:
-        scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute(
-            """
-            INSERT INTO photos (filepath, filename, scanned_at, scan_session_id)
-            VALUES (?, ?, ?, ?)
-            """,
-            (normalized_path, os.path.basename(normalized_path), scan_time, session_id),
-        )
-        photo_id = cursor.lastrowid
-        queued_count = 1
+    scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    photo_id, queued_count, status = _queue_image_path(cursor, normalized_path, session_id, scan_time)
+    if status == "processed":
+        return {"message": "Image is already processed in the AI gallery.", "photo_id": photo_id, "status": status}
 
     cursor.execute(
         """
@@ -231,6 +258,116 @@ async def scan_file(
 
     state.add_log(f"Queued file for AI processing: {normalized_path}")
     return {"message": "Image queued for AI processing.", "photo_id": photo_id, "status": "pending"}
+
+
+@router.post("/local-date-scope")
+async def scan_local_date_scope(
+    req: LocalDateScopeScanRequest,
+    background_tasks: BackgroundTasks,
+    db: sqlite3.Connection = Depends(get_db),
+) -> dict[str, Any]:
+    """Queue local folder images matching a timeline year/month/day scope."""
+    state.IGNORE_SCREENSHOTS = req.ignore_screenshots
+    state.USE_OLLAMA = req.use_ollama
+    state.USE_CLIP = req.use_clip
+
+    cursor = db.cursor()
+    conditions = [
+        "year = ?",
+        "media_type = 'image'",
+        "(validation_status IS NULL OR validation_status != 'invalid_media_stub')",
+    ]
+    params: list[Any] = [req.year]
+
+    if req.month is not None:
+        conditions.append("month = ?")
+        params.append(req.month)
+    if req.day is not None:
+        conditions.append("day = ?")
+        params.append(req.day)
+    if req.from_date:
+        conditions.append("date(REPLACE(SUBSTR(COALESCE(NULLIF(date_taken, ''), date_fallback), 1, 10), ':', '-')) >= date(?)")
+        params.append(req.from_date)
+    if req.to_date:
+        conditions.append("date(REPLACE(SUBSTR(COALESCE(NULLIF(date_taken, ''), date_fallback), 1, 10), ':', '-')) <= date(?)")
+        params.append(req.to_date)
+    if req.media_types not in {"all", "image"}:
+        return {
+            "message": "No image files matched this timeline scope.",
+            "queued_count": 0,
+            "skipped_count": 0,
+            "missing_count": 0,
+        }
+
+    cursor.execute(
+        f"""
+        SELECT filepath
+        FROM local_media
+        WHERE {" AND ".join(conditions)}
+        ORDER BY filepath ASC
+        """,
+        tuple(params),
+    )
+    paths = [os.path.abspath(str(row[0])) for row in cursor.fetchall()]
+
+    active_session = get_resumable_session(db, "ai")
+    root_path = f"local timeline {req.year}"
+    if req.month is not None:
+        root_path += f"-{req.month:02d}"
+    if req.day is not None:
+        root_path += f"-{req.day:02d}"
+    session_id = active_session["id"] if active_session else create_scan_session(
+        db,
+        "ai",
+        root_path,
+        force_rescan=False,
+    )
+
+    scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    queued_count = 0
+    skipped_count = 0
+    missing_count = 0
+
+    for path in paths:
+        if not os.path.exists(path):
+            missing_count += 1
+            continue
+        _, queued_delta, _ = _queue_image_path(cursor, path, session_id, scan_time)
+        queued_count += queued_delta
+        if queued_delta == 0:
+            skipped_count += 1
+
+    cursor.execute(
+        """
+        UPDATE scan_sessions
+        SET total_count = total_count + ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (queued_count, session_id),
+    )
+    db.commit()
+
+    if state.SCAN_STATE == "idle":
+        state.current_scan_total = (active_session["total_count"] if active_session else 0) + queued_count
+        state.current_scan_processed = active_session["processed_count"] if active_session else 0
+        if queued_count > 0:
+            state.SCAN_STATE = "running"
+            background_tasks.add_task(background_processor)
+        elif not active_session:
+            set_session_status(db, session_id, "completed")
+    else:
+        state.current_scan_total += queued_count
+
+    state.add_log(
+        f"Queued {queued_count} local timeline images for AI processing "
+        f"({skipped_count} already queued or processed, {missing_count} missing)."
+    )
+    return {
+        "message": f"Queued {queued_count} images for AI processing.",
+        "queued_count": queued_count,
+        "skipped_count": skipped_count,
+        "missing_count": missing_count,
+    }
 
 
 @router.post("/single")

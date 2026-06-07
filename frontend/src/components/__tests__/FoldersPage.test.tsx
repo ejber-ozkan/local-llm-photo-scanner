@@ -246,6 +246,42 @@ describe('FoldersPage timeline', () => {
         expect(screen.queryByText('Identify Destination')).not.toBeInTheDocument();
     });
 
+    it('bulk queues the selected timeline year for CLIP AI with screenshot filtering enabled', async () => {
+        let bulkPayload: unknown = null;
+        server.use(
+            http.get(`${BASE}/api/system/check-ffmpeg`, () => HttpResponse.json({ available: true })),
+            http.get(`${BASE}/api/folder-scan/dates`, ({ request }) => {
+                const params = new URL(request.url).searchParams;
+                if (!params.get('year')) return HttpResponse.json([{ label: 'Year2024', value: 2024, count: 3 }]);
+                return HttpResponse.json([{ label: 'Month5', value: 5, count: 3 }]);
+            }),
+            http.post(`${BASE}/api/scan/local-date-scope`, async ({ request }) => {
+                bulkPayload = await request.json();
+                return HttpResponse.json({ message: 'Queued 3 images for AI processing.', queued_count: 3, skipped_count: 0 });
+            }),
+        );
+
+        renderFoldersPage();
+
+        await userEvent.click(await screen.findByText('Year2024'));
+        await userEvent.click(await screen.findByRole('button', { name: /send visible timeline items to clip ai/i }));
+
+        await waitFor(() => {
+            expect(bulkPayload).toEqual({
+                year: 2024,
+                month: null,
+                day: null,
+                use_ollama: false,
+                use_clip: true,
+                ignore_screenshots: true,
+                media_types: 'all',
+                from_date: '',
+                to_date: '',
+            });
+        });
+        expect(await screen.findByText('Queued 3 images for AI processing.')).toBeInTheDocument();
+    });
+
     it('adds date filters to timeline requests and clears back to the unfiltered timeline', async () => {
         const observedQueries: string[] = [];
         server.use(

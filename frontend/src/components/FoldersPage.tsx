@@ -549,6 +549,30 @@ export default function FoldersPage() {
         }
     };
 
+    const sendTimelineScopeToAi = async (mode: 'full' | 'clip') => {
+        if (timelineYear === null) return;
+
+        const progressLabel = mode === 'full' ? 'Full AI' : 'CLIP AI';
+        try {
+            const res = await axios.post(`${API_BASE_URL}/api/scan/local-date-scope`, {
+                year: timelineYear,
+                month: timelineMonth,
+                day: timelineDay,
+                use_ollama: mode === 'full',
+                use_clip: true,
+                ignore_screenshots: true,
+                media_types: mediaTypes,
+                from_date: fromDate,
+                to_date: toDate,
+            });
+            toastSuccess(res.data?.message || `Queued timeline items for ${progressLabel}.`);
+        } catch (err) {
+            console.error(err);
+            const message = axios.isAxiosError(err) ? err.response?.data?.detail : null;
+            toastError(message || `Failed to queue timeline items for ${progressLabel}.`);
+        }
+    };
+
     useEffect(() => {
         if (!aiProgress?.active || aiProgress.complete) return;
 
@@ -846,7 +870,7 @@ export default function FoldersPage() {
             </div>
 
             {/* Breadcrumbs or Back navigation line */}
-            <div className="max-w-7xl w-full mx-auto mb-6 flex items-center gap-3 shrink-0">
+            <div className="max-w-7xl w-full mx-auto mb-6 flex flex-col gap-2 shrink-0">
                 {viewMode === 'explorer' ? (
                     <div className="flex items-center flex-wrap gap-2 text-sm text-textMuted bg-surface/50 border border-gray-800/50 py-2 px-4 rounded-xl w-full">
                         <button
@@ -943,43 +967,73 @@ export default function FoldersPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2 text-sm text-textMuted bg-surface/50 border border-gray-800/50 py-2 px-4 rounded-xl w-full">
-                        <button
-                            onClick={() => navigate('/folders')}
-                            className="hover:text-white flex items-center gap-1.5 transition-colors"
-                        >
-                            <Calendar className="w-4 h-4 text-indigo-400" />
-                            <span>Timeline</span>
-                        </button>
-                        {timelineYear !== null && (
-                            <>
-                                <span className="text-gray-700">&gt;</span>
-                                <button
-                                    onClick={() => navigate(`/folders/${timelineYear}`)}
-                                    className={`hover:text-white transition-colors ${timelineMonth === null ? 'text-indigo-400 font-semibold' : ''}`}
-                                >
-                                    {timelineYear}
-                                </button>
-                            </>
+                    <>
+                        <div className="flex items-center gap-2 text-sm text-textMuted bg-surface/50 border border-gray-800/50 py-2 px-4 rounded-xl w-full">
+                            <button
+                                onClick={() => navigate('/folders')}
+                                className="hover:text-white flex items-center gap-1.5 transition-colors"
+                            >
+                                <Calendar className="w-4 h-4 text-indigo-400" />
+                                <span>Timeline</span>
+                            </button>
+                            {timelineYear !== null && (
+                                <>
+                                    <span className="text-gray-700">&gt;</span>
+                                    <button
+                                        onClick={() => navigate(`/folders/${timelineYear}`)}
+                                        className={`hover:text-white transition-colors ${timelineMonth === null ? 'text-indigo-400 font-semibold' : ''}`}
+                                    >
+                                        {timelineYear}
+                                    </button>
+                                </>
+                            )}
+                            {timelineMonth !== null && (
+                                <>
+                                    <span className="text-gray-700">&gt;</span>
+                                    <button
+                                        onClick={() => navigate(`/folders/${timelineYear}/${timelineMonth}`)}
+                                        className={`hover:text-white transition-colors ${timelineDay === null ? 'text-indigo-400 font-semibold' : ''}`}
+                                    >
+                                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][timelineMonth - 1]}
+                                    </button>
+                                </>
+                            )}
+                            {timelineDay !== null && (
+                                <>
+                                    <span className="text-gray-700">&gt;</span>
+                                    <span className="text-indigo-400 font-semibold">{timelineDay.toString().padStart(2, '0')}</span>
+                                </>
+                            )}
+                        </div>
+                        {timelineYear !== null && !selectedFile && !searchingByFileName && mediaTypes !== 'video' && mediaTypes !== 'invalid_media_stub' && (
+                            <div className="flex flex-col gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] px-3 py-2 text-xs text-gray-300 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <Zap className="h-4 w-4 shrink-0 text-indigo-300" />
+                                    <span className="truncate">Send visible timeline items to the AI queue</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        aria-label="Send visible timeline items to Full AI"
+                                        onClick={() => sendTimelineScopeToAi('full')}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/40 bg-indigo-500/15 px-3 py-1.5 font-semibold text-indigo-100 transition-colors hover:border-indigo-300 hover:bg-indigo-500/25"
+                                    >
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        Full AI
+                                    </button>
+                                    <button
+                                        type="button"
+                                        aria-label="Send visible timeline items to CLIP AI"
+                                        onClick={() => sendTimelineScopeToAi('clip')}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/40 bg-sky-500/10 px-3 py-1.5 font-semibold text-sky-100 transition-colors hover:border-sky-300 hover:bg-sky-500/20"
+                                    >
+                                        <Zap className="h-3.5 w-3.5" />
+                                        CLIP AI
+                                    </button>
+                                </div>
+                            </div>
                         )}
-                        {timelineMonth !== null && (
-                            <>
-                                <span className="text-gray-700">&gt;</span>
-                                <button
-                                    onClick={() => navigate(`/folders/${timelineYear}/${timelineMonth}`)}
-                                    className={`hover:text-white transition-colors ${timelineDay === null ? 'text-indigo-400 font-semibold' : ''}`}
-                                >
-                                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][timelineMonth - 1]}
-                                </button>
-                            </>
-                        )}
-                        {timelineDay !== null && (
-                            <>
-                                <span className="text-gray-700">&gt;</span>
-                                <span className="text-indigo-400 font-semibold">{timelineDay.toString().padStart(2, '0')}</span>
-                            </>
-                        )}
-                    </div>
+                    </>
                 )}
             </div>
 

@@ -1,4 +1,5 @@
 import io
+import os
 import sqlite3
 
 import pytest
@@ -131,6 +132,67 @@ def test_settings_models(client):
 
     resp2 = client.post("/api/settings/model", json={"active_model": "llama3.2-vision:latest"})
     assert resp2.status_code == 200
+
+
+def test_queue_local_date_scope_for_full_ai(client, mock_db_file, dummy_img, monkeypatch):
+    from api.routes import scan
+    import core.state as state
+
+    monkeypatch.setattr(scan, "background_processor", lambda: None)
+    state.SCAN_STATE = "idle"
+
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO local_media (
+            filepath, filename, parent_path, file_size, file_hash, media_type,
+            validation_status, year, month, day
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (dummy_img, "scope.jpg", os.path.dirname(dummy_img), 100, "hash-scope", "image", "valid", 2024, 5, 24),
+    )
+    c.execute(
+        """
+        INSERT INTO local_media (
+            filepath, filename, parent_path, file_size, file_hash, media_type,
+            validation_status, year, month, day
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(os.path.join(os.path.dirname(dummy_img), "movie.mp4")),
+            "movie.mp4",
+            os.path.dirname(dummy_img),
+            100,
+            "hash-video",
+            "video",
+            "valid",
+            2024,
+            5,
+            24,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/scan/local-date-scope",
+        json={"year": 2024, "use_ollama": True, "use_clip": True, "ignore_screenshots": True},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["queued_count"] == 1
+    assert state.IGNORE_SCREENSHOTS is True
+    assert state.USE_OLLAMA is True
+    assert state.USE_CLIP is True
+
+    conn = sqlite3.connect(mock_db_file)
+    rows = conn.execute("SELECT filepath, status FROM photos").fetchall()
+    conn.close()
+    assert rows == [(dummy_img, "pending")]
+    state.SCAN_STATE = "idle"
+    state.current_scan_total = 0
+    state.current_scan_processed = 0
 
 
 def test_test_entities_endpoints(client, mock_db_file, dummy_img):

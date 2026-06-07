@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.5.0] - 2026-06-07
+
+### Added
+
+- Bulk AI queue actions under Local Folder timeline breadcrumbs for selected year, month, or day scopes.
+- Backend date-scope queue endpoint that reuses the existing AI scan worker and automatically enables screenshot ignoring for bulk timeline queues.
+- Tests covering bulk timeline CLIP queue requests and backend local date-scope queueing.
+
 ## [3.4.0] - 2026-06-07
 
 ### Added
