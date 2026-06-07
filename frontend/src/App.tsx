@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { Camera, Search, UserCheck, Settings, Copy, Loader2, FolderOpen } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
+import GlobalScanStatusPanel from './components/GlobalScanStatusPanel';
 
 // ── Lazy-loaded route components (bundle-dynamic-imports) ─────────────
 const Gallery = lazy(() => import('./components/Gallery'));
@@ -76,6 +77,7 @@ function App() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-auto h-screen relative bg-gradient-to-br from-background via-background to-[#111]">
+          <GlobalScanStatusPanel />
           <ErrorBoundary>
             <Suspense fallback={<RouteSpinner />}>
               <Routes>

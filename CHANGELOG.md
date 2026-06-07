@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0] - 2026-06-07
+
+### Added
+
+- Global scan activity panel across all app pages showing active AI and local folder scans, processed totals, remaining queue counts, and collapsible responsive details.
+- Frontend tests for idle, AI scan, local folder scan, and collapsed scan panel states.
+
 ## [3.3.1] - 2026-06-06
 
 ### Added
