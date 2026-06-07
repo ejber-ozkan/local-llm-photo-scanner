@@ -238,6 +238,17 @@ def test_warm_ollama_model_failure_returns_false():
 
 
 @responses.activate
+def test_warm_ollama_model_retries_transient_failure():
+    url = "http://localhost:11434/api/generate"
+
+    responses.add(responses.POST, url, status=500)
+    responses.add(responses.POST, url, json={"done": True}, status=200)
+
+    assert image_service.warm_ollama_model(url, "qwen3-vl:8b", keep_alive="2h", timeout=5, attempts=2, delay=0) is True
+    assert len(responses.calls) == 2
+
+
+@responses.activate
 def test_process_image_with_ollama_model_not_found():
     url = "http://localhost:11434/api/generate"
     model = "non-existent-model"

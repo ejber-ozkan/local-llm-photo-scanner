@@ -129,6 +129,8 @@ def test_start_scan_invalid_path(client):
 
 def test_start_scan_success(client, tmp_path, mock_ollama, mock_deepface, monkeypatch):
     """Test that starting a scan correctly enqueue background tasks."""
+    import core.config as config
+
     # Arrange: Create test directory with dummy image
     test_scan_dir = tmp_path / "scan_target"
     test_scan_dir.mkdir()
@@ -137,10 +139,18 @@ def test_start_scan_success(client, tmp_path, mock_ollama, mock_deepface, monkey
 
     # We must patch add_task on BackgroundTasks so we can spy on it, or just let it queue.
     # To test without waiting, we'll verify the HTTP response first.
-    response = client.post("/api/scan", json={"directory_path": str(test_scan_dir), "run_facial_recognition": True})
+    response = client.post(
+        "/api/scan",
+        json={
+            "directory_path": str(test_scan_dir),
+            "run_facial_recognition": True,
+            "active_model": "qwen3-vl:8b",
+        },
+    )
     assert response.status_code == 200
     data = response.json()
     assert "Scan complete. Added 1 new images" in data["message"]
+    assert config.ACTIVE_OLLAMA_MODEL == "qwen3-vl:8b"
 
 
 def test_rename_entity_success(client, mock_db_file):

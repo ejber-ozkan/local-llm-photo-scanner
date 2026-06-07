@@ -1,5 +1,6 @@
 import base64
 import os
+import time
 from datetime import datetime
 from typing import Any
 
@@ -260,6 +261,8 @@ def warm_ollama_model(
     model_to_use: str,
     keep_alive: str | None = None,
     timeout: int | None = None,
+    attempts: int = 3,
+    delay: float = 5.0,
 ) -> bool:
     """Load an Ollama model before the first real image request."""
     keep_alive_value = keep_alive or config.OLLAMA_KEEP_ALIVE
@@ -271,13 +274,17 @@ def warm_ollama_model(
         "keep_alive": keep_alive_value,
     }
 
-    try:
-        response = requests.post(ollama_url, json=payload, timeout=timeout_value)
-        response.raise_for_status()
-        return True
-    except Exception as e:
-        print(f"Error warming Ollama model '{model_to_use}': {e}")
-        return False
+    total_attempts = max(1, attempts)
+    for attempt in range(1, total_attempts + 1):
+        try:
+            response = requests.post(ollama_url, json=payload, timeout=timeout_value)
+            response.raise_for_status()
+            return True
+        except Exception as e:
+            print(f"Error warming Ollama model '{model_to_use}' (attempt {attempt}/{total_attempts}): {e}")
+            if attempt < total_attempts and delay > 0:
+                time.sleep(delay)
+    return False
 
 
 def process_image_with_ollama(filepath: str, ollama_url: str, model_to_use: str) -> str | None:

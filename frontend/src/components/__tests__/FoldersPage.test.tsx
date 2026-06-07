@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -7,6 +7,10 @@ import FoldersPage from '../FoldersPage';
 import { server } from '../../test/mocks/server';
 
 const BASE = 'http://localhost:8000';
+
+afterEach(() => {
+    localStorage.removeItem('activeModel');
+});
 
 function renderFoldersPage(initialEntry = '/folders') {
     return render(
@@ -184,6 +188,7 @@ describe('FoldersPage timeline', () => {
     });
 
     it('queues an opened folder image for full AI without leaving the current view', async () => {
+        localStorage.setItem('activeModel', 'llava:13b');
         let queuedPayload: any = null;
         server.use(
             http.get(`${BASE}/api/system/check-ffmpeg`, () => HttpResponse.json({ available: true })),
@@ -237,6 +242,7 @@ describe('FoldersPage timeline', () => {
                 filepath: 'C:\\Photos\\ai-target.jpg',
                 use_ollama: true,
                 use_clip: true,
+                active_model: 'llava:13b',
             });
         });
         expect(await screen.findByText(/Generating CLIP embedding for:/)).toBeInTheDocument();

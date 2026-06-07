@@ -254,7 +254,8 @@ export default function SettingsPage() {
                 force_rescan: force,
                 ignore_screenshots: ignoreScreenshots,
                 use_ollama: useOllama,
-                use_clip: useClip
+                use_clip: useClip,
+                active_model: activeModel
             });
             setPath('');
             setIsHistoryOpen(false); // Close history so user can see it processing

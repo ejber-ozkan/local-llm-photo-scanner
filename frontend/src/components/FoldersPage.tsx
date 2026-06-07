@@ -522,6 +522,7 @@ export default function FoldersPage() {
         if (!selectedFile || selectedFile.media_type !== 'image') return;
 
         const progressLabel = mode === 'full' ? 'Full AI' : 'CLIP AI';
+        const activeModel = localStorage.getItem('activeModel') || undefined;
         setAiProgress({
             active: true,
             complete: false,
@@ -534,7 +535,8 @@ export default function FoldersPage() {
             const res = await axios.post(`${API_BASE_URL}/api/scan/file`, {
                 filepath: selectedFile.filepath,
                 use_ollama: mode === 'full',
-                use_clip: true
+                use_clip: true,
+                active_model: mode === 'full' ? activeModel : undefined
             });
             if (res.data?.status === 'processed') {
                 setAiProgress(prev => prev
@@ -553,6 +555,7 @@ export default function FoldersPage() {
         if (timelineYear === null) return;
 
         const progressLabel = mode === 'full' ? 'Full AI' : 'CLIP AI';
+        const activeModel = localStorage.getItem('activeModel') || undefined;
         try {
             const res = await axios.post(`${API_BASE_URL}/api/scan/local-date-scope`, {
                 year: timelineYear,
@@ -561,6 +564,7 @@ export default function FoldersPage() {
                 use_ollama: mode === 'full',
                 use_clip: true,
                 ignore_screenshots: true,
+                active_model: mode === 'full' ? activeModel : undefined,
                 media_types: mediaTypes,
                 from_date: fromDate,
                 to_date: toDate,

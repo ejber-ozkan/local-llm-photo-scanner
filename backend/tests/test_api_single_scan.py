@@ -136,6 +136,7 @@ def test_settings_models(client):
 
 def test_queue_local_date_scope_for_full_ai(client, mock_db_file, dummy_img, monkeypatch):
     from api.routes import scan
+    import core.config as config
     import core.state as state
 
     monkeypatch.setattr(scan, "background_processor", lambda: None)
@@ -177,11 +178,18 @@ def test_queue_local_date_scope_for_full_ai(client, mock_db_file, dummy_img, mon
 
     resp = client.post(
         "/api/scan/local-date-scope",
-        json={"year": 2024, "use_ollama": True, "use_clip": True, "ignore_screenshots": True},
+        json={
+            "year": 2024,
+            "use_ollama": True,
+            "use_clip": True,
+            "ignore_screenshots": True,
+            "active_model": "qwen3-vl:8b",
+        },
     )
 
     assert resp.status_code == 200
     assert resp.json()["queued_count"] == 1
+    assert config.ACTIVE_OLLAMA_MODEL == "qwen3-vl:8b"
     assert state.IGNORE_SCREENSHOTS is True
     assert state.USE_OLLAMA is True
     assert state.USE_CLIP is True

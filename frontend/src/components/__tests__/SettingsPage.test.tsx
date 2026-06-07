@@ -147,6 +147,7 @@ describe('SettingsPage', () => {
 
     it('starts a background AI scan with selected options', async () => {
         const user = userEvent.setup();
+        localStorage.setItem('activeModel', 'llava:7b');
         let scanPayload: any = null;
         server.use(
             http.post(`${BASE}/api/scan`, async ({ request }) => {
@@ -168,6 +169,7 @@ describe('SettingsPage', () => {
                 ignore_screenshots: true,
                 use_ollama: false,
                 use_clip: true,
+                active_model: 'llava:7b',
             });
         });
     });

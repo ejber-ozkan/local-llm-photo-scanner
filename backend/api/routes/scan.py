@@ -42,6 +42,7 @@ class ScanFileRequest(BaseModel):
     filepath: str
     use_ollama: bool = True
     use_clip: bool = True
+    active_model: str | None = None
 
 
 class LocalDateScopeScanRequest(BaseModel):
@@ -53,9 +54,16 @@ class LocalDateScopeScanRequest(BaseModel):
     use_ollama: bool = True
     use_clip: bool = True
     ignore_screenshots: bool = True
+    active_model: str | None = None
     media_types: str = "all"
     from_date: str = ""
     to_date: str = ""
+
+
+def _apply_active_scan_model(active_model: str | None) -> None:
+    """Use the model selected by the client for this scan request."""
+    if active_model:
+        config.ACTIVE_OLLAMA_MODEL = active_model
 
 
 def _clear_gallery_filters_cache() -> None:
@@ -117,6 +125,7 @@ async def scan_directory(
     state.IGNORE_SCREENSHOTS = req.ignore_screenshots
     state.USE_OLLAMA = getattr(req, "use_ollama", True)
     state.USE_CLIP = getattr(req, "use_clip", True)
+    _apply_active_scan_model(req.active_model)
 
     if req.force_rescan:
         state.add_log(f"Force Rescan enabled. Purging older gallery metadata for: {req.directory_path}")
@@ -226,6 +235,7 @@ async def scan_file(
 
     state.USE_OLLAMA = req.use_ollama
     state.USE_CLIP = req.use_clip
+    _apply_active_scan_model(req.active_model)
 
     active_session = get_resumable_session(db, "ai")
     session_id = active_session["id"] if active_session else create_scan_session(
@@ -270,6 +280,7 @@ async def scan_local_date_scope(
     state.IGNORE_SCREENSHOTS = req.ignore_screenshots
     state.USE_OLLAMA = req.use_ollama
     state.USE_CLIP = req.use_clip
+    _apply_active_scan_model(req.active_model)
 
     cursor = db.cursor()
     conditions = [

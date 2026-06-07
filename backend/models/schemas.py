@@ -15,6 +15,7 @@ class ScanRequest(BaseModel):
     ignore_screenshots: bool = False
     use_ollama: bool = True
     use_clip: bool = True
+    active_model: str | None = None
 
 
 class SettingsUpdateRequest(BaseModel):
