@@ -1,11 +1,11 @@
-# Local AI Photo Gallery v3.6.1
+# Local AI Photo Gallery v3.7.0
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
 
 ## Features
 
-### v3.6.1 Features
+### v3.7.0 Features
 - **Ollama Scan Warm-Up**: AI scans now preload the selected Ollama vision model before processing the first image and pause safely if the model cannot be loaded.
 - **Ollama Keep-Alive Controls**: Backend Ollama requests include a configurable keep-alive value so large vision models are less likely to unload mid-scan.
 - **Ollama Setup Guidance**: README setup notes now include model preload and keep-alive options for long-running local scans.

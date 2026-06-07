@@ -214,6 +214,19 @@ def test_test_entities_endpoints(client, mock_db_file, dummy_img):
     conn.close()
 
     # Create entity
+
+
+def test_test_entities_endpoints(client, mock_db_file, dummy_img):
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO photos (id, filepath, filename, status) VALUES (?, ?, ?, ?)",
+        (50, dummy_img, "testent.jpg", "processed"),
+    )
+    conn.commit()
+    conn.close()
+
+    # Create entity
     resp = client.post(
         "/api/test/entities/name", json={"photo_id": 50, "entity_id": "Unknown", "new_name": "TestPerson"}
     )
@@ -225,3 +238,114 @@ def test_test_entities_endpoints(client, mock_db_file, dummy_img):
         200,
         404,
     ]  # Might be 404 if it didn't create properly but we just want coverage of the code path
+
+
+def test_local_date_scope_dry_run(client, mock_db_file, dummy_img, monkeypatch):
+    from api.routes import scan
+    import core.state as state
+
+    monkeypatch.setattr(scan, "background_processor", lambda: None)
+    state.SCAN_STATE = "idle"
+
+    # Setup DB
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute("DELETE FROM photos")
+    c.execute("DELETE FROM local_media")
+    c.execute(
+        """
+        INSERT INTO local_media (
+            filepath, filename, parent_path, file_size, file_hash, media_type,
+            validation_status, year, month, day
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (dummy_img, "scope.jpg", os.path.dirname(dummy_img), 100, "hash-scope", "image", "valid", 2024, 5, 24),
+    )
+    conn.commit()
+    conn.close()
+
+    # Dry-run request
+    resp = client.post(
+        "/api/scan/local-date-scope",
+        json={
+            "year": 2024,
+            "use_ollama": True,
+            "use_clip": True,
+            "ignore_screenshots": True,
+            "dry_run": True,
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_in_scope"] == 1
+    assert data["already_processed"] == 0
+    assert data["new_count"] == 1
+    assert data["queued_count"] == 0
+
+    # Verify no photo was queued in DB
+    conn = sqlite3.connect(mock_db_file)
+    rows = conn.execute("SELECT filepath, status FROM photos").fetchall()
+    conn.close()
+    assert len(rows) == 0
+
+
+def test_local_date_scope_force_rescan(client, mock_db_file, dummy_img, monkeypatch):
+    from api.routes import scan
+    import core.state as state
+
+    monkeypatch.setattr(scan, "background_processor", lambda: None)
+    state.SCAN_STATE = "idle"
+
+    # Setup DB
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute("DELETE FROM photos")
+    c.execute("DELETE FROM local_media")
+    c.execute(
+        """
+        INSERT INTO local_media (
+            filepath, filename, parent_path, file_size, file_hash, media_type,
+            validation_status, year, month, day
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (dummy_img, "scope.jpg", os.path.dirname(dummy_img), 100, "hash-scope", "image", "valid", 2024, 5, 24),
+    )
+    c.execute(
+        "INSERT INTO photos (filepath, filename, status) VALUES (?, ?, ?)",
+        (dummy_img, "scope.jpg", "processed"),
+    )
+    conn.commit()
+    conn.close()
+
+    # Request without force rescan
+    resp1 = client.post(
+        "/api/scan/local-date-scope",
+        json={
+            "year": 2024,
+            "use_ollama": True,
+            "use_clip": True,
+            "ignore_screenshots": True,
+            "force_rescan": False,
+        },
+    )
+    assert resp1.status_code == 200
+    assert resp1.json()["queued_count"] == 0
+
+    # Request with force rescan
+    resp2 = client.post(
+        "/api/scan/local-date-scope",
+        json={
+            "year": 2024,
+            "use_ollama": True,
+            "use_clip": True,
+            "ignore_screenshots": True,
+            "force_rescan": True,
+        },
+    )
+    assert resp2.status_code == 200
+    assert resp2.json()["queued_count"] == 1
+
+    conn = sqlite3.connect(mock_db_file)
+    rows = conn.execute("SELECT filepath, status FROM photos").fetchall()
+    conn.close()
+    assert rows == [(dummy_img, "pending")]

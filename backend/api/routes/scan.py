@@ -58,6 +58,8 @@ class LocalDateScopeScanRequest(BaseModel):
     media_types: str = "all"
     from_date: str = ""
     to_date: str = ""
+    dry_run: bool = False
+    force_rescan: bool = False
 
 
 def _apply_active_scan_model(active_model: str | None) -> None:
@@ -78,6 +80,7 @@ def _queue_image_path(
     normalized_path: str,
     session_id: int,
     scan_time: str,
+    force_rescan: bool = False,
 ) -> tuple[int | None, int, str]:
     """Queue one image path in the AI gallery table and return its queue delta."""
     cursor.execute("SELECT id, status FROM photos WHERE filepath = ? LIMIT 1", (normalized_path,))
@@ -88,8 +91,9 @@ def _queue_image_path(
         if photo_status in {"pending", "processing"}:
             cursor.execute("UPDATE photos SET scan_session_id = ? WHERE id = ?", (session_id, photo_id))
             return photo_id, 0, photo_status
-        if photo_status == "processed":
+        if photo_status == "processed" and not force_rescan:
             return photo_id, 0, photo_status
+        # Re-queue: either force_rescan on processed, or other statuses (error, screenshot, etc.)
         cursor.execute(
             """
             UPDATE photos
@@ -276,12 +280,13 @@ async def scan_local_date_scope(
     background_tasks: BackgroundTasks,
     db: sqlite3.Connection = Depends(get_db),
 ) -> dict[str, Any]:
-    """Queue local folder images matching a timeline year/month/day scope."""
-    state.IGNORE_SCREENSHOTS = req.ignore_screenshots
-    state.USE_OLLAMA = req.use_ollama
-    state.USE_CLIP = req.use_clip
-    _apply_active_scan_model(req.active_model)
+    """Queue local folder images matching a timeline year/month/day scope.
 
+    When ``dry_run`` is True the endpoint returns counts only (how many
+    images exist in the scope, how many are already processed, how many
+    are new) without mutating any state.  The frontend uses this to
+    decide whether to prompt the user with a force-rescan dialog.
+    """
     cursor = db.cursor()
     conditions = [
         "year = ?",
@@ -308,6 +313,7 @@ async def scan_local_date_scope(
             "queued_count": 0,
             "skipped_count": 0,
             "missing_count": 0,
+            "total_in_scope": 0,
         }
 
     cursor.execute(
@@ -321,6 +327,40 @@ async def scan_local_date_scope(
     )
     paths = [os.path.abspath(str(row[0])) for row in cursor.fetchall()]
 
+    # ── Dry-run mode: report counts only, no mutations ──
+    if req.dry_run:
+        already_processed = 0
+        new_count = 0
+        missing_count = 0
+        for path in paths:
+            if not os.path.exists(path):
+                missing_count += 1
+                continue
+            cursor.execute(
+                "SELECT status FROM photos WHERE filepath = ? LIMIT 1",
+                (path,),
+            )
+            row = cursor.fetchone()
+            if row and row[0] == "processed":
+                already_processed += 1
+            else:
+                new_count += 1
+        return {
+            "message": "Dry-run complete.",
+            "total_in_scope": len(paths),
+            "already_processed": already_processed,
+            "new_count": new_count,
+            "missing_count": missing_count,
+            "queued_count": 0,
+            "skipped_count": 0,
+        }
+
+    # ── Actual scan ──
+    state.IGNORE_SCREENSHOTS = req.ignore_screenshots
+    state.USE_OLLAMA = req.use_ollama
+    state.USE_CLIP = req.use_clip
+    _apply_active_scan_model(req.active_model)
+
     active_session = get_resumable_session(db, "ai")
     root_path = f"local timeline {req.year}"
     if req.month is not None:
@@ -331,7 +371,7 @@ async def scan_local_date_scope(
         db,
         "ai",
         root_path,
-        force_rescan=False,
+        force_rescan=req.force_rescan,
     )
 
     scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -343,7 +383,10 @@ async def scan_local_date_scope(
         if not os.path.exists(path):
             missing_count += 1
             continue
-        _, queued_delta, _ = _queue_image_path(cursor, path, session_id, scan_time)
+        _, queued_delta, _ = _queue_image_path(
+            cursor, path, session_id, scan_time,
+            force_rescan=req.force_rescan,
+        )
         queued_count += queued_delta
         if queued_delta == 0:
             skipped_count += 1
@@ -378,6 +421,7 @@ async def scan_local_date_scope(
         "queued_count": queued_count,
         "skipped_count": skipped_count,
         "missing_count": missing_count,
+        "total_in_scope": len(paths),
     }
 
 

@@ -262,7 +262,17 @@ describe('FoldersPage timeline', () => {
                 return HttpResponse.json([{ label: 'Month5', value: 5, count: 3 }]);
             }),
             http.post(`${BASE}/api/scan/local-date-scope`, async ({ request }) => {
-                bulkPayload = await request.json();
+                const body: any = await request.json();
+                if (body.dry_run) {
+                    return HttpResponse.json({
+                        message: 'Dry-run complete.',
+                        total_in_scope: 3,
+                        already_processed: 0,
+                        new_count: 3,
+                        missing_count: 0,
+                    });
+                }
+                bulkPayload = body;
                 return HttpResponse.json({ message: 'Queued 3 images for AI processing.', queued_count: 3, skipped_count: 0 });
             }),
         );
@@ -283,9 +293,67 @@ describe('FoldersPage timeline', () => {
                 media_types: 'all',
                 from_date: '',
                 to_date: '',
+                force_rescan: false,
             });
         });
         expect(await screen.findByText('Queued 3 images for AI processing.')).toBeInTheDocument();
+    });
+
+    it('prompts the user and handles choice when timeline items are already processed', async () => {
+        let finalPayload: any = null;
+        server.use(
+            http.get(`${BASE}/api/system/check-ffmpeg`, () => HttpResponse.json({ available: true })),
+            http.get(`${BASE}/api/folder-scan/dates`, ({ request }) => {
+                const params = new URL(request.url).searchParams;
+                if (!params.get('year')) return HttpResponse.json([{ label: 'Year2024', value: 2024, count: 3 }]);
+                return HttpResponse.json([{ label: 'Month5', value: 5, count: 3 }]);
+            }),
+            http.post(`${BASE}/api/scan/local-date-scope`, async ({ request }) => {
+                const body: any = await request.json();
+                if (body.dry_run) {
+                    return HttpResponse.json({
+                        message: 'Dry-run complete.',
+                        total_in_scope: 3,
+                        already_processed: 2,
+                        new_count: 1,
+                        missing_count: 0,
+                    });
+                }
+                finalPayload = body;
+                return HttpResponse.json({ message: 'Queued images.', queued_count: 1, skipped_count: 2 });
+            }),
+        );
+
+        renderFoldersPage();
+
+        await userEvent.click(await screen.findByText('Year2024'));
+        await userEvent.click(await screen.findByRole('button', { name: /send visible timeline items to clip ai/i }));
+
+        // Check that the dialog appears
+        expect(await screen.findByText('Items Already in AI Gallery')).toBeInTheDocument();
+        expect(screen.getByText('2')).toBeInTheDocument();
+        expect(screen.getByText('3')).toBeInTheDocument();
+        expect(screen.getByText(/images in this scope/i)).toBeInTheDocument();
+
+        // Option 1: Scan New Only
+        const scanNewBtn = screen.getByRole('button', { name: /scan new only/i });
+        await userEvent.click(scanNewBtn);
+
+        await waitFor(() => {
+            expect(finalPayload).toEqual({
+                year: 2024,
+                month: null,
+                day: null,
+                use_ollama: false,
+                use_clip: true,
+                ignore_screenshots: true,
+                media_types: 'all',
+                from_date: '',
+                to_date: '',
+                force_rescan: false,
+            });
+        });
+        expect(screen.queryByText('Items Already in AI Gallery')).not.toBeInTheDocument();
     });
 
     it('adds date filters to timeline requests and clears back to the unfiltered timeline', async () => {

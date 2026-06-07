@@ -23,7 +23,8 @@ import {
     Sparkles,
     Loader2,
     CheckCircle,
-    Search
+    Search,
+    AlertTriangle
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
@@ -193,6 +194,16 @@ export default function FoldersPage() {
         filepath: string;
         lines: string[];
         error?: string;
+    } | null>(null);
+
+    // Rescan confirmation dialog state
+    const [rescanDialog, setRescanDialog] = useState<{
+        open: boolean;
+        mode: 'full' | 'clip';
+        alreadyProcessed: number;
+        newCount: number;
+        totalInScope: number;
+        loading: boolean;
     } | null>(null);
 
     const { toasts, dismiss, error: toastError, success: toastSuccess } = useToast();
@@ -554,8 +565,69 @@ export default function FoldersPage() {
     const sendTimelineScopeToAi = async (mode: 'full' | 'clip') => {
         if (timelineYear === null) return;
 
-        const progressLabel = mode === 'full' ? 'Full AI' : 'CLIP AI';
         const activeModel = localStorage.getItem('activeModel') || undefined;
+        const basePayload = {
+            year: timelineYear,
+            month: timelineMonth,
+            day: timelineDay,
+            use_ollama: mode === 'full',
+            use_clip: true,
+            ignore_screenshots: true,
+            active_model: mode === 'full' ? activeModel : undefined,
+            media_types: mediaTypes,
+            from_date: fromDate,
+            to_date: toDate,
+        };
+
+        // Step 1: dry-run to check if items are already processed
+        try {
+            const dryRes = await axios.post(`${API_BASE_URL}/api/scan/local-date-scope`, {
+                ...basePayload,
+                dry_run: true,
+            });
+            const { already_processed = 0, new_count = 0, total_in_scope = 0 } = dryRes.data || {};
+
+            if (total_in_scope === 0) {
+                toastError('No image files matched this timeline scope.');
+                return;
+            }
+
+            if (already_processed > 0) {
+                // Show confirmation dialog
+                setRescanDialog({
+                    open: true,
+                    mode,
+                    alreadyProcessed: already_processed,
+                    newCount: new_count,
+                    totalInScope: total_in_scope,
+                    loading: false,
+                });
+                return;
+            }
+
+            // Nothing processed yet — queue directly
+            const res = await axios.post(`${API_BASE_URL}/api/scan/local-date-scope`, {
+                ...basePayload,
+                force_rescan: false,
+            });
+            const progressLabel = mode === 'full' ? 'Full AI' : 'CLIP AI';
+            toastSuccess(res.data?.message || `Queued timeline items for ${progressLabel}.`);
+        } catch (err) {
+            console.error(err);
+            const message = axios.isAxiosError(err) ? err.response?.data?.detail : null;
+            toastError(message || `Failed to queue timeline items for AI processing.`);
+        }
+    };
+
+    const executeRescanChoice = async (forceRescan: boolean) => {
+        if (!rescanDialog) return;
+
+        const { mode } = rescanDialog;
+        const activeModel = localStorage.getItem('activeModel') || undefined;
+        const progressLabel = mode === 'full' ? 'Full AI' : 'CLIP AI';
+
+        setRescanDialog(prev => prev ? { ...prev, loading: true } : null);
+
         try {
             const res = await axios.post(`${API_BASE_URL}/api/scan/local-date-scope`, {
                 year: timelineYear,
@@ -568,12 +640,15 @@ export default function FoldersPage() {
                 media_types: mediaTypes,
                 from_date: fromDate,
                 to_date: toDate,
+                force_rescan: forceRescan,
             });
             toastSuccess(res.data?.message || `Queued timeline items for ${progressLabel}.`);
         } catch (err) {
             console.error(err);
             const message = axios.isAxiosError(err) ? err.response?.data?.detail : null;
             toastError(message || `Failed to queue timeline items for ${progressLabel}.`);
+        } finally {
+            setRescanDialog(null);
         }
     };
 
@@ -1861,6 +1936,57 @@ export default function FoldersPage() {
                                 className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-semibold transition-all"
                             >
                                 Close View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Rescan Confirmation Dialog */}
+            {rescanDialog?.open && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+                    <div className="bg-surface border border-gray-700 rounded-2xl shadow-2xl max-w-md w-full p-6 flex flex-col gap-5 animate-[fadeIn_150ms_ease-out]">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-100">Items Already in AI Gallery</h3>
+                                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                    <span className="text-amber-300 font-semibold">{rescanDialog.alreadyProcessed}</span> of{' '}
+                                    <span className="text-gray-200 font-semibold">{rescanDialog.totalInScope}</span> images in this
+                                    scope have already been processed by AI.
+                                    {rescanDialog.newCount > 0 && (
+                                        <> <span className="text-emerald-400 font-semibold">{rescanDialog.newCount}</span> new images are ready to scan.</>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            {rescanDialog.newCount > 0 && (
+                                <button
+                                    onClick={() => executeRescanChoice(false)}
+                                    disabled={rescanDialog.loading}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/20 hover:border-emerald-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {rescanDialog.loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                                    Scan New Only ({rescanDialog.newCount} images)
+                                </button>
+                            )}
+                            <button
+                                onClick={() => executeRescanChoice(true)}
+                                disabled={rescanDialog.loading}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-200 text-xs font-semibold hover:bg-amber-500/20 hover:border-amber-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {rescanDialog.loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                                Force Rescan All ({rescanDialog.totalInScope} images)
+                            </button>
+                            <button
+                                onClick={() => setRescanDialog(null)}
+                                disabled={rescanDialog.loading}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-700 bg-gray-800/50 text-gray-400 text-xs font-semibold hover:text-white hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Cancel
                             </button>
                         </div>
                     </div>

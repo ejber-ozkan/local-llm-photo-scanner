@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.7.0] - 2026-06-07
+
+### Fixed
+
+- HEIC/HEIF images no longer cause `400 Bad Request` errors from Ollama vision models. Images are now converted to JPEG in memory before base64 encoding.
+
+### Added
+
+- Rescan confirmation dialog on the Folders timeline page when clicking "Full AI" or "CLIP AI" on a scope that already has processed images.
+- Dry-run mode for the `/api/scan/local-date-scope` endpoint that returns scope counts without queuing.
+- Force rescan option that re-queues already-processed images for AI reanalysis.
+
 ## [3.6.1] - 2026-06-07
 
 ### Fixed

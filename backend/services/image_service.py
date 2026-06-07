@@ -1,4 +1,5 @@
 import base64
+import io
 import os
 import time
 from datetime import datetime
@@ -9,6 +10,16 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 
 import core.config as config
+
+# Register HEIC/HEIF support with Pillow so Image.open() handles .heic files
+try:
+    from pillow_heif import register_heif_opener
+
+    register_heif_opener()
+except ImportError:
+    pass  # pillow-heif not installed; HEIC processing will fail gracefully
+
+HEIC_EXTENSIONS = {".heic", ".heif"}
 
 
 class ImageServiceError(Exception):
@@ -240,11 +251,27 @@ def resize_image_for_ollama(filepath: str, max_size: int = 1024) -> str | None:
         return None
 
 
+def _convert_heic_to_jpeg_bytes(filepath: str) -> bytes:
+    """Convert a HEIC/HEIF image to JPEG bytes in memory.
+
+    Args:
+        filepath (str): The path to the HEIC/HEIF image file.
+
+    Returns:
+        bytes: The JPEG-encoded image data.
+    """
+    with Image.open(filepath) as img:
+        rgb_img = img.convert("RGB")
+        buf = io.BytesIO()
+        rgb_img.save(buf, format="JPEG", quality=90)
+        return buf.getvalue()
+
+
 def encode_image_to_base64(filepath: str) -> str:
     """Encode an image file to a base64 string.
 
-    Reads the binary data of the file and encodes it into a UTF-8 base64
-    string suitable for JSON transmission over REST APIs.
+    For HEIC/HEIF files, the image is first converted to JPEG in memory
+    since many downstream consumers (e.g. Ollama) only accept JPEG/PNG.
 
     Args:
         filepath (str): The path to the image file to encode.
@@ -252,6 +279,13 @@ def encode_image_to_base64(filepath: str) -> str:
     Returns:
         str: The image file encoded as a base64 string.
     """
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext in HEIC_EXTENSIONS:
+        try:
+            jpeg_bytes = _convert_heic_to_jpeg_bytes(filepath)
+            return base64.b64encode(jpeg_bytes).decode("utf-8")
+        except Exception as e:
+            print(f"Warning: HEIC conversion failed for {filepath}, falling back to raw bytes: {e}")
     with open(filepath, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
