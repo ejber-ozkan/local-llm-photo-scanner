@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "LocalAIPhotoMetadataApplication",
+  "project_id": "618165da-49e3-46f9-a105-b97553e1ebf1"
+}
