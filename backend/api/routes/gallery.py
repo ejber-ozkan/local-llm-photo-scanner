@@ -4,7 +4,7 @@ import sqlite3
 from functools import lru_cache
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 from PIL import Image
 
@@ -295,12 +295,16 @@ async def search_photos(
 
 
 @router.get("/gallery/map")
-async def get_gallery_map_photos(db: sqlite3.Connection = Depends(get_db)) -> list[dict[str, Any]]:
+async def get_gallery_map_photos(
+    request: Request,
+    include_local: bool = Query(False, description="Include GPS-tagged non-AI local folder images."),
+    db: sqlite3.Connection = Depends(get_db),
+) -> list[dict[str, Any]]:
     """Returns only GPS-positioned gallery photos for the map view."""
     cursor = db.cursor()
     cursor.execute(
         """
-        SELECT id, filename, description, date_taken, gps_lat, gps_lon
+        SELECT id, filename, description, date_taken, gps_lat, gps_lon, filepath
         FROM photos
         WHERE status = 'processed'
           AND gps_lat IS NOT NULL
@@ -309,7 +313,7 @@ async def get_gallery_map_photos(db: sqlite3.Connection = Depends(get_db)) -> li
         """
     )
 
-    return [
+    gallery_photos = [
         {
             "id": row[0],
             "filename": row[1],
@@ -317,9 +321,42 @@ async def get_gallery_map_photos(db: sqlite3.Connection = Depends(get_db)) -> li
             "date_taken": row[3],
             "gps_lat": row[4],
             "gps_lon": row[5],
+            "filepath": row[6],
+            "source": "gallery",
         }
         for row in cursor.fetchall()
     ]
+
+    include_local_query = request.query_params.get("include_local", "").lower() in {"1", "true", "yes", "on"}
+    if not (include_local or include_local_query):
+        return gallery_photos
+
+    cursor.execute(
+        """
+        SELECT id, filename, filepath, date_taken, date_fallback, gps_lat, gps_lon
+        FROM local_media
+        WHERE media_type = 'image'
+          AND gps_lat IS NOT NULL
+          AND gps_lon IS NOT NULL
+          AND (validation_status IS NULL OR validation_status != 'invalid_media_stub')
+        ORDER BY COALESCE(date_taken, date_fallback, date_created, date_modified, scanned_at) DESC, id DESC
+        """
+    )
+    local_photos = [
+        {
+            "id": row[0],
+            "filename": row[1],
+            "filepath": row[2],
+            "description": "",
+            "date_taken": row[3] or row[4],
+            "gps_lat": row[5],
+            "gps_lon": row[6],
+            "source": "local",
+        }
+        for row in cursor.fetchall()
+    ]
+
+    return gallery_photos + local_photos
 
 
 @router.get("/duplicates")

@@ -34,10 +34,12 @@ export interface PhotoDetail {
 export interface MapPhoto {
     id: number;
     filename: string;
+    filepath?: string;
     description?: string;
     date_taken?: string;
     gps_lat: number;
     gps_lon: number;
+    source: 'gallery' | 'local';
 }
 
 export interface FilterOptions {

@@ -76,6 +76,7 @@ export const mockMapPhotos = [
         date_taken: '2024:06:15 10:30:00',
         gps_lat: 51.5074,
         gps_lon: -0.1278,
+        source: 'gallery',
     },
     {
         id: 2,
@@ -84,6 +85,7 @@ export const mockMapPhotos = [
         date_taken: '2023:12:01 07:45:00',
         gps_lat: 51.501,
         gps_lon: -0.12,
+        source: 'gallery',
     },
 ];
 

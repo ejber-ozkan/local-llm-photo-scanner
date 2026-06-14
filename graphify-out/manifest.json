@@ -25,8 +25,8 @@
     "semantic_hash": "2a5ecaa6f72f265e2526a7a04cfb74df"
   },
   "backend/api/routes/gallery.py": {
-    "mtime": 1781458465.1958313,
-    "ast_hash": "fa1b4943a39ee848f359d34a52868f60",
+    "mtime": 1781459946.936911,
+    "ast_hash": "4c76ded5fcdc2d863ccca469a482ec73",
     "semantic_hash": ""
   },
   "backend/api/routes/scan.py": {
@@ -405,8 +405,8 @@
     "semantic_hash": "393ef3b1d5629bc8a9641ea478fca8e3"
   },
   "frontend/src/types.ts": {
-    "mtime": 1781458471.650888,
-    "ast_hash": "641f5d648d51da87b0e35ee2ebaec9ca",
+    "mtime": 1781459589.1835518,
+    "ast_hash": "d30b533c38c394434d80da68882661c1",
     "semantic_hash": ""
   },
   "frontend/src/utils/__tests__/dateFormatters.test.ts": {
@@ -500,13 +500,13 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1781458848.8302166,
-    "ast_hash": "46c7cb65f7379d4298de770fc08043fa",
+    "mtime": 1781459998.5816453,
+    "ast_hash": "79b6fdb4e7277b253b98a2503f48f563",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1781458841.5258353,
-    "ast_hash": "02adb471a0fc169c844340be6b36df05",
+    "mtime": 1781459990.06461,
+    "ast_hash": "73d124cc83d9a3f41afb8404b438a267",
     "semantic_hash": ""
   },
   "backend/mypy_output.txt": {
@@ -545,8 +545,8 @@
     "semantic_hash": ""
   },
   "frontend/src/components/ImageMapPage.tsx": {
-    "mtime": 1781458685.555648,
-    "ast_hash": "c8163b444cacbd2600ad59f99f990444",
+    "mtime": 1781459673.0516598,
+    "ast_hash": "ea6ef31b81c37f9600a6bebf69eaa246",
     "semantic_hash": ""
   }
 }

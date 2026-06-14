@@ -118,8 +118,56 @@ def test_get_gallery_map_returns_only_geotagged_processed_photos(client, mock_db
             "date_taken": "2025-01-01",
             "gps_lat": 51.5074,
             "gps_lon": -0.1278,
+            "filepath": "/tmp/photo1.jpg",
+            "source": "gallery",
         }
     ]
+
+
+def test_get_gallery_map_can_include_local_indexed_images(client, mock_db_file):
+    """Map endpoint can optionally include GPS-tagged non-AI local images."""
+    seed_test_database(mock_db_file)
+
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute("UPDATE photos SET gps_lat = ?, gps_lon = ? WHERE id = 1", (51.5074, -0.1278))
+    c.execute(
+        """
+        INSERT INTO local_media (
+            id, filepath, filename, parent_path, file_size, file_hash, media_type,
+            validation_status, date_taken, gps_lat, gps_lon
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            44,
+            "/tmp/local-map.jpg",
+            "local-map.jpg",
+            "/tmp",
+            2048,
+            "local-hash",
+            "image",
+            "valid",
+            "2024-07-01",
+            40.7128,
+            -74.0060,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    default_response = client.get("/api/gallery/map")
+    assert default_response.status_code == 200
+    assert {item["source"] for item in default_response.json()} == {"gallery"}
+
+    response = client.get("/api/gallery/map?include_local=true")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert {item["source"] for item in data} == {"gallery", "local"}
+    local_item = next(item for item in data if item["source"] == "local")
+    assert local_item["filename"] == "local-map.jpg"
+    assert local_item["filepath"] == "/tmp/local-map.jpg"
+    assert local_item["gps_lat"] == 40.7128
 
 
 def test_force_rescan_clears_gallery_filter_cache(client, mock_db_file, tmp_path):

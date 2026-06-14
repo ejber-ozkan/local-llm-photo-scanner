@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.9.1] - 2026-06-14
+
+### Added
+
+- Image Maps can optionally include GPS-tagged non-AI local indexed images.
+- Multi-image map clusters now expand into up to eight clickable thumbnails around the marker.
+
+### Fixed
+
+- Image Maps marker thumbnails and map control buttons now respond reliably without being intercepted by map drag handling.
+- Single map thumbnails and expanded cluster thumbnails now open the full image view.
+
 ## [3.9.0] - 2026-06-14
 
 ### Added

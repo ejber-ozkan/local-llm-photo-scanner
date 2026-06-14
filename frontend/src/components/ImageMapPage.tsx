@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ChevronLeft, Image as ImageIcon, Layers, Loader2, LocateFixed, Map as MapIcon, Minus, Plus, X } from 'lucide-react';
+import { ChevronLeft, Image as ImageIcon, Images, Layers, Loader2, LocateFixed, Map as MapIcon, Minus, Plus, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent, WheelEvent } from 'react';
 import { API_BASE_URL } from '../config';
@@ -37,6 +37,7 @@ const TILE_SIZE = 256;
 const MIN_ZOOM = 2;
 const MAX_ZOOM = 18;
 const DEFAULT_CENTER = { lat: 20, lon: 0 };
+const MAX_EXPANDED_THUMBNAILS = 8;
 const PROVIDER_LABELS: Record<MapProvider, string> = {
     openstreetmap: 'OpenStreetMap',
     google: 'Google Maps',
@@ -89,14 +90,23 @@ function formatLocation(lat: number, lon: number) {
     return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
 }
 
+function getPhotoImageUrl(photo: MapPhoto, timestamp: number) {
+    if (photo.source === 'local' && photo.filepath) {
+        return `${API_BASE_URL}/api/folder-scan/media-preview?path=${encodeURIComponent(photo.filepath)}&t=${timestamp}`;
+    }
+    return `${API_BASE_URL}/api/image/${photo.id}?t=${timestamp}`;
+}
+
 export default function ImageMapPage() {
     const [photos, setPhotos] = useState<MapPhoto[]>([]);
     const [loading, setLoading] = useState(true);
+    const [includeLocal, setIncludeLocal] = useState(false);
     const [provider, setProvider] = useState<MapProvider>('openstreetmap');
     const [zoom, setZoom] = useState(3);
     const [center, setCenter] = useState(DEFAULT_CENTER);
     const [size, setSize] = useState<Size>({ width: 0, height: 0 });
     const [selectedPhoto, setSelectedPhoto] = useState<MapPhoto | null>(null);
+    const [expandedCluster, setExpandedCluster] = useState<PhotoCluster | null>(null);
     const mapRef = useRef<HTMLDivElement>(null);
     const dragRef = useRef<{ start: Point; centerStart: Point } | null>(null);
     const [timestamp] = useState(Date.now);
@@ -107,12 +117,16 @@ export default function ImageMapPage() {
         async function fetchMapPhotos() {
             setLoading(true);
             try {
-                const res = await axios.get<MapPhoto[]>(`${API_BASE_URL}/api/gallery/map`);
+                const params = new URLSearchParams();
+                if (includeLocal) params.set('include_local', 'true');
+                const query = params.toString();
+                const res = await axios.get<MapPhoto[]>(`${API_BASE_URL}/api/gallery/map${query ? `?${query}` : ''}`);
                 if (!active) return;
                 const nextPhotos = res.data.filter((photo) =>
                     Number.isFinite(photo.gps_lat) && Number.isFinite(photo.gps_lon)
                 );
                 setPhotos(nextPhotos);
+                setExpandedCluster(null);
                 if (nextPhotos.length > 0) {
                     const average = nextPhotos.reduce(
                         (acc, photo) => ({ lat: acc.lat + photo.gps_lat, lon: acc.lon + photo.gps_lon }),
@@ -136,7 +150,7 @@ export default function ImageMapPage() {
         return () => {
             active = false;
         };
-    }, []);
+    }, [includeLocal]);
 
     useEffect(() => {
         const el = mapRef.current;
@@ -232,6 +246,7 @@ export default function ImageMapPage() {
     const zoomBy = useCallback((delta: number, target?: { lat: number; lon: number }) => {
         setZoom((prev) => clamp(prev + delta, MIN_ZOOM, MAX_ZOOM));
         if (target) setCenter(target);
+        setExpandedCluster(null);
     }, []);
 
     const resetToPhotos = useCallback(() => {
@@ -247,10 +262,12 @@ export default function ImageMapPage() {
         );
         setCenter({ lat: average.lat / photos.length, lon: average.lon / photos.length });
         setZoom(photos.length === 1 ? 12 : 4);
+        setExpandedCluster(null);
     }, [photos]);
 
     const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
         if (event.button !== 0) return;
+        if ((event.target as HTMLElement).closest('button, a')) return;
         event.currentTarget.setPointerCapture?.(event.pointerId);
         dragRef.current = {
             start: { x: event.clientX, y: event.clientY },
@@ -260,6 +277,7 @@ export default function ImageMapPage() {
 
     const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
         if (!dragRef.current) return;
+        setExpandedCluster(null);
         const dx = event.clientX - dragRef.current.start.x;
         const dy = event.clientY - dragRef.current.start.y;
         const nextX = dragRef.current.centerStart.x - dx;
@@ -280,11 +298,16 @@ export default function ImageMapPage() {
     };
 
     const handleClusterClick = (cluster: PhotoCluster) => {
-        if (cluster.photos.length === 1 || zoom >= 14) {
+        if (cluster.photos.length === 1) {
             setSelectedPhoto(cluster.photos[0]);
+            setExpandedCluster(null);
             return;
         }
-        zoomBy(2, { lat: cluster.lat, lon: cluster.lon });
+        setExpandedCluster(cluster);
+    };
+
+    const handleMapBackgroundClick = () => {
+        setExpandedCluster(null);
     };
 
     return (
@@ -297,6 +320,7 @@ export default function ImageMapPage() {
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
                 onWheel={handleWheel}
+                onClick={handleMapBackgroundClick}
                 role="application"
                 aria-label="Image Maps"
             >
@@ -330,13 +354,13 @@ export default function ImageMapPage() {
                             aria-label={
                                 cluster.photos.length === 1
                                     ? `Open ${representative.filename}`
-                                    : `Zoom to ${cluster.photos.length} images near ${formatLocation(cluster.lat, cluster.lon)}`
+                                    : `Show ${cluster.photos.length} images near ${formatLocation(cluster.lat, cluster.lon)}`
                             }
                             title={cluster.photos.length === 1 ? representative.filename : `${cluster.photos.length} images`}
                         >
                             {showThumbnail ? (
                                 <img
-                                    src={`${API_BASE_URL}/api/image/${representative.id}?t=${timestamp}`}
+                                    src={getPhotoImageUrl(representative, timestamp)}
                                     alt=""
                                     loading="lazy"
                                     decoding="async"
@@ -356,6 +380,58 @@ export default function ImageMapPage() {
                     );
                 })}
 
+                {expandedCluster && (
+                    <div
+                        className="absolute z-40"
+                        style={{ left: expandedCluster.x, top: expandedCluster.y }}
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        {expandedCluster.photos.slice(0, MAX_EXPANDED_THUMBNAILS).map((photo, index, visiblePhotos) => {
+                            const angle = (index / Math.max(visiblePhotos.length, 1)) * Math.PI * 2 - Math.PI / 2;
+                            const radius = visiblePhotos.length <= 3 ? 96 : 122;
+                            const x = Math.cos(angle) * radius;
+                            const y = Math.sin(angle) * radius;
+                            return (
+                                <button
+                                    key={`${photo.source}-${photo.id}`}
+                                    type="button"
+                                    className="absolute flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-end overflow-hidden rounded-2xl border-2 border-white bg-black shadow-[0_18px_35px_rgba(0,0,0,0.50)] transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                                    style={{ left: x, top: y }}
+                                    onClick={() => {
+                                        setSelectedPhoto(photo);
+                                        setExpandedCluster(null);
+                                    }}
+                                    aria-label={`Open ${photo.filename}`}
+                                    title={photo.filename}
+                                >
+                                    <img
+                                        src={getPhotoImageUrl(photo, timestamp)}
+                                        alt=""
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                    />
+                                    <span className="relative w-full truncate bg-black/70 px-1.5 py-1 text-left text-[10px] font-semibold text-white">
+                                        {photo.filename}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                        <div className="absolute left-0 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/35 bg-black/70 text-sm font-bold text-white shadow-xl">
+                            {expandedCluster.photos.length}
+                        </div>
+                        {expandedCluster.photos.length > MAX_EXPANDED_THUMBNAILS && (
+                            <button
+                                type="button"
+                                className="absolute left-0 top-[100px] -translate-x-1/2 rounded-full border border-white/25 bg-black/70 px-3 py-1 text-xs font-semibold text-white shadow-xl hover:bg-black/85"
+                                onClick={() => zoomBy(2, { lat: expandedCluster.lat, lon: expandedCluster.lon })}
+                            >
+                                +{expandedCluster.photos.length - MAX_EXPANDED_THUMBNAILS} more
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 <div className="absolute left-6 top-6 z-30 flex max-w-[calc(100%-3rem)] items-center gap-3">
                     <div className="rounded-full bg-cyan-100/85 p-2 text-[#06313a] shadow-xl backdrop-blur">
                         <ChevronLeft className="h-5 w-5" />
@@ -371,7 +447,12 @@ export default function ImageMapPage() {
                 <div className="absolute right-6 top-6 z-30 overflow-hidden rounded-lg border border-white/20 bg-cyan-100/85 text-[#06313a] shadow-xl backdrop-blur">
                     <button
                         type="button"
-                        onClick={() => setProvider(provider === 'openstreetmap' ? 'google' : 'openstreetmap')}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setProvider(provider === 'openstreetmap' ? 'google' : 'openstreetmap');
+                            setExpandedCluster(null);
+                        }}
                         className="flex h-14 w-14 items-center justify-center border-b border-[#06313a]/15 transition-colors hover:bg-white/50"
                         title={`Switch map provider. Current: ${PROVIDER_LABELS[provider]}`}
                         aria-label={`Switch map provider. Current provider is ${PROVIDER_LABELS[provider]}`}
@@ -380,7 +461,11 @@ export default function ImageMapPage() {
                     </button>
                     <button
                         type="button"
-                        onClick={resetToPhotos}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            resetToPhotos();
+                        }}
                         className="flex h-14 w-14 items-center justify-center transition-colors hover:bg-white/50"
                         title="Recenter photos"
                         aria-label="Recenter photos"
@@ -390,10 +475,27 @@ export default function ImageMapPage() {
                 </div>
 
                 <div className="absolute bottom-6 right-6 z-30 flex items-center gap-3">
+                    <button
+                        type="button"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setIncludeLocal((current) => !current);
+                        }}
+                        className={`flex h-14 w-14 items-center justify-center rounded-lg border border-white/20 shadow-xl backdrop-blur transition-colors ${includeLocal ? 'bg-emerald-300/90 text-[#06313a]' : 'bg-cyan-100/85 text-[#06313a] hover:bg-white/85'}`}
+                        title={includeLocal ? 'Hide non-AI scanned images' : 'Include non-AI scanned images'}
+                        aria-label={includeLocal ? 'Hide non-AI scanned images' : 'Include non-AI scanned images'}
+                    >
+                        <Images className="h-5 w-5" />
+                    </button>
                     <div className="overflow-hidden rounded-lg border border-white/20 bg-cyan-100/85 text-[#06313a] shadow-xl backdrop-blur">
                         <button
                             type="button"
-                            onClick={() => zoomBy(1)}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                zoomBy(1);
+                            }}
                             className="flex h-12 w-12 items-center justify-center border-b border-[#06313a]/15 transition-colors hover:bg-white/50"
                             aria-label="Zoom in"
                         >
@@ -401,7 +503,11 @@ export default function ImageMapPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => zoomBy(-1)}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                zoomBy(-1);
+                            }}
                             className="flex h-12 w-12 items-center justify-center transition-colors hover:bg-white/50"
                             aria-label="Zoom out"
                         >
@@ -414,7 +520,7 @@ export default function ImageMapPage() {
                 </div>
 
                 <div className="absolute bottom-4 left-6 z-30 rounded bg-black/35 px-2 py-1 text-[10px] text-white/65 backdrop-blur">
-                    {PROVIDER_LABELS[provider]} tiles
+                    {PROVIDER_LABELS[provider]} tiles{includeLocal ? ' + local indexed images' : ''}
                 </div>
 
                 {loading && (
@@ -431,7 +537,7 @@ export default function ImageMapPage() {
                         <div className="max-w-md rounded-lg border border-white/15 bg-black/55 p-6 text-center shadow-xl backdrop-blur-md">
                             <ImageIcon className="mx-auto mb-3 h-10 w-10 text-cyan-200" />
                             <h2 className="text-lg font-bold">No geotagged photos yet</h2>
-                            <p className="mt-2 text-sm text-white/65">Scan images with GPS metadata to see them grouped on the map.</p>
+                            <p className="mt-2 text-sm text-white/65">Scan images with GPS metadata, or enable local indexed images, to see them grouped on the map.</p>
                         </div>
                     </div>
                 )}
@@ -448,7 +554,7 @@ export default function ImageMapPage() {
                         <X className="h-6 w-6" />
                     </button>
                     <img
-                        src={`${API_BASE_URL}/api/image/${selectedPhoto.id}?t=${timestamp}`}
+                        src={getPhotoImageUrl(selectedPhoto, timestamp)}
                         alt={selectedPhoto.filename}
                         className="max-h-full max-w-full object-contain"
                         onClick={(event) => event.stopPropagation()}
