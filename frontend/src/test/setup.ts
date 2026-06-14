@@ -17,6 +17,15 @@ afterAll(() => server.close());
 
 // Mock IntersectionObserver globally in tests to immediately trigger visibility
 class GlobalMockIntersectionObserver {
+    readonly root: Element | Document | null = null;
+    readonly rootMargin = '0px';
+    readonly thresholds: readonly number[] = [0];
+    callback: IntersectionObserverCallback;
+
+    constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+    }
+
     observe(element: Element) {
         if (this.callback) {
             this.callback(
@@ -27,9 +36,27 @@ class GlobalMockIntersectionObserver {
     }
     unobserve() {}
     disconnect() {}
-    callback: IntersectionObserverCallback;
-    constructor(callback: IntersectionObserverCallback) {
-        this.callback = callback;
+    takeRecords(): IntersectionObserverEntry[] {
+        return [];
     }
 }
-globalThis.IntersectionObserver = GlobalMockIntersectionObserver as any;
+globalThis.IntersectionObserver = GlobalMockIntersectionObserver as typeof IntersectionObserver;
+
+class GlobalMockResizeObserver {
+    callback: ResizeObserverCallback;
+
+    constructor(callback: ResizeObserverCallback) {
+        this.callback = callback;
+    }
+
+    observe(element: Element) {
+        this.callback(
+            [{ target: element, contentRect: { width: 1024, height: 720 } } as unknown as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+        );
+    }
+
+    unobserve() {}
+    disconnect() {}
+}
+globalThis.ResizeObserver = GlobalMockResizeObserver as typeof ResizeObserver;

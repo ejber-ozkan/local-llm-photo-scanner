@@ -1,16 +1,16 @@
 # Graph Report - LocalAIPhotoMetadataApplication  (2026-06-14)
 
 ## Corpus Check
-- 56 files · ~46,364 words
+- 57 files · ~47,439 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 576 nodes · 891 edges · 55 communities (31 shown, 24 thin omitted)
+- 599 nodes · 925 edges · 57 communities (33 shown, 24 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 47 edges (avg confidence: 0.59)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8a3b90d2`
+- Built from commit: `af6d48db`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -36,6 +36,8 @@
 - [[_COMMUNITY_Community 21|Community 21]]
 - [[_COMMUNITY_Community 22|Community 22]]
 - [[_COMMUNITY_File Management and Duplicate Detection|File Management and Duplicate Detection]]
+- [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 25|Community 25]]
 - [[_COMMUNITY_Path Navigation Utilities|Path Navigation Utilities]]
 - [[_COMMUNITY_Error Handling Component Module|Error Handling Component Module]]
 - [[_COMMUNITY_Database Schema Maintenance|Database Schema Maintenance]]
@@ -65,14 +67,14 @@
 ## God Nodes (most connected - your core abstractions)
 1. `FoldersPage` - 15 edges
 2. `Connection` - 14 edges
-3. `Any` - 12 edges
-4. `build_duplicate_report()` - 12 edges
-5. `Any` - 12 edges
-6. `ScanRequest` - 12 edges
-7. `ScanControlRequest` - 12 edges
-8. `get_resumable_session()` - 12 edges
-9. `DuplicateReportFile` - 12 edges
-10. `Changelog` - 12 edges
+3. `Changelog` - 13 edges
+4. `Any` - 12 edges
+5. `build_duplicate_report()` - 12 edges
+6. `Any` - 12 edges
+7. `ScanRequest` - 12 edges
+8. `ScanControlRequest` - 12 edges
+9. `get_resumable_session()` - 12 edges
+10. `DuplicateReportFile` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Map a local_media row tuple to the duplicate report file payload.` --rationale_for--> `DuplicateReportFile`  [EXTRACTED]
@@ -89,11 +91,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (55 total, 24 thin omitted)
+## Communities (57 total, 24 thin omitted)
 
 ### Community 0 - "Image Processing Services"
-Cohesion: 0.05
-Nodes (43): Main APIRouter registry aggregating all individual route namespaces., find_best_face_match(), get_connection(), init_db(), init_single_db(), Connection, Initialize both the main and test databases.      This function iterates throu, Initialize a single SQLite database with the required schema.      Creates the (+35 more)
+Cohesion: 0.08
+Nodes (29): Any, Exception, clear_gallery_filters_cache(), Invalidate cached gallery filter metadata after photo/entity changes., _convert_gps_to_decimal(), _convert_heic_to_jpeg_bytes(), encode_image_to_base64(), extract_all_exif() (+21 more)
 
 ### Community 1 - "Frontend Application Dependencies"
 Cohesion: 0.40
@@ -101,7 +103,7 @@ Nodes (5): Babel, OXC, Rolldown Vite, SWC, ViteJS Plugin React
 
 ### Community 2 - "Image Search Endpoints"
 Cohesion: 0.06
-Nodes (33): [3.0.0] - 2026-05-25, [3.1.0] - 2026-05-28, [3.2.0] - 2026-06-06, [3.3.0] - 2026-06-06, [3.3.1] - 2026-06-06, [3.4.0] - 2026-06-07, [3.5.0] - 2026-06-07, [3.6.0] - 2026-06-07 (+25 more)
+Nodes (36): [3.0.0] - 2026-05-25, [3.1.0] - 2026-05-28, [3.2.0] - 2026-06-06, [3.3.0] - 2026-06-06, [3.3.1] - 2026-06-06, [3.4.0] - 2026-06-07, [3.5.0] - 2026-06-07, [3.6.0] - 2026-06-07 (+28 more)
 
 ### Community 3 - "Repository Version Management"
 Cohesion: 0.12
@@ -109,11 +111,11 @@ Nodes (28): Load the application version from the repository root VERSION file.,
 
 ### Community 4 - "System Testing and Debugging"
 Cohesion: 0.08
-Nodes (25): 1. Backend Setup, 1. Ensure Ollama is Running, 2. Frontend Setup, 2. Start using provided scripts (Recommended), 3. How to Stop, 4. Open the Application, 4. Start Manually (Alternative), 5. Managing Your Database (+17 more)
+Nodes (23): 1. Backend Setup, 1. Ensure Ollama is Running, 2. Frontend Setup, 2. Start using provided scripts (Recommended), 3. How to Stop, 4. Open the Application, 4. Start Manually (Alternative), 5. Managing Your Database (+15 more)
 
 ### Community 5 - "Backend Infrastructure Setup"
-Cohesion: 0.12
-Nodes (24): Any, Connection, Connection, get_db(), get_test_db(), Dependency injection definitions for yielding SQLite connections to FastAPI rout, FastAPI Dependency: Yields a fresh uncommitted database session for the request, FastAPI Dependency: Yields a fresh connection exclusively for the sandbox test d (+16 more)
+Cohesion: 0.08
+Nodes (29): Main APIRouter registry aggregating all individual route namespaces., Any, Connection, Connection, Main entrypoint for the Local AI Photo Scanner backend application.  This module, Application startup hook triggering local database initialization., startup_event(), Configuration constants and global environment states for the application. (+21 more)
 
 ### Community 6 - "Background Scanner Framework"
 Cohesion: 0.05
@@ -124,8 +126,8 @@ Cohesion: 0.12
 Nodes (20): ClientAPI, get_chroma_client(), get_chroma_data_dir(), get_clip_collection(), get_faces_collection(), get_photos_collection(), Return the filesystem path used by the persistent Chroma client., Returns the singleton ChromaDB client instance.     During normal operation, th (+12 more)
 
 ### Community 8 - "CLIP Model Management System"
-Cohesion: 0.12
-Nodes (25): Any, Connection, Response, get_clip_model(), Returns the singleton SentenceTransformer CLIP model., _compute_gallery_filters(), get_duplicates(), get_gallery_filters() (+17 more)
+Cohesion: 0.11
+Nodes (27): Any, Connection, Response, get_clip_model(), Returns the singleton SentenceTransformer CLIP model., _compute_gallery_filters(), get_duplicates(), get_gallery_filters() (+19 more)
 
 ### Community 9 - "API Scan Tests Suite"
 Cohesion: 0.17
@@ -171,16 +173,24 @@ Nodes (3): ConfirmDialogProps, EntityRow, EntityRowProps
 Cohesion: 0.20
 Nodes (13): DuplicatesPage(), Identify(), LazyImageProps, DuplicatesPage, Identify, DuplicateGroup, DuplicatePhoto, DuplicateReportGroup (+5 more)
 
+### Community 24 - "Community 24"
+Cohesion: 0.13
+Nodes (14): clamp(), DEFAULT_CENTER, formatLocation(), ImageMapPage(), latToY(), lonToX(), MapProvider, PhotoCluster (+6 more)
+
+### Community 25 - "Community 25"
+Cohesion: 0.24
+Nodes (9): find_best_face_match(), get_connection(), init_db(), init_single_db(), Connection, Initialize both the main and test databases.      This function iterates throu, Initialize a single SQLite database with the required schema.      Creates the, Get a connection to the specified database.      Args:         use_test_db (b (+1 more)
+
 ### Community 29 - "Path Navigation Utilities"
 Cohesion: 0.06
 Nodes (62): Any, BackgroundTasks, Connection, Response, FileResponse, build_duplicate_report(), _csv_safe_row(), dates_explorer() (+54 more)
 
 ### Community 32 - "Error Handling Component Module"
 Cohesion: 0.12
-Nodes (7): ErrorBoundary, Props, State, Gallery, ScanPage, ScanTest, SettingsPage
+Nodes (8): ErrorBoundary, Props, State, Gallery, ImageMapPage, ScanPage, ScanTest, SettingsPage
 
 ## Knowledge Gaps
-- **99 isolated node(s):** `StreamingResponse`, `Any`, `Any`, `Gallery`, `SettingsPage` (+94 more)
+- **104 isolated node(s):** `StreamingResponse`, `Any`, `Any`, `Gallery`, `SettingsPage` (+99 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -188,16 +198,16 @@ Nodes (7): ErrorBoundary, Props, State, Gallery, ScanPage, ScanTest, SettingsPag
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DuplicateReportFile` connect `Path Navigation Utilities` to `Compiler Configuration Settings`, `File Management and Duplicate Detection`?**
-  _High betweenness centrality (0.225) - this node is a cross-community bridge._
+  _High betweenness centrality (0.251) - this node is a cross-community bridge._
 - **Why does `FoldersPage` connect `Compiler Configuration Settings` to `Error Handling Component Module`, `API Scan Tests Suite`, `Path Navigation Utilities`, `File Management and Duplicate Detection`?**
-  _High betweenness centrality (0.092) - this node is a cross-community bridge._
-- **Why does `_read_app_version()` connect `Repository Version Management` to `Image Processing Services`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
-- **Are the 3 inferred relationships involving `Any` (e.g. with `DatabaseCleanRequest` and `RestoreRequest`) actually correct?**
-  _`Any` has 3 INFERRED edges - model-reasoned connections that need verification._
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
+- **Why does `_read_app_version()` connect `Repository Version Management` to `Backend Infrastructure Setup`?**
+  _High betweenness centrality (0.073) - this node is a cross-community bridge._
 - **What connects `Main APIRouter registry aggregating all individual route namespaces.`, `API Router grouping entity naming, extraction, and management algorithms.`, `Splits a full name into first and last name components.` to the rest of the system?**
-  _255 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _261 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Image Processing Services` be split into smaller, more focused modules?**
-  _Cohesion score 0.05102040816326531 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08172043010752689 - nodes in this community are weakly interconnected._
 - **Should `Image Search Endpoints` be split into smaller, more focused modules?**
-  _Cohesion score 0.062388591800356503 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06156156156156156 - nodes in this community are weakly interconnected._
+- **Should `Repository Version Management` be split into smaller, more focused modules?**
+  _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._

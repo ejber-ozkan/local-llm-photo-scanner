@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.9.0] - 2026-06-14
+
+### Added
+
+- Added an Image Maps sidebar page before Review Duplicates for browsing GPS-tagged gallery photos on an interactive map.
+- Added clustered thumbnail markers that reveal counts at wider zooms and load image thumbnails only for visible marker groups.
+- Added OpenStreetMap and Google Maps tile switching plus full-image viewing from single-photo map markers.
+- Added a slim `/api/gallery/map` endpoint for GPS-positioned gallery photos.
+
+### Fixed
+
+- Photo detail responses now include stored GPS coordinates so existing location previews can render reliably.
+
 ## [3.8.0] - 2026-06-14
 
 ### Changed

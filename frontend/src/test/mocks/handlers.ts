@@ -68,6 +68,25 @@ export const mockYears = [
     { year: '2022', count: 20 },
 ];
 
+export const mockMapPhotos = [
+    {
+        id: 1,
+        filename: 'beach.jpg',
+        description: 'A sunny beach with palm trees',
+        date_taken: '2024:06:15 10:30:00',
+        gps_lat: 51.5074,
+        gps_lon: -0.1278,
+    },
+    {
+        id: 2,
+        filename: 'mountain.jpg',
+        description: 'Snow-capped mountains at sunrise',
+        date_taken: '2023:12:01 07:45:00',
+        gps_lat: 51.501,
+        gps_lon: -0.12,
+    },
+];
+
 export const mockModels = {
     models: [
         { name: 'llava:13b', is_vision: true },
@@ -111,6 +130,10 @@ export const handlers = [
 
     http.get(`${BASE}/api/gallery/years`, () => {
         return HttpResponse.json(mockYears);
+    }),
+
+    http.get(`${BASE}/api/gallery/map`, () => {
+        return HttpResponse.json(mockMapPhotos);
     }),
 
     http.get(`${BASE}/api/photo/:photoId/detail`, () => {

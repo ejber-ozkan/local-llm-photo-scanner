@@ -69,8 +69,10 @@ def update_readme(path: Path, version: str) -> None:
     content = path.read_text(encoding="utf-8")
     content, title_count = README_TITLE_RE.subn(f"# Local AI Photo Gallery v{version}", content, count=1)
     content, features_count = README_FEATURES_RE.subn(f"### v{version} Features", content, count=1)
-    if title_count != 1 or features_count != 1:
-        raise ValueError("README version headings not found as expected.")
+    if title_count != 1:
+        raise ValueError("README version title not found as expected.")
+    if features_count > 1:
+        raise ValueError("Multiple README version feature headings found.")
     path.write_text(content, encoding="utf-8")
 
 

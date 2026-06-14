@@ -20,7 +20,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "api_router",
-      "community": 0,
+      "community": 5,
       "norm_label": "router.py"
     },
     {
@@ -30,7 +30,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "api_router_rationale_1",
-      "community": 0,
+      "community": 5,
       "norm_label": "main apirouter registry aggregating all individual route namespaces."
     },
     {
@@ -987,17 +987,27 @@
       "label": "search_photos()",
       "file_type": "code",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L139",
+      "source_location": "L141",
       "_origin": "ast",
       "id": "routes_gallery_search_photos",
       "community": 8,
       "norm_label": "search_photos()"
     },
     {
+      "label": "get_gallery_map_photos()",
+      "file_type": "code",
+      "source_file": "backend/api/routes/gallery.py",
+      "source_location": "L298",
+      "_origin": "ast",
+      "id": "routes_gallery_get_gallery_map_photos",
+      "community": 8,
+      "norm_label": "get_gallery_map_photos()"
+    },
+    {
       "label": "get_duplicates()",
       "file_type": "code",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L296",
+      "source_location": "L326",
       "_origin": "ast",
       "id": "routes_gallery_get_duplicates",
       "community": 8,
@@ -1007,7 +1017,7 @@
       "label": "get_skipped()",
       "file_type": "code",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L356",
+      "source_location": "L386",
       "_origin": "ast",
       "id": "routes_gallery_get_skipped",
       "community": 8,
@@ -1017,7 +1027,7 @@
       "label": "_compute_gallery_filters()",
       "file_type": "code",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L383",
+      "source_location": "L413",
       "_origin": "ast",
       "id": "routes_gallery_compute_gallery_filters",
       "community": 8,
@@ -1027,7 +1037,7 @@
       "label": "get_gallery_filters()",
       "file_type": "code",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L434",
+      "source_location": "L464",
       "_origin": "ast",
       "id": "routes_gallery_get_gallery_filters",
       "community": 8,
@@ -1037,7 +1047,7 @@
       "label": "get_gallery_years()",
       "file_type": "code",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L441",
+      "source_location": "L471",
       "_origin": "ast",
       "id": "routes_gallery_get_gallery_years",
       "community": 8,
@@ -1047,7 +1057,7 @@
       "label": "get_similar_photos()",
       "file_type": "code",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L456",
+      "source_location": "L486",
       "_origin": "ast",
       "id": "routes_gallery_get_similar_photos",
       "community": 8,
@@ -1097,19 +1107,29 @@
       "label": "Searches photos with full filter and sort support.",
       "file_type": "rationale",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L153",
+      "source_location": "L155",
       "_origin": "ast",
-      "id": "routes_gallery_rationale_153",
+      "id": "routes_gallery_rationale_155",
       "community": 8,
       "norm_label": "searches photos with full filter and sort support."
+    },
+    {
+      "label": "Returns only GPS-positioned gallery photos for the map view.",
+      "file_type": "rationale",
+      "source_file": "backend/api/routes/gallery.py",
+      "source_location": "L299",
+      "_origin": "ast",
+      "id": "routes_gallery_rationale_299",
+      "community": 8,
+      "norm_label": "returns only gps-positioned gallery photos for the map view."
     },
     {
       "label": "Returns grouped duplicate files based on MD5 analysis.",
       "file_type": "rationale",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L297",
+      "source_location": "L327",
       "_origin": "ast",
-      "id": "routes_gallery_rationale_297",
+      "id": "routes_gallery_rationale_327",
       "community": 8,
       "norm_label": "returns grouped duplicate files based on md5 analysis."
     },
@@ -1117,9 +1137,9 @@
       "label": "Returns files that were explicitly skipped during import (e.g., screenshots).",
       "file_type": "rationale",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L357",
+      "source_location": "L387",
       "_origin": "ast",
-      "id": "routes_gallery_rationale_357",
+      "id": "routes_gallery_rationale_387",
       "community": 8,
       "norm_label": "returns files that were explicitly skipped during import (e.g., screenshots)."
     },
@@ -1127,9 +1147,9 @@
       "label": "Deterministically cache the gallery filters to avoid redundant DB aggregation qu",
       "file_type": "rationale",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L384",
+      "source_location": "L414",
       "_origin": "ast",
-      "id": "routes_gallery_rationale_384",
+      "id": "routes_gallery_rationale_414",
       "community": 8,
       "norm_label": "deterministically cache the gallery filters to avoid redundant db aggregation qu"
     },
@@ -1137,9 +1157,9 @@
       "label": "Returns available filter options dynamically computed for the frontend gallery.",
       "file_type": "rationale",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L435",
+      "source_location": "L465",
       "_origin": "ast",
-      "id": "routes_gallery_rationale_435",
+      "id": "routes_gallery_rationale_465",
       "community": 8,
       "norm_label": "returns available filter options dynamically computed for the frontend gallery."
     },
@@ -1147,9 +1167,9 @@
       "label": "Returns years that have photos, with counts, for the timeline sidebar.",
       "file_type": "rationale",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L442",
+      "source_location": "L472",
       "_origin": "ast",
-      "id": "routes_gallery_rationale_442",
+      "id": "routes_gallery_rationale_472",
       "community": 8,
       "norm_label": "returns years that have photos, with counts, for the timeline sidebar."
     },
@@ -1157,9 +1177,9 @@
       "label": "Finds visually/semantically similar photos using ChromaDB.",
       "file_type": "rationale",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L457",
+      "source_location": "L487",
       "_origin": "ast",
-      "id": "routes_gallery_rationale_457",
+      "id": "routes_gallery_rationale_487",
       "community": 8,
       "norm_label": "finds visually/semantically similar photos using chromadb."
     },
@@ -2040,7 +2060,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_config",
-      "community": 0,
+      "community": 5,
       "norm_label": "config.py"
     },
     {
@@ -2060,7 +2080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_config_rationale_1",
-      "community": 0,
+      "community": 5,
       "norm_label": "configuration constants and global environment states for the application."
     },
     {
@@ -2450,7 +2470,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_database_setup",
-      "community": 0,
+      "community": 25,
       "norm_label": "database_setup.py"
     },
     {
@@ -2460,7 +2480,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "backend_database_setup_init_db",
-      "community": 0,
+      "community": 25,
       "norm_label": "init_db()"
     },
     {
@@ -2470,7 +2490,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "backend_database_setup_init_single_db",
-      "community": 0,
+      "community": 25,
       "norm_label": "init_single_db()"
     },
     {
@@ -2480,7 +2500,7 @@
       "source_location": "L219",
       "_origin": "ast",
       "id": "backend_database_setup_get_connection",
-      "community": 0,
+      "community": 25,
       "norm_label": "get_connection()"
     },
     {
@@ -2490,7 +2510,7 @@
       "source_location": "L219",
       "_origin": "ast",
       "id": "backend_database_setup_py_connection",
-      "community": 0,
+      "community": 25,
       "norm_label": "connection"
     },
     {
@@ -2500,7 +2520,7 @@
       "source_location": "L236",
       "_origin": "ast",
       "id": "backend_database_setup_find_best_face_match",
-      "community": 0,
+      "community": 25,
       "norm_label": "find_best_face_match()"
     },
     {
@@ -2510,7 +2530,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "backend_database_setup_rationale_11",
-      "community": 0,
+      "community": 25,
       "norm_label": "initialize both the main and test databases.      this function iterates throu"
     },
     {
@@ -2520,7 +2540,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "backend_database_setup_rationale_21",
-      "community": 0,
+      "community": 25,
       "norm_label": "initialize a single sqlite database with the required schema.      creates the"
     },
     {
@@ -2530,7 +2550,7 @@
       "source_location": "L220",
       "_origin": "ast",
       "id": "backend_database_setup_rationale_220",
-      "community": 0,
+      "community": 25,
       "norm_label": "get a connection to the specified database.      args:         use_test_db (b"
     },
     {
@@ -2540,7 +2560,7 @@
       "source_location": "L237",
       "_origin": "ast",
       "id": "backend_database_setup_rationale_237",
-      "community": 0,
+      "community": 25,
       "norm_label": "find the best matching face for a given embedding in the database.      compar"
     },
     {
@@ -2610,7 +2630,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_main",
-      "community": 0,
+      "community": 5,
       "norm_label": "main.py"
     },
     {
@@ -2620,7 +2640,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "backend_main_startup_event",
-      "community": 0,
+      "community": 5,
       "norm_label": "startup_event()"
     },
     {
@@ -2630,7 +2650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "backend_main_rationale_1",
-      "community": 0,
+      "community": 5,
       "norm_label": "main entrypoint for the local ai photo scanner backend application.  this module"
     },
     {
@@ -2640,7 +2660,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "backend_main_rationale_41",
-      "community": 0,
+      "community": 5,
       "norm_label": "application startup hook triggering local database initialization."
     },
     {
@@ -3554,10 +3574,20 @@
       "norm_label": "folderspage"
     },
     {
+      "label": "ImageMapPage",
+      "file_type": "code",
+      "source_file": "frontend/src/App.tsx",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "src_app_imagemappage",
+      "community": 32,
+      "norm_label": "imagemappage"
+    },
+    {
       "label": "RouteSpinner()",
       "file_type": "code",
       "source_file": "frontend/src/App.tsx",
-      "source_location": "L26",
+      "source_location": "L27",
       "_origin": "ast",
       "id": "src_app_routespinner",
       "community": 32,
@@ -3567,7 +3597,7 @@
       "label": "App()",
       "file_type": "code",
       "source_file": "frontend/src/App.tsx",
-      "source_location": "L34",
+      "source_location": "L35",
       "_origin": "ast",
       "id": "src_app_app",
       "community": 32,
@@ -3822,6 +3852,186 @@
       "id": "components_identify_identify",
       "community": 23,
       "norm_label": "identify()"
+    },
+    {
+      "label": "ImageMapPage.tsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "components_imagemappage",
+      "community": 24,
+      "norm_label": "imagemappage.tsx"
+    },
+    {
+      "label": "MapProvider",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "components_imagemappage_mapprovider",
+      "community": 24,
+      "norm_label": "mapprovider"
+    },
+    {
+      "label": "Size",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "components_imagemappage_size",
+      "community": 24,
+      "norm_label": "size"
+    },
+    {
+      "label": "Point",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "components_imagemappage_point",
+      "community": 24,
+      "norm_label": "point"
+    },
+    {
+      "label": "Tile",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "components_imagemappage_tile",
+      "community": 24,
+      "norm_label": "tile"
+    },
+    {
+      "label": "PhotoCluster",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "components_imagemappage_photocluster",
+      "community": 24,
+      "norm_label": "photocluster"
+    },
+    {
+      "label": "DEFAULT_CENTER",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "components_imagemappage_default_center",
+      "community": 24,
+      "norm_label": "default_center"
+    },
+    {
+      "label": "PROVIDER_LABELS",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "components_imagemappage_provider_labels",
+      "community": 24,
+      "norm_label": "provider_labels"
+    },
+    {
+      "label": "clamp()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "components_imagemappage_clamp",
+      "community": 24,
+      "norm_label": "clamp()"
+    },
+    {
+      "label": "lonToX()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "components_imagemappage_lontox",
+      "community": 24,
+      "norm_label": "lontox()"
+    },
+    {
+      "label": "latToY()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "components_imagemappage_lattoy",
+      "community": 24,
+      "norm_label": "lattoy()"
+    },
+    {
+      "label": "xToLon()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "components_imagemappage_xtolon",
+      "community": 24,
+      "norm_label": "xtolon()"
+    },
+    {
+      "label": "yToLat()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "components_imagemappage_ytolat",
+      "community": 24,
+      "norm_label": "ytolat()"
+    },
+    {
+      "label": "project()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "components_imagemappage_project",
+      "community": 24,
+      "norm_label": "project()"
+    },
+    {
+      "label": "tileUrl()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L72",
+      "_origin": "ast",
+      "id": "components_imagemappage_tileurl",
+      "community": 24,
+      "norm_label": "tileurl()"
+    },
+    {
+      "label": "getClusterGridSize()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L81",
+      "_origin": "ast",
+      "id": "components_imagemappage_getclustergridsize",
+      "community": 24,
+      "norm_label": "getclustergridsize()"
+    },
+    {
+      "label": "formatLocation()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L88",
+      "_origin": "ast",
+      "id": "components_imagemappage_formatlocation",
+      "community": 24,
+      "norm_label": "formatlocation()"
+    },
+    {
+      "label": "ImageMapPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "components_imagemappage_imagemappage",
+      "community": 24,
+      "norm_label": "imagemappage()"
     },
     {
       "label": "LocationMap.tsx",
@@ -4274,10 +4484,20 @@
       "norm_label": "photodetail"
     },
     {
-      "label": "FilterOptions",
+      "label": "MapPhoto",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
       "source_location": "L34",
+      "_origin": "ast",
+      "id": "src_types_mapphoto",
+      "community": 24,
+      "norm_label": "mapphoto"
+    },
+    {
+      "label": "FilterOptions",
+      "file_type": "code",
+      "source_file": "frontend/src/types.ts",
+      "source_location": "L43",
       "_origin": "ast",
       "id": "src_types_filteroptions",
       "community": 13,
@@ -4287,7 +4507,7 @@
       "label": "YearInfo",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L44",
+      "source_location": "L53",
       "_origin": "ast",
       "id": "src_types_yearinfo",
       "community": 23,
@@ -4297,7 +4517,7 @@
       "label": "Entity",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L50",
+      "source_location": "L59",
       "_origin": "ast",
       "id": "src_types_entity",
       "community": 23,
@@ -4307,7 +4527,7 @@
       "label": "UniquePhoto",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L58",
+      "source_location": "L67",
       "_origin": "ast",
       "id": "src_types_uniquephoto",
       "community": 23,
@@ -4317,7 +4537,7 @@
       "label": "DuplicatePhoto",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L64",
+      "source_location": "L73",
       "_origin": "ast",
       "id": "src_types_duplicatephoto",
       "community": 23,
@@ -4327,7 +4547,7 @@
       "label": "DuplicateGroup",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L72",
+      "source_location": "L81",
       "_origin": "ast",
       "id": "src_types_duplicategroup",
       "community": 23,
@@ -4337,7 +4557,7 @@
       "label": "ScanStatus",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L80",
+      "source_location": "L89",
       "_origin": "ast",
       "id": "src_types_scanstatus",
       "community": 9,
@@ -4347,7 +4567,7 @@
       "label": "ScanHistoryItem",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L88",
+      "source_location": "L97",
       "_origin": "ast",
       "id": "src_types_scanhistoryitem",
       "community": 20,
@@ -4357,7 +4577,7 @@
       "label": "TestResult",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L94",
+      "source_location": "L103",
       "_origin": "ast",
       "id": "src_types_testresult",
       "community": 23,
@@ -4367,7 +4587,7 @@
       "label": "LocalMediaItem",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L112",
+      "source_location": "L121",
       "_origin": "ast",
       "id": "src_types_localmediaitem",
       "community": 14,
@@ -4377,7 +4597,7 @@
       "label": "FolderExplorerResponse",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L148",
+      "source_location": "L157",
       "_origin": "ast",
       "id": "src_types_folderexplorerresponse",
       "community": 14,
@@ -4387,7 +4607,7 @@
       "label": "DateDrilldownItem",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L155",
+      "source_location": "L164",
       "_origin": "ast",
       "id": "src_types_datedrilldownitem",
       "community": 14,
@@ -4397,7 +4617,7 @@
       "label": "FolderScanStatus",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L161",
+      "source_location": "L170",
       "_origin": "ast",
       "id": "src_types_folderscanstatus",
       "community": 19,
@@ -4407,7 +4627,7 @@
       "label": "DuplicateReportFile",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L167",
+      "source_location": "L176",
       "_origin": "ast",
       "id": "src_types_duplicatereportfile",
       "community": 29,
@@ -4417,7 +4637,7 @@
       "label": "DuplicateReportGroup",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L187",
+      "source_location": "L196",
       "_origin": "ast",
       "id": "src_types_duplicatereportgroup",
       "community": 23,
@@ -4427,7 +4647,7 @@
       "label": "DuplicateReportResponse",
       "file_type": "code",
       "source_file": "frontend/src/types.ts",
-      "source_location": "L196",
+      "source_location": "L205",
       "_origin": "ast",
       "id": "src_types_duplicatereportresponse",
       "community": 14,
@@ -4547,7 +4767,7 @@
       "label": "update_mock_version()",
       "file_type": "code",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L77",
+      "source_location": "L79",
       "_origin": "ast",
       "id": "scripts_bump_version_update_mock_version",
       "community": 3,
@@ -4557,7 +4777,7 @@
       "label": "apply_version()",
       "file_type": "code",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L86",
+      "source_location": "L88",
       "_origin": "ast",
       "id": "scripts_bump_version_apply_version",
       "community": 3,
@@ -4567,7 +4787,7 @@
       "label": "collect_version_state()",
       "file_type": "code",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L96",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "scripts_bump_version_collect_version_state",
       "community": 3,
@@ -4577,7 +4797,7 @@
       "label": "check_alignment()",
       "file_type": "code",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L118",
+      "source_location": "L120",
       "_origin": "ast",
       "id": "scripts_bump_version_check_alignment",
       "community": 3,
@@ -4587,7 +4807,7 @@
       "label": "run_git_command()",
       "file_type": "code",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L129",
+      "source_location": "L131",
       "_origin": "ast",
       "id": "scripts_bump_version_run_git_command",
       "community": 3,
@@ -4597,7 +4817,7 @@
       "label": "main()",
       "file_type": "code",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L134",
+      "source_location": "L136",
       "_origin": "ast",
       "id": "scripts_bump_version_main",
       "community": 3,
@@ -4677,9 +4897,9 @@
       "label": "Update the frontend test mock version constant.",
       "file_type": "rationale",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L78",
+      "source_location": "L80",
       "_origin": "ast",
-      "id": "scripts_bump_version_rationale_78",
+      "id": "scripts_bump_version_rationale_80",
       "community": 3,
       "norm_label": "update the frontend test mock version constant."
     },
@@ -4687,9 +4907,9 @@
       "label": "Write the requested version into all generated metadata files.",
       "file_type": "rationale",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L87",
+      "source_location": "L89",
       "_origin": "ast",
-      "id": "scripts_bump_version_rationale_87",
+      "id": "scripts_bump_version_rationale_89",
       "community": 3,
       "norm_label": "write the requested version into all generated metadata files."
     },
@@ -4697,9 +4917,9 @@
       "label": "Return the current version observed in each managed file.",
       "file_type": "rationale",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L97",
+      "source_location": "L99",
       "_origin": "ast",
-      "id": "scripts_bump_version_rationale_97",
+      "id": "scripts_bump_version_rationale_99",
       "community": 3,
       "norm_label": "return the current version observed in each managed file."
     },
@@ -4707,9 +4927,9 @@
       "label": "Return mismatches from the repository version source of truth.",
       "file_type": "rationale",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L119",
+      "source_location": "L121",
       "_origin": "ast",
-      "id": "scripts_bump_version_rationale_119",
+      "id": "scripts_bump_version_rationale_121",
       "community": 3,
       "norm_label": "return mismatches from the repository version source of truth."
     },
@@ -4717,9 +4937,9 @@
       "label": "Run a git command rooted at the repository path.",
       "file_type": "rationale",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L130",
+      "source_location": "L132",
       "_origin": "ast",
-      "id": "scripts_bump_version_rationale_130",
+      "id": "scripts_bump_version_rationale_132",
       "community": 3,
       "norm_label": "run a git command rooted at the repository path."
     },
@@ -4727,9 +4947,9 @@
       "label": "CLI entrypoint for applying or checking repository versions.",
       "file_type": "rationale",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L135",
+      "source_location": "L137",
       "_origin": "ast",
-      "id": "scripts_bump_version_rationale_135",
+      "id": "scripts_bump_version_rationale_137",
       "community": 3,
       "norm_label": "cli entrypoint for applying or checking repository versions."
     },
@@ -4854,10 +5074,40 @@
       "norm_label": "changelog"
     },
     {
-      "label": "[3.8.0] - 2026-06-14",
+      "label": "[3.9.0] - 2026-06-14",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
       "source_location": "L3",
+      "_origin": "ast",
+      "id": "changelog_3_9_0_2026_06_14",
+      "community": 2,
+      "norm_label": "[3.9.0] - 2026-06-14"
+    },
+    {
+      "label": "Added",
+      "file_type": "document",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "changelog_added",
+      "community": 2,
+      "norm_label": "added"
+    },
+    {
+      "label": "Fixed",
+      "file_type": "document",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "changelog_fixed",
+      "community": 2,
+      "norm_label": "fixed"
+    },
+    {
+      "label": "[3.8.0] - 2026-06-14",
+      "file_type": "document",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "changelog_3_8_0_2026_06_14",
       "community": 2,
@@ -4867,7 +5117,7 @@
       "label": "Changed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L5",
+      "source_location": "L18",
       "_origin": "ast",
       "id": "changelog_changed",
       "community": 2,
@@ -4877,7 +5127,7 @@
       "label": "[3.7.0] - 2026-06-07",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L11",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "changelog_3_7_0_2026_06_07",
       "community": 2,
@@ -4887,9 +5137,9 @@
       "label": "Fixed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L13",
+      "source_location": "L26",
       "_origin": "ast",
-      "id": "changelog_fixed",
+      "id": "changelog_fixed_26",
       "community": 2,
       "norm_label": "fixed"
     },
@@ -4897,9 +5147,9 @@
       "label": "Added",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L17",
+      "source_location": "L30",
       "_origin": "ast",
-      "id": "changelog_added",
+      "id": "changelog_added_30",
       "community": 2,
       "norm_label": "added"
     },
@@ -4907,7 +5157,7 @@
       "label": "[3.6.1] - 2026-06-07",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L23",
+      "source_location": "L36",
       "_origin": "ast",
       "id": "changelog_3_6_1_2026_06_07",
       "community": 2,
@@ -4917,9 +5167,9 @@
       "label": "Fixed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L25",
+      "source_location": "L38",
       "_origin": "ast",
-      "id": "changelog_fixed_25",
+      "id": "changelog_fixed_38",
       "community": 2,
       "norm_label": "fixed"
     },
@@ -4927,41 +5177,11 @@
       "label": "[3.6.0] - 2026-06-07",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L33",
+      "source_location": "L46",
       "_origin": "ast",
       "id": "changelog_3_6_0_2026_06_07",
       "community": 2,
       "norm_label": "[3.6.0] - 2026-06-07"
-    },
-    {
-      "label": "Added",
-      "file_type": "document",
-      "source_file": "CHANGELOG.md",
-      "source_location": "L35",
-      "_origin": "ast",
-      "id": "changelog_added_35",
-      "community": 2,
-      "norm_label": "added"
-    },
-    {
-      "label": "Changed",
-      "file_type": "document",
-      "source_file": "CHANGELOG.md",
-      "source_location": "L41",
-      "_origin": "ast",
-      "id": "changelog_changed_41",
-      "community": 2,
-      "norm_label": "changed"
-    },
-    {
-      "label": "[3.5.0] - 2026-06-07",
-      "file_type": "document",
-      "source_file": "CHANGELOG.md",
-      "source_location": "L46",
-      "_origin": "ast",
-      "id": "changelog_3_5_0_2026_06_07",
-      "community": 2,
-      "norm_label": "[3.5.0] - 2026-06-07"
     },
     {
       "label": "Added",
@@ -4974,10 +5194,40 @@
       "norm_label": "added"
     },
     {
-      "label": "[3.4.0] - 2026-06-07",
+      "label": "Changed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
       "source_location": "L54",
+      "_origin": "ast",
+      "id": "changelog_changed_54",
+      "community": 2,
+      "norm_label": "changed"
+    },
+    {
+      "label": "[3.5.0] - 2026-06-07",
+      "file_type": "document",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "changelog_3_5_0_2026_06_07",
+      "community": 2,
+      "norm_label": "[3.5.0] - 2026-06-07"
+    },
+    {
+      "label": "Added",
+      "file_type": "document",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L61",
+      "_origin": "ast",
+      "id": "changelog_added_61",
+      "community": 2,
+      "norm_label": "added"
+    },
+    {
+      "label": "[3.4.0] - 2026-06-07",
+      "file_type": "document",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L67",
       "_origin": "ast",
       "id": "changelog_3_4_0_2026_06_07",
       "community": 2,
@@ -4987,9 +5237,9 @@
       "label": "Added",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L56",
+      "source_location": "L69",
       "_origin": "ast",
-      "id": "changelog_added_56",
+      "id": "changelog_added_69",
       "community": 2,
       "norm_label": "added"
     },
@@ -4997,7 +5247,7 @@
       "label": "[3.3.1] - 2026-06-06",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L61",
+      "source_location": "L74",
       "_origin": "ast",
       "id": "changelog_3_3_1_2026_06_06",
       "community": 2,
@@ -5007,9 +5257,9 @@
       "label": "Added",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L63",
+      "source_location": "L76",
       "_origin": "ast",
-      "id": "changelog_added_63",
+      "id": "changelog_added_76",
       "community": 2,
       "norm_label": "added"
     },
@@ -5017,7 +5267,7 @@
       "label": "[3.3.0] - 2026-06-06",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L68",
+      "source_location": "L81",
       "_origin": "ast",
       "id": "changelog_3_3_0_2026_06_06",
       "community": 2,
@@ -5027,9 +5277,9 @@
       "label": "Added",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L70",
+      "source_location": "L83",
       "_origin": "ast",
-      "id": "changelog_added_70",
+      "id": "changelog_added_83",
       "community": 2,
       "norm_label": "added"
     },
@@ -5037,9 +5287,9 @@
       "label": "Changed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L81",
+      "source_location": "L94",
       "_origin": "ast",
-      "id": "changelog_changed_81",
+      "id": "changelog_changed_94",
       "community": 2,
       "norm_label": "changed"
     },
@@ -5047,9 +5297,9 @@
       "label": "Fixed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L87",
+      "source_location": "L100",
       "_origin": "ast",
-      "id": "changelog_fixed_87",
+      "id": "changelog_fixed_100",
       "community": 2,
       "norm_label": "fixed"
     },
@@ -5057,7 +5307,7 @@
       "label": "[3.2.0] - 2026-06-06",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L91",
+      "source_location": "L104",
       "_origin": "ast",
       "id": "changelog_3_2_0_2026_06_06",
       "community": 2,
@@ -5067,9 +5317,9 @@
       "label": "Added",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L93",
+      "source_location": "L106",
       "_origin": "ast",
-      "id": "changelog_added_93",
+      "id": "changelog_added_106",
       "community": 2,
       "norm_label": "added"
     },
@@ -5077,9 +5327,9 @@
       "label": "Changed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L100",
+      "source_location": "L113",
       "_origin": "ast",
-      "id": "changelog_changed_100",
+      "id": "changelog_changed_113",
       "community": 2,
       "norm_label": "changed"
     },
@@ -5087,9 +5337,9 @@
       "label": "Fixed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L105",
+      "source_location": "L118",
       "_origin": "ast",
-      "id": "changelog_fixed_105",
+      "id": "changelog_fixed_118",
       "community": 2,
       "norm_label": "fixed"
     },
@@ -5097,7 +5347,7 @@
       "label": "[3.1.0] - 2026-05-28",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L109",
+      "source_location": "L122",
       "_origin": "ast",
       "id": "changelog_3_1_0_2026_05_28",
       "community": 2,
@@ -5107,9 +5357,9 @@
       "label": "Added",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L111",
+      "source_location": "L124",
       "_origin": "ast",
-      "id": "changelog_added_111",
+      "id": "changelog_added_124",
       "community": 2,
       "norm_label": "added"
     },
@@ -5117,9 +5367,9 @@
       "label": "Changed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L119",
+      "source_location": "L132",
       "_origin": "ast",
-      "id": "changelog_changed_119",
+      "id": "changelog_changed_132",
       "community": 2,
       "norm_label": "changed"
     },
@@ -5127,9 +5377,9 @@
       "label": "Fixed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L124",
+      "source_location": "L137",
       "_origin": "ast",
-      "id": "changelog_fixed_124",
+      "id": "changelog_fixed_137",
       "community": 2,
       "norm_label": "fixed"
     },
@@ -5137,7 +5387,7 @@
       "label": "[3.0.0] - 2026-05-25",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L128",
+      "source_location": "L141",
       "_origin": "ast",
       "id": "changelog_3_0_0_2026_05_25",
       "community": 2,
@@ -5147,9 +5397,9 @@
       "label": "Added",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L130",
+      "source_location": "L143",
       "_origin": "ast",
-      "id": "changelog_added_130",
+      "id": "changelog_added_143",
       "community": 2,
       "norm_label": "added"
     },
@@ -5157,9 +5407,9 @@
       "label": "Changed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L137",
+      "source_location": "L150",
       "_origin": "ast",
-      "id": "changelog_changed_137",
+      "id": "changelog_changed_150",
       "community": 2,
       "norm_label": "changed"
     },
@@ -5167,9 +5417,9 @@
       "label": "Fixed",
       "file_type": "document",
       "source_file": "CHANGELOG.md",
-      "source_location": "L143",
+      "source_location": "L156",
       "_origin": "ast",
-      "id": "changelog_fixed_143",
+      "id": "changelog_fixed_156",
       "community": 2,
       "norm_label": "fixed"
     },
@@ -5184,60 +5434,40 @@
       "norm_label": "readme.md"
     },
     {
-      "label": "Local AI Photo Gallery v3.8.0",
+      "label": "Local AI Photo Gallery v3.9.0",
       "file_type": "document",
       "source_file": "README.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "readme_local_ai_photo_gallery_v3_8_0",
+      "id": "readme_local_ai_photo_gallery_v3_9_0",
       "community": 4,
-      "norm_label": "local ai photo gallery v3.8.0"
+      "norm_label": "local ai photo gallery v3.9.0"
     },
     {
       "label": "Features",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L6",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "readme_features",
       "community": 4,
       "norm_label": "features"
     },
     {
-      "label": "v3.8.0 Features",
+      "label": "Core Features",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L8",
+      "source_location": "L14",
       "_origin": "ast",
-      "id": "readme_v3_8_0_features",
+      "id": "readme_core_features",
       "community": 4,
-      "norm_label": "v3.8.0 features"
-    },
-    {
-      "label": "v3.5.0 Features",
-      "file_type": "document",
-      "source_file": "README.md",
-      "source_location": "L13",
-      "_origin": "ast",
-      "id": "readme_v3_5_0_features",
-      "community": 4,
-      "norm_label": "v3.5.0 features"
-    },
-    {
-      "label": "Earlier Features",
-      "file_type": "document",
-      "source_file": "README.md",
-      "source_location": "L20",
-      "_origin": "ast",
-      "id": "readme_earlier_features",
-      "community": 4,
-      "norm_label": "earlier features"
+      "norm_label": "core features"
     },
     {
       "label": "Screenshots",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L46",
+      "source_location": "L39",
       "_origin": "ast",
       "id": "readme_screenshots",
       "community": 4,
@@ -5247,7 +5477,7 @@
       "label": "Technology Architecture & Stack",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L62",
+      "source_location": "L59",
       "_origin": "ast",
       "id": "readme_technology_architecture_stack",
       "community": 4,
@@ -5257,7 +5487,7 @@
       "label": "Frontend Stack",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L64",
+      "source_location": "L61",
       "_origin": "ast",
       "id": "readme_frontend_stack",
       "community": 4,
@@ -5267,7 +5497,7 @@
       "label": "Backend Stack",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L75",
+      "source_location": "L77",
       "_origin": "ast",
       "id": "readme_backend_stack",
       "community": 4,
@@ -5277,7 +5507,7 @@
       "label": "Local AI Integrations",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L89",
+      "source_location": "L100",
       "_origin": "ast",
       "id": "readme_local_ai_integrations",
       "community": 4,
@@ -5287,7 +5517,7 @@
       "label": "Prerequisites",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L94",
+      "source_location": "L107",
       "_origin": "ast",
       "id": "readme_prerequisites",
       "community": 4,
@@ -5297,7 +5527,7 @@
       "label": "How to Build & Setup",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L120",
+      "source_location": "L142",
       "_origin": "ast",
       "id": "readme_how_to_build_setup",
       "community": 4,
@@ -5307,7 +5537,7 @@
       "label": "1. Backend Setup",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L122",
+      "source_location": "L144",
       "_origin": "ast",
       "id": "readme_1_backend_setup",
       "community": 4,
@@ -5317,7 +5547,7 @@
       "label": "2. Frontend Setup",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L149",
+      "source_location": "L174",
       "_origin": "ast",
       "id": "readme_2_frontend_setup",
       "community": 4,
@@ -5327,7 +5557,7 @@
       "label": "How to Run",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L164",
+      "source_location": "L190",
       "_origin": "ast",
       "id": "readme_how_to_run",
       "community": 4,
@@ -5337,7 +5567,7 @@
       "label": "1. Ensure Ollama is Running",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L168",
+      "source_location": "L195",
       "_origin": "ast",
       "id": "readme_1_ensure_ollama_is_running",
       "community": 4,
@@ -5347,7 +5577,7 @@
       "label": "2. Start using provided scripts (Recommended)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L222",
+      "source_location": "L269",
       "_origin": "ast",
       "id": "readme_2_start_using_provided_scripts_recommended",
       "community": 4,
@@ -5357,7 +5587,7 @@
       "label": "3. How to Stop",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L239",
+      "source_location": "L290",
       "_origin": "ast",
       "id": "readme_3_how_to_stop",
       "community": 4,
@@ -5367,7 +5597,7 @@
       "label": "4. Start Manually (Alternative)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L253",
+      "source_location": "L306",
       "_origin": "ast",
       "id": "readme_4_start_manually_alternative",
       "community": 4,
@@ -5377,7 +5607,7 @@
       "label": "4. Open the Application",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L273",
+      "source_location": "L326",
       "_origin": "ast",
       "id": "readme_4_open_the_application",
       "community": 4,
@@ -5387,7 +5617,7 @@
       "label": "5. Managing Your Database",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L278",
+      "source_location": "L333",
       "_origin": "ast",
       "id": "readme_5_managing_your_database",
       "community": 4,
@@ -5397,7 +5627,7 @@
       "label": "6. Generate Python Documentation (PyDocs)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L291",
+      "source_location": "L351",
       "_origin": "ast",
       "id": "readme_6_generate_python_documentation_pydocs",
       "community": 4,
@@ -5407,7 +5637,7 @@
       "label": "7. Running Backend Tests",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L305",
+      "source_location": "L370",
       "_origin": "ast",
       "id": "readme_7_running_backend_tests",
       "community": 4,
@@ -5417,7 +5647,7 @@
       "label": "8. Running Frontend Tests",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L346",
+      "source_location": "L419",
       "_origin": "ast",
       "id": "readme_8_running_frontend_tests",
       "community": 4,
@@ -5427,7 +5657,7 @@
       "label": "9. Versioning",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L376",
+      "source_location": "L454",
       "_origin": "ast",
       "id": "readme_9_versioning",
       "community": 4,
@@ -7857,6 +8087,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
+      "source_location": "L298",
+      "weight": 1.0,
+      "source": "routes_gallery",
+      "target": "routes_gallery_get_gallery_map_photos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/api/routes/gallery.py",
       "source_location": "L441",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -8056,6 +8296,17 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
+      "source_location": "L298",
+      "weight": 1.0,
+      "source": "routes_gallery_get_gallery_map_photos",
+      "target": "backend_api_routes_gallery_py_connection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/api/routes/gallery.py",
       "source_location": "L441",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -8133,6 +8384,17 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
+      "source_location": "L298",
+      "weight": 1.0,
+      "source": "routes_gallery_get_gallery_map_photos",
+      "target": "backend_api_routes_gallery_py_any",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/api/routes/gallery.py",
       "source_location": "L441",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -8176,11 +8438,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L153",
+      "source_location": "L155",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_gallery_rationale_153",
-      "target": "routes_gallery_search_photos"
+      "source": "routes_gallery_rationale_155",
+      "target": "routes_gallery_search_photos",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8197,21 +8459,31 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L297",
+      "source_location": "L299",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_gallery_rationale_297",
-      "target": "routes_gallery_get_duplicates"
+      "source": "routes_gallery_rationale_299",
+      "target": "routes_gallery_get_gallery_map_photos",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L357",
+      "source_location": "L327",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_gallery_rationale_357",
-      "target": "routes_gallery_get_skipped"
+      "source": "routes_gallery_rationale_327",
+      "target": "routes_gallery_get_duplicates",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/api/routes/gallery.py",
+      "source_location": "L387",
+      "weight": 1.0,
+      "source": "routes_gallery_rationale_387",
+      "target": "routes_gallery_get_skipped",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8228,31 +8500,31 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L384",
+      "source_location": "L414",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_gallery_rationale_384",
-      "target": "routes_gallery_compute_gallery_filters"
+      "source": "routes_gallery_rationale_414",
+      "target": "routes_gallery_compute_gallery_filters",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L435",
+      "source_location": "L465",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_gallery_rationale_435",
-      "target": "routes_gallery_get_gallery_filters"
+      "source": "routes_gallery_rationale_465",
+      "target": "routes_gallery_get_gallery_filters",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L442",
+      "source_location": "L472",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_gallery_rationale_442",
-      "target": "routes_gallery_get_gallery_years"
+      "source": "routes_gallery_rationale_472",
+      "target": "routes_gallery_get_gallery_years",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -8269,11 +8541,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "backend/api/routes/gallery.py",
-      "source_location": "L457",
+      "source_location": "L487",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routes_gallery_rationale_457",
-      "target": "routes_gallery_get_similar_photos"
+      "source": "routes_gallery_rationale_487",
+      "target": "routes_gallery_get_similar_photos",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -12102,6 +12374,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "frontend/src/App.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_app",
+      "target": "src_app_imagemappage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/App.tsx",
       "source_location": "L25",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -12114,9 +12396,9 @@
       "source_file": "frontend/src/App.tsx",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "src_app",
-      "target": "src_app_scanpage",
-      "confidence_score": 1.0
+      "target": "src_app_scanpage"
     },
     {
       "relation": "contains",
@@ -13039,6 +13321,253 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_clamp",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_default_center",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L88",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_formatlocation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_getclustergridsize",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_imagemappage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_lattoy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_lontox",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_mapprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_photocluster",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_point",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_project",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_provider_labels",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_size",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_tile",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L72",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_tileurl",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_xtolon",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "components_imagemappage_ytolat",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "src_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "components_imagemappage",
+      "target": "src_types_mapphoto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "field",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "components_imagemappage_photocluster",
+      "target": "src_types_mapphoto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "components_imagemappage_lattoy",
+      "target": "components_imagemappage_clamp",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L69",
+      "weight": 1.0,
+      "source": "components_imagemappage_project",
+      "target": "components_imagemappage_lontox",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L69",
+      "weight": 1.0,
+      "source": "components_imagemappage_project",
+      "target": "components_imagemappage_lattoy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ImageMapPage.tsx",
+      "source_location": "L458",
+      "weight": 1.0,
+      "source": "components_imagemappage_imagemappage",
+      "target": "components_imagemappage_formatlocation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "frontend/src/components/LocationMap.tsx",
       "source_location": "L9",
       "weight": 1.0,
@@ -13073,9 +13602,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "components_scanpage_confirmmodal",
-      "confidence_score": 1.0
+      "target": "components_scanpage_confirmmodal"
     },
     {
       "relation": "contains",
@@ -13083,9 +13612,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "components_scanpage_getapierrormessage",
-      "confidence_score": 1.0
+      "target": "components_scanpage_getapierrormessage"
     },
     {
       "relation": "contains",
@@ -13093,9 +13622,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L14",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "components_scanpage_scanlog",
-      "confidence_score": 1.0
+      "target": "components_scanpage_scanlog"
     },
     {
       "relation": "contains",
@@ -13103,9 +13632,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "components_scanpage_scanmode",
-      "confidence_score": 1.0
+      "target": "components_scanpage_scanmode"
     },
     {
       "relation": "contains",
@@ -13113,9 +13642,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L29",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "components_scanpage_scanpage",
-      "confidence_score": 1.0
+      "target": "components_scanpage_scanpage"
     },
     {
       "relation": "imports_from",
@@ -13124,9 +13653,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "src_types",
-      "confidence_score": 1.0
+      "target": "src_types"
     },
     {
       "relation": "imports",
@@ -13135,9 +13664,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "src_types_folderscanstatus",
-      "confidence_score": 1.0
+      "target": "src_types_folderscanstatus"
     },
     {
       "relation": "imports",
@@ -13146,9 +13675,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "src_types_scanhistoryitem",
-      "confidence_score": 1.0
+      "target": "src_types_scanhistoryitem"
     },
     {
       "relation": "imports",
@@ -13157,9 +13686,9 @@
       "source_file": "frontend/src/components/ScanPage.tsx",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_scanpage",
-      "target": "src_types_scanstatus",
-      "confidence_score": 1.0
+      "target": "src_types_scanstatus"
     },
     {
       "relation": "contains",
@@ -13265,9 +13794,9 @@
       "source_file": "frontend/src/components/SettingsPage.tsx",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_settingspage",
-      "target": "components_settingspage_color_themes",
-      "confidence_score": 1.0
+      "target": "components_settingspage_color_themes"
     },
     {
       "relation": "contains",
@@ -13275,9 +13804,9 @@
       "source_file": "frontend/src/components/SettingsPage.tsx",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_settingspage",
-      "target": "components_settingspage_confirmmodal",
-      "confidence_score": 1.0
+      "target": "components_settingspage_confirmmodal"
     },
     {
       "relation": "contains",
@@ -13285,9 +13814,9 @@
       "source_file": "frontend/src/components/SettingsPage.tsx",
       "source_location": "L22",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_settingspage",
-      "target": "components_settingspage_getapierrormessage",
-      "confidence_score": 1.0
+      "target": "components_settingspage_getapierrormessage"
     },
     {
       "relation": "contains",
@@ -13687,6 +14216,16 @@
       "confidence_score": 1.0,
       "source": "src_types",
       "target": "src_types_localmediaitem"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/types.ts",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_types",
+      "target": "src_types_mapphoto",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14193,11 +14732,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L78",
+      "source_location": "L80",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_bump_version_rationale_78",
-      "target": "scripts_bump_version_update_mock_version"
+      "source": "scripts_bump_version_rationale_80",
+      "target": "scripts_bump_version_update_mock_version",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14214,11 +14753,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L87",
+      "source_location": "L89",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_bump_version_rationale_87",
-      "target": "scripts_bump_version_apply_version"
+      "source": "scripts_bump_version_rationale_89",
+      "target": "scripts_bump_version_apply_version",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14235,11 +14774,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L97",
+      "source_location": "L99",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_bump_version_rationale_97",
-      "target": "scripts_bump_version_collect_version_state"
+      "source": "scripts_bump_version_rationale_99",
+      "target": "scripts_bump_version_collect_version_state",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14256,11 +14795,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L119",
+      "source_location": "L121",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_bump_version_rationale_119",
-      "target": "scripts_bump_version_check_alignment"
+      "source": "scripts_bump_version_rationale_121",
+      "target": "scripts_bump_version_check_alignment",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -14277,21 +14816,21 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L130",
+      "source_location": "L132",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_bump_version_rationale_130",
-      "target": "scripts_bump_version_run_git_command"
+      "source": "scripts_bump_version_rationale_132",
+      "target": "scripts_bump_version_run_git_command",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "scripts/bump_version.py",
-      "source_location": "L135",
+      "source_location": "L137",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "scripts_bump_version_rationale_135",
-      "target": "scripts_bump_version_main"
+      "source": "scripts_bump_version_rationale_137",
+      "target": "scripts_bump_version_main",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14555,8 +15094,18 @@
       "source_file": "CHANGELOG.md",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "changelog_changelog",
-      "target": "changelog_3_8_0_2026_06_14",
+      "target": "changelog_3_8_0_2026_06_14"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "changelog_changelog",
+      "target": "changelog_3_9_0_2026_06_14",
       "confidence_score": 1.0
     },
     {
@@ -14565,19 +15114,19 @@
       "source_file": "CHANGELOG.md",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "changelog_3_8_0_2026_06_14",
-      "target": "changelog_changed",
+      "source": "changelog_3_9_0_2026_06_14",
+      "target": "changelog_added",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L33",
+      "source_location": "L12",
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "changelog_3_6_0_2026_06_07",
-      "target": "changelog_changed"
+      "source": "changelog_3_9_0_2026_06_14",
+      "target": "changelog_fixed",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -14603,30 +15152,50 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L25",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "changelog_3_8_0_2026_06_14",
+      "target": "changelog_changed"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L33",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "changelog_3_6_0_2026_06_07",
+      "target": "changelog_changed"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "changelog_3_7_0_2026_06_07",
+      "target": "changelog_added_30",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "changelog_3_7_0_2026_06_07",
+      "target": "changelog_fixed_26",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L38",
       "weight": 1.0,
       "source": "changelog_3_6_1_2026_06_07",
-      "target": "changelog_fixed_25",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "CHANGELOG.md",
-      "source_location": "L35",
-      "weight": 1.0,
-      "source": "changelog_3_6_0_2026_06_07",
-      "target": "changelog_added_35",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "CHANGELOG.md",
-      "source_location": "L41",
-      "weight": 1.0,
-      "source": "changelog_3_6_0_2026_06_07",
-      "target": "changelog_changed_41",
+      "target": "changelog_fixed_38",
       "confidence_score": 1.0
     },
     {
@@ -14635,8 +15204,18 @@
       "source_file": "CHANGELOG.md",
       "source_location": "L48",
       "weight": 1.0,
-      "source": "changelog_3_5_0_2026_06_07",
+      "source": "changelog_3_6_0_2026_06_07",
       "target": "changelog_added_48",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "changelog_3_6_0_2026_06_07",
+      "target": "changelog_changed_54",
       "confidence_score": 1.0
     },
     {
@@ -14653,60 +15232,60 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L56",
+      "source_location": "L48",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "changelog_3_5_0_2026_06_07",
+      "target": "changelog_added_48"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "changelog_3_5_0_2026_06_07",
+      "target": "changelog_added_61",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "changelog_3_4_0_2026_06_07",
-      "target": "changelog_added_56",
+      "target": "changelog_added_69",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L63",
+      "source_location": "L76",
       "weight": 1.0,
       "source": "changelog_3_3_1_2026_06_06",
-      "target": "changelog_added_63",
+      "target": "changelog_added_76",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L70",
+      "source_location": "L83",
       "weight": 1.0,
       "source": "changelog_3_3_0_2026_06_06",
-      "target": "changelog_added_70",
+      "target": "changelog_added_83",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L81",
+      "source_location": "L94",
       "weight": 1.0,
       "source": "changelog_3_3_0_2026_06_06",
-      "target": "changelog_changed_81",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "CHANGELOG.md",
-      "source_location": "L87",
-      "weight": 1.0,
-      "source": "changelog_3_3_0_2026_06_06",
-      "target": "changelog_fixed_87",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "CHANGELOG.md",
-      "source_location": "L93",
-      "weight": 1.0,
-      "source": "changelog_3_2_0_2026_06_06",
-      "target": "changelog_added_93",
+      "target": "changelog_changed_94",
       "confidence_score": 1.0
     },
     {
@@ -14715,38 +15294,38 @@
       "source_file": "CHANGELOG.md",
       "source_location": "L100",
       "weight": 1.0,
-      "source": "changelog_3_2_0_2026_06_06",
-      "target": "changelog_changed_100",
+      "source": "changelog_3_3_0_2026_06_06",
+      "target": "changelog_fixed_100",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L105",
+      "source_location": "L106",
       "weight": 1.0,
       "source": "changelog_3_2_0_2026_06_06",
-      "target": "changelog_fixed_105",
+      "target": "changelog_added_106",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L111",
+      "source_location": "L113",
       "weight": 1.0,
-      "source": "changelog_3_1_0_2026_05_28",
-      "target": "changelog_added_111",
+      "source": "changelog_3_2_0_2026_06_06",
+      "target": "changelog_changed_113",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L119",
+      "source_location": "L118",
       "weight": 1.0,
-      "source": "changelog_3_1_0_2026_05_28",
-      "target": "changelog_changed_119",
+      "source": "changelog_3_2_0_2026_06_06",
+      "target": "changelog_fixed_118",
       "confidence_score": 1.0
     },
     {
@@ -14756,17 +15335,17 @@
       "source_location": "L124",
       "weight": 1.0,
       "source": "changelog_3_1_0_2026_05_28",
-      "target": "changelog_fixed_124",
+      "target": "changelog_added_124",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CHANGELOG.md",
-      "source_location": "L130",
+      "source_location": "L132",
       "weight": 1.0,
-      "source": "changelog_3_0_0_2026_05_25",
-      "target": "changelog_added_130",
+      "source": "changelog_3_1_0_2026_05_28",
+      "target": "changelog_changed_132",
       "confidence_score": 1.0
     },
     {
@@ -14775,8 +15354,8 @@
       "source_file": "CHANGELOG.md",
       "source_location": "L137",
       "weight": 1.0,
-      "source": "changelog_3_0_0_2026_05_25",
-      "target": "changelog_changed_137",
+      "source": "changelog_3_1_0_2026_05_28",
+      "target": "changelog_fixed_137",
       "confidence_score": 1.0
     },
     {
@@ -14786,7 +15365,27 @@
       "source_location": "L143",
       "weight": 1.0,
       "source": "changelog_3_0_0_2026_05_25",
-      "target": "changelog_fixed_143",
+      "target": "changelog_added_143",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L150",
+      "weight": 1.0,
+      "source": "changelog_3_0_0_2026_05_25",
+      "target": "changelog_changed_150",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CHANGELOG.md",
+      "source_location": "L156",
+      "weight": 1.0,
+      "source": "changelog_3_0_0_2026_05_25",
+      "target": "changelog_fixed_156",
       "confidence_score": 1.0
     },
     {
@@ -14796,16 +15395,16 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "readme",
-      "target": "readme_local_ai_photo_gallery_v3_8_0",
+      "target": "readme_local_ai_photo_gallery_v3_9_0",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L6",
+      "source_location": "L12",
       "weight": 1.0,
-      "source": "readme_local_ai_photo_gallery_v3_8_0",
+      "source": "readme_local_ai_photo_gallery_v3_9_0",
       "target": "readme_features",
       "confidence_score": 1.0
     },
@@ -14813,9 +15412,9 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L120",
+      "source_location": "L142",
       "weight": 1.0,
-      "source": "readme_local_ai_photo_gallery_v3_8_0",
+      "source": "readme_local_ai_photo_gallery_v3_9_0",
       "target": "readme_how_to_build_setup",
       "confidence_score": 1.0
     },
@@ -14823,9 +15422,9 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L164",
+      "source_location": "L190",
       "weight": 1.0,
-      "source": "readme_local_ai_photo_gallery_v3_8_0",
+      "source": "readme_local_ai_photo_gallery_v3_9_0",
       "target": "readme_how_to_run",
       "confidence_score": 1.0
     },
@@ -14833,9 +15432,9 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L94",
+      "source_location": "L107",
       "weight": 1.0,
-      "source": "readme_local_ai_photo_gallery_v3_8_0",
+      "source": "readme_local_ai_photo_gallery_v3_9_0",
       "target": "readme_prerequisites",
       "confidence_score": 1.0
     },
@@ -14843,9 +15442,9 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L46",
+      "source_location": "L39",
       "weight": 1.0,
-      "source": "readme_local_ai_photo_gallery_v3_8_0",
+      "source": "readme_local_ai_photo_gallery_v3_9_0",
       "target": "readme_screenshots",
       "confidence_score": 1.0
     },
@@ -14853,9 +15452,9 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L62",
+      "source_location": "L59",
       "weight": 1.0,
-      "source": "readme_local_ai_photo_gallery_v3_8_0",
+      "source": "readme_local_ai_photo_gallery_v3_9_0",
       "target": "readme_technology_architecture_stack",
       "confidence_score": 1.0
     },
@@ -14863,30 +15462,10 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L20",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "readme_features",
-      "target": "readme_earlier_features"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "README.md",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "readme_features",
-      "target": "readme_v3_5_0_features"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "README.md",
-      "source_location": "L8",
+      "source_location": "L14",
       "weight": 1.0,
       "source": "readme_features",
-      "target": "readme_v3_8_0_features",
+      "target": "readme_core_features",
       "confidence_score": 1.0
     },
     {
@@ -15125,5 +15704,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "8a3b90d29bcffbb337e70e6972881803d785efcd"
+  "built_at_commit": "af6d48dba4dffdbb3bfb445263e7bd7fff73cab8"
 }

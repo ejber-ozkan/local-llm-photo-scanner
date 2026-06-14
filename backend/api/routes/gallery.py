@@ -93,7 +93,7 @@ async def get_photo_detail(photo_id: int, db: sqlite3.Connection = Depends(get_d
     cursor.execute(
         """
         SELECT id, filepath, filename, description, status, date_created, date_modified, date_taken,
-               camera_make, camera_model
+               camera_make, camera_model, gps_lat, gps_lon
         FROM photos WHERE id = ?
     """,
         (photo_id,),
@@ -115,6 +115,8 @@ async def get_photo_detail(photo_id: int, db: sqlite3.Connection = Depends(get_d
         "description": row[3],
         "status": row[4],
         "metadata": {"Date Taken": row[7] or "Unknown", "Date Modified": row[6] or "Unknown", "Camera": camera_full},
+        "gps_lat": row[10],
+        "gps_lon": row[11],
     }
 
     # 2. Fetch Associated Entities
@@ -289,6 +291,34 @@ async def search_photos(
             "date_modified": row[6],
         }
         for row in results
+    ]
+
+
+@router.get("/gallery/map")
+async def get_gallery_map_photos(db: sqlite3.Connection = Depends(get_db)) -> list[dict[str, Any]]:
+    """Returns only GPS-positioned gallery photos for the map view."""
+    cursor = db.cursor()
+    cursor.execute(
+        """
+        SELECT id, filename, description, date_taken, gps_lat, gps_lon
+        FROM photos
+        WHERE status = 'processed'
+          AND gps_lat IS NOT NULL
+          AND gps_lon IS NOT NULL
+        ORDER BY COALESCE(date_taken, date_created, date_modified) DESC, id DESC
+        """
+    )
+
+    return [
+        {
+            "id": row[0],
+            "filename": row[1],
+            "description": row[2],
+            "date_taken": row[3],
+            "gps_lat": row[4],
+            "gps_lon": row[5],
+        }
+        for row in cursor.fetchall()
     ]
 
 

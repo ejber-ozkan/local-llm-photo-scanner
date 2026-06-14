@@ -17,10 +17,18 @@ describe('App', () => {
         expect(screen.getByText('Gallery')).toBeInTheDocument();
         expect(screen.getByText('Folders')).toBeInTheDocument();
         expect(screen.getByText('Gallery label & Identify')).toBeInTheDocument();
+        expect(screen.getByText('Image Maps')).toBeInTheDocument();
         expect(screen.getByText('Review Duplicates')).toBeInTheDocument();
         expect(screen.getByText('Test Local AI Scan')).toBeInTheDocument();
         expect(screen.getByText('Scan')).toBeInTheDocument();
         expect(screen.getByText('Settings')).toBeInTheDocument();
+    });
+
+    it('places Image Maps before Review Duplicates in the sidebar', async () => {
+        const { default: App } = await import('../../App');
+        render(<App />);
+        const links = screen.getAllByRole('link').map((link) => link.textContent);
+        expect(links.indexOf('Image Maps')).toBeLessThan(links.indexOf('Review Duplicates'));
     });
 
     // ── Default Route ──────────────────────────────────────────────────

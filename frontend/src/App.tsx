@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { Camera, Search, UserCheck, Settings, Copy, Loader2, FolderOpen, FolderSearch } from 'lucide-react';
+import { Camera, Search, UserCheck, Settings, Copy, Loader2, FolderOpen, FolderSearch, Map } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
 import GlobalScanStatusPanel from './components/GlobalScanStatusPanel';
 
@@ -12,6 +12,7 @@ const ScanPage = lazy(() => import('./components/ScanPage'));
 const ScanTest = lazy(() => import('./components/ScanTest'));
 const DuplicatesPage = lazy(() => import('./components/DuplicatesPage'));
 const FoldersPage = lazy(() => import('./components/FoldersPage'));
+const ImageMapPage = lazy(() => import('./components/ImageMapPage'));
 
 // ── Lazy theme initialization (no-flicker, runs before first paint) ──
 // Uses an IIFE that fires synchronously during module evaluation
@@ -61,6 +62,10 @@ function App() {
               <UserCheck className="w-5 h-5 group-hover:text-primary transition-colors" />
               <span>Gallery label &amp; Identify</span>
             </NavLink>
+            <NavLink to="/image-maps" className={navCls}>
+              <Map className="w-5 h-5 group-hover:text-primary transition-colors" />
+              <span>Image Maps</span>
+            </NavLink>
             <NavLink to="/duplicates" className={navCls}>
               <Copy className="w-5 h-5 group-hover:text-primary transition-colors" />
               <span>Review Duplicates</span>
@@ -88,6 +93,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Gallery />} />
                 <Route path="/identify" element={<Identify />} />
+                <Route path="/image-maps" element={<ImageMapPage />} />
                 <Route path="/duplicates" element={<DuplicatesPage />} />
                 <Route path="/folders" element={<FoldersPage />} />
                 <Route path="/folders/:year" element={<FoldersPage />} />

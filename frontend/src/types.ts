@@ -31,6 +31,15 @@ export interface PhotoDetail {
     ai_model?: string;
 }
 
+export interface MapPhoto {
+    id: number;
+    filename: string;
+    description?: string;
+    date_taken?: string;
+    gps_lat: number;
+    gps_lon: number;
+}
+
 export interface FilterOptions {
     names: { name: string; type: string }[];
     cameras: string[];

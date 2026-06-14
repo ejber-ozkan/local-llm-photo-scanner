@@ -91,6 +91,37 @@ def test_get_filters(client, mock_db_file):
     assert data["names"][0]["name"] == "Fido"
 
 
+def test_get_gallery_map_returns_only_geotagged_processed_photos(client, mock_db_file):
+    """Map endpoint returns a slim payload of processed photos with GPS coordinates."""
+    seed_test_database(mock_db_file)
+
+    conn = sqlite3.connect(mock_db_file)
+    c = conn.cursor()
+    c.execute("UPDATE photos SET gps_lat = ?, gps_lon = ? WHERE id = 1", (51.5074, -0.1278))
+    c.execute("UPDATE photos SET gps_lat = NULL, gps_lon = NULL WHERE id = 2")
+    c.execute(
+        "INSERT INTO photos (id, filepath, filename, status, gps_lat, gps_lon) VALUES (?, ?, ?, ?, ?, ?)",
+        (3, "/tmp/duplicate.jpg", "duplicate.jpg", "duplicate", 40.7128, -74.0060),
+    )
+    conn.commit()
+    conn.close()
+
+    response = client.get("/api/gallery/map")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data == [
+        {
+            "id": 1,
+            "filename": "photo1.jpg",
+            "description": "A picture of a dog",
+            "date_taken": "2025-01-01",
+            "gps_lat": 51.5074,
+            "gps_lon": -0.1278,
+        }
+    ]
+
+
 def test_force_rescan_clears_gallery_filter_cache(client, mock_db_file, tmp_path):
     """Force rescan should invalidate cached gallery filter metadata immediately."""
     seed_test_database(mock_db_file)
