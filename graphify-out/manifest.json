@@ -225,9 +225,9 @@
     "semantic_hash": "799fa8bde47854e3da9e139e51551ae2"
   },
   "frontend/src/App.tsx": {
-    "mtime": 1780840653.9634986,
-    "ast_hash": "cad78da12f99d4c73bea2febd828acca",
-    "semantic_hash": "cad78da12f99d4c73bea2febd828acca"
+    "mtime": 1781439587.2577105,
+    "ast_hash": "10888d8201b6f1005ef44072413b1f8f",
+    "semantic_hash": ""
   },
   "frontend/src/components/DuplicatesPage.tsx": {
     "mtime": 1780784745.1429698,
@@ -240,9 +240,9 @@
     "semantic_hash": "43764fa2878d588a9d361f30f1edba4c"
   },
   "frontend/src/components/FoldersPage.tsx": {
-    "mtime": 1780847314.5669956,
-    "ast_hash": "86b41df8cbb2b445dad35e434db0683a",
-    "semantic_hash": "86b41df8cbb2b445dad35e434db0683a"
+    "mtime": 1781439980.8818593,
+    "ast_hash": "b4ff427ecc2e970c6dd6043930ed146d",
+    "semantic_hash": ""
   },
   "frontend/src/components/Gallery.tsx": {
     "mtime": 1780784619.9110918,
@@ -265,14 +265,14 @@
     "semantic_hash": "c4310d5c557cb3a4ddd1b4277fa18753"
   },
   "frontend/src/components/ScanTest.tsx": {
-    "mtime": 1772876620.2986488,
-    "ast_hash": "f57cf314c4bd44a3e107bb05600b40b4",
-    "semantic_hash": "f57cf314c4bd44a3e107bb05600b40b4"
+    "mtime": 1781439974.7996943,
+    "ast_hash": "3712b22f7258632a127382a6a03dded9",
+    "semantic_hash": ""
   },
   "frontend/src/components/SettingsPage.tsx": {
-    "mtime": 1780844913.9960954,
-    "ast_hash": "225d7cd1968b108e282ab26ce348c88e",
-    "semantic_hash": "225d7cd1968b108e282ab26ce348c88e"
+    "mtime": 1781439913.1138542,
+    "ast_hash": "cc7e5a08034f8f49d082f60405210732",
+    "semantic_hash": ""
   },
   "frontend/src/components/Toast.tsx": {
     "mtime": 1771770371.026681,
@@ -500,13 +500,13 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1780847561.978324,
-    "ast_hash": "2d60378740c577650b48641261b6b0f4",
+    "mtime": 1781440240.7645178,
+    "ast_hash": "3567e1dd7f29b66f5ef73b00377c0d29",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1780847550.5718331,
-    "ast_hash": "f1f04da431221b976752c0e932378957",
+    "mtime": 1781440231.2346864,
+    "ast_hash": "b1f84c28abc81ae5050abd493a57eba5",
     "semantic_hash": ""
   },
   "backend/mypy_output.txt": {
@@ -537,6 +537,11 @@
   "frontend/src/assets/react.svg": {
     "mtime": 1771626925.0615957,
     "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ScanPage.tsx": {
+    "mtime": 1781440182.4419456,
+    "ast_hash": "27e09d305de483a0bcf7c91f3edbd079",
     "semantic_hash": ""
   }
 }

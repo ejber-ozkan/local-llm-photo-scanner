@@ -1,11 +1,11 @@
-# Local AI Photo Gallery v3.7.0
+# Local AI Photo Gallery v3.8.0
 Local LLM Photo Scanner is a self-contained, privacy-preserving application that allows you to manage, search, and collate metadata for your personal photo collections entirely on your local machine.
 
 The application intelligently scans your local directories, processing images using a locally-hosted Large Language Model (LLM) to generate rich, natural-language scene descriptions. It also leverages DeepFace facial recognition to detect and group unknown people and pets within your images, allowing you to seamlessly search your gallery using intuitive, natural language queries.
 
 ## Features
 
-### v3.7.0 Features
+### v3.8.0 Features
 - **Ollama Scan Warm-Up**: AI scans now preload the selected Ollama vision model before processing the first image and pause safely if the model cannot be loaded.
 - **Ollama Keep-Alive Controls**: Backend Ollama requests include a configurable keep-alive value so large vision models are less likely to unload mid-scan.
 - **Ollama Setup Guidance**: README setup notes now include model preload and keep-alive options for long-running local scans.
@@ -27,13 +27,13 @@ The application intelligently scans your local directories, processing images us
 - **Find Visually Similar Photos**: Instantly discover photos physically or contextually resembling each other using spatial coordinate matching via the CLIP engine—without relying on text interpretation.
 - **Advanced Database Management**: Create timestamped backups of your main gallery database from the Settings page and restore to any version with one click. Securely wipe the test sandbox or the entire primary gallery DB using protected UI buttons.
 - **Custom Themes & Appearance**: Choose from 6 built-in colour themes (Twilight Purple, Crimson Sun, Citrus Olive, Ocean Mint, Sapphire Blue, Magenta Rose) plus a Light / Dark mode toggle. Preferences are saved automatically and applied instantly on next load with no flash.
-- **Multi-Model AI Tracking & Comparison**: Each photo records which Ollama vision model generated its description. You can switch the active model at any time. Upload a single photo directly in the "Scan & Test" tab to compare output from different models side-by-side.
+- **Multi-Model AI Tracking & Comparison**: Each photo records which Ollama vision model generated its description. You can switch the active model at any time. Upload a single photo directly in the "Test Local AI Scan" tab to compare output from different models side-by-side.
 - **Frontend Performance Optimizations**: Component decomposition, `useMemo`/`useCallback` hooks, code-splitting with `React.lazy`/`Suspense`, and `ErrorBoundary` implementations for a highly responsive and robust UI structure.
 - **In-App Notifications**: All action feedback (backup created, restore complete, entity errors) uses styled in-app toast notifications — no more browser alert pop-ups.
 - **Interactive Timeline & Detailed Sorting**: Sort photos by Date Taken, Date Created, Date Modified, or Filename. A vertical year timeline on the right side of the gallery lets you jump instantly to any year.
 - **Privacy-First Processing**: All photo scanning, metadata generation, and facial recognition occur entirely on your local machine. No data is sent to the cloud.
 - **Natural Language Search**: Quickly find images by searching for descriptions like "a dog in a park".
-- **Facial & Entity Clustering**: Identifies and clusters faces across your dataset, allowing you to attach real names to recognized individuals and pets. Entities can be renamed or deleted inline from the Gallery popup and the Scan & Test panel.
+- **Facial & Entity Clustering**: Identifies and clusters faces across your dataset, allowing you to attach real names to recognized individuals and pets. Entities can be renamed or deleted inline from the Gallery popup and the Test Local AI Scan panel.
 - **Duplicate & Screenshot Filter**: Native pre-processing hashes your images to automatically quarantine identical files and screenshots from your main, pristine gallery. Inspect and manage duplicates separately in the **Review Duplicates** tab.
 - **Force Rescan**: Rescan a previously scanned directory to refresh AI descriptions and face data. A confirmation dialog warns you before overwriting existing metadata.
 - **Background Scan Controls**: Pause, resume, or cancel any in-progress background scan without losing already-processed results. Live log output streams in-app so you can see exactly what the AI is processing.
@@ -48,8 +48,8 @@ The application intelligently scans your local directories, processing images us
 | Gallery & Visual Search                                                                                              | Single Image Testing & QA                                                                              |
 | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | ![Gallery View — Visual CLIP Search in Action](docs/screenshots/screenshot_clip_visual_search.png)                   | ![Test Scan — single image AI evaluation](docs/screenshots/screenshot_test_scan.png)                   |
-| **Scan & Settings**                                                                                                  | **Database, Themes & Danger Zone**                                                                     |
-| ![Scan & Settings — directory scanner, progress, AI engine selection](docs/screenshots/screenshot_settings_scan.png) | ![Appearance, backup/restore and database management](docs/screenshots/screenshot_settings_themes.png) |
+| **Scan**                                                                                                             | **Settings**                                                                                           |
+| ![Scan — directory scanner and progress](docs/screenshots/screenshot_settings_scan.png)                              | ![Settings — appearance, backup/restore and database management](docs/screenshots/screenshot_settings_themes.png) |
 
 | Local Folder Timeline Filters                                                                                      | Folder File Information & AI Actions                                                                                     |
 | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
@@ -273,12 +273,12 @@ npm run dev
 ### 4. Open the Application
 Navigate to the URL provided by Vite in your web browser (typically `http://localhost:5173`). 
 
-Go to the **Scan & Settings** tab, input the absolute path to a folder containing images (e.g., `C:\Users\YourName\Pictures`), and start the background scan to watch the AI build your personalized photo dataset!
+Go to the **Scan** tab, input the absolute path to a folder containing images (e.g., `C:\Users\YourName\Pictures`), and start the background scan to watch the AI build your personalized photo dataset!
 
 ### 5. Managing Your Database
 
 If you need to restart from scratch or clear out test scans:
-- **From the UI**: Navigate to the **Scan & Settings** or **Scan & Test** tab. Scroll down to Database Management. You can securely wipe the test sandbox or the entire primary gallery DB using the protected UI buttons.
+- **From the UI**: Navigate to the **Settings** tab and scroll down to Danger Zone. You can securely wipe the test sandbox or the entire primary gallery DB using the protected UI buttons.
 - **Database Backups**: Use the **Database Integrity & Backups** section in Settings to create a timestamped backup or restore from a previous backup.
 - **From the Backend CLI**: You can run the `clean_db.py` script manually inside the `backend` environment:
   ```bash

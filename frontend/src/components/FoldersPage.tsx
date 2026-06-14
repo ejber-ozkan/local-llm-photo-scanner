@@ -1164,7 +1164,7 @@ export default function FoldersPage() {
                                 <Folder className="w-16 h-16 mb-4 text-blue-500/40" />
                                 <p className="text-lg font-medium text-gray-400">Empty directory or no folder scanned yet.</p>
                                 <p className="text-sm text-gray-600 mt-2 max-w-md">
-                                    Click "Scan & Settings" to register and index folders on your local disk.
+                                    Click "Scan" to register and index folders on your local disk.
                                 </p>
                             </div>
                         ) : (

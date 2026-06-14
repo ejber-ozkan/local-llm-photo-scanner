@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { Camera, Search, UserCheck, Settings, Copy, Loader2, FolderOpen } from 'lucide-react';
+import { Camera, Search, UserCheck, Settings, Copy, Loader2, FolderOpen, FolderSearch } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
 import GlobalScanStatusPanel from './components/GlobalScanStatusPanel';
 
@@ -8,6 +8,7 @@ import GlobalScanStatusPanel from './components/GlobalScanStatusPanel';
 const Gallery = lazy(() => import('./components/Gallery'));
 const Identify = lazy(() => import('./components/Identify'));
 const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const ScanPage = lazy(() => import('./components/ScanPage'));
 const ScanTest = lazy(() => import('./components/ScanTest'));
 const DuplicatesPage = lazy(() => import('./components/DuplicatesPage'));
 const FoldersPage = lazy(() => import('./components/FoldersPage'));
@@ -52,25 +53,29 @@ function App() {
               <Search className="w-5 h-5 group-hover:text-primary transition-colors" />
               <span>Gallery</span>
             </NavLink>
+            <NavLink to="/folders" className={navCls}>
+              <FolderOpen className="w-5 h-5 group-hover:text-primary transition-colors" />
+              <span>Folders</span>
+            </NavLink>
             <NavLink to="/identify" className={navCls}>
               <UserCheck className="w-5 h-5 group-hover:text-primary transition-colors" />
-              <span>Identify</span>
+              <span>Gallery label &amp; Identify</span>
             </NavLink>
             <NavLink to="/duplicates" className={navCls}>
               <Copy className="w-5 h-5 group-hover:text-primary transition-colors" />
               <span>Review Duplicates</span>
             </NavLink>
-            <NavLink to="/folders" className={navCls}>
-              <FolderOpen className="w-5 h-5 group-hover:text-primary transition-colors" />
-              <span>Folders</span>
-            </NavLink>
             <NavLink to="/test" className={navCls}>
               <Camera className="w-5 h-5 group-hover:text-primary transition-colors" />
-              <span>Scan &amp; Test</span>
+              <span>Test Local AI Scan</span>
+            </NavLink>
+            <NavLink to="/scan" className={navCls}>
+              <FolderSearch className="w-5 h-5 group-hover:text-primary transition-colors" />
+              <span>Scan</span>
             </NavLink>
             <NavLink to="/settings" className={navCls}>
               <Settings className="w-5 h-5 group-hover:text-primary transition-colors" />
-              <span>Scan &amp; Settings</span>
+              <span>Settings</span>
             </NavLink>
           </nav>
         </div>
@@ -89,6 +94,7 @@ function App() {
                 <Route path="/folders/:year/:month" element={<FoldersPage />} />
                 <Route path="/folders/:year/:month/:day" element={<FoldersPage />} />
                 <Route path="/test" element={<ScanTest />} />
+                <Route path="/scan" element={<ScanPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Routes>
             </Suspense>

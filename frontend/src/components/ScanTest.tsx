@@ -159,7 +159,7 @@ export default function ScanTest() {
             <div className="mb-10">
                 <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                     <Sparkles className="text-primary w-8 h-8" />
-                    Scan & Test Image
+                    Test Local AI Scan
                 </h1>
                 <p className="text-gray-400 mt-2 text-lg">Upload or drag a single image here to see exactly how the AI processes and tags it in real-time.</p>
             </div>

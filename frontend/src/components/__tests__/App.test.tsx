@@ -15,11 +15,12 @@ describe('App', () => {
         const { default: App } = await import('../../App');
         render(<App />);
         expect(screen.getByText('Gallery')).toBeInTheDocument();
-        expect(screen.getByText('Identify')).toBeInTheDocument();
-        expect(screen.getByText('Review Duplicates')).toBeInTheDocument();
         expect(screen.getByText('Folders')).toBeInTheDocument();
-        expect(screen.getByText('Scan & Test')).toBeInTheDocument();
-        expect(screen.getByText('Scan & Settings')).toBeInTheDocument();
+        expect(screen.getByText('Gallery label & Identify')).toBeInTheDocument();
+        expect(screen.getByText('Review Duplicates')).toBeInTheDocument();
+        expect(screen.getByText('Test Local AI Scan')).toBeInTheDocument();
+        expect(screen.getByText('Scan')).toBeInTheDocument();
+        expect(screen.getByText('Settings')).toBeInTheDocument();
     });
 
     // ── Default Route ──────────────────────────────────────────────────

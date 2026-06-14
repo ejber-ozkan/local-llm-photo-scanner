@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.8.0] - 2026-06-14
+
+### Changed
+
+- Split the combined Scan & Settings area into dedicated Scan and Settings pages.
+- Merged AI gallery scanning and non-AI folder scanning into one Scan page panel with a mode switch, shared progress controls, and one live log viewer.
+- Renamed Scan & Test to Test Local AI Scan and updated sidebar ordering/labels.
+
 ## [3.7.0] - 2026-06-07
 
 ### Fixed
