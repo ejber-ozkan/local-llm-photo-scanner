@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.10.0] - 2026-07-12
+
+### Added
+
+- A "Scan New Only" button option in the Scan Page dashboard popup for folders that have been scanned previously, allowing non-destructive scans of only new files and subfolders.
+
+### Fixed
+
+- Timeline date resolution uses the earlier of the file's modification date (`date_modified`/`mtime`) and creation date (`date_created`/`ctime`) to resolve the true original capture time of copied/modified files.
+
 ## [3.9.1] - 2026-06-14
 
 ### Added

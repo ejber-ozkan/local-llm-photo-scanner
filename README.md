@@ -1,4 +1,4 @@
-# Local AI Photo Gallery v3.9.1
+# Local AI Photo Gallery v3.10.0
 
 Local LLM Photo Scanner is a self-contained, privacy-preserving app for
 managing, searching, and collating metadata for personal photo collections on

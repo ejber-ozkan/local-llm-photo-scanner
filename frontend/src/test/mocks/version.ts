@@ -1,1 +1,1 @@
-export const MOCK_APP_VERSION = "3.9.1";
+export const MOCK_APP_VERSION = "3.10.0";

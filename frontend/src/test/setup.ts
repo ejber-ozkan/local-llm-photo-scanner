@@ -60,3 +60,29 @@ class GlobalMockResizeObserver {
     disconnect() {}
 }
 globalThis.ResizeObserver = GlobalMockResizeObserver as typeof ResizeObserver;
+
+// Mock localStorage globally for environments where Node's experimental localStorage causes conflicts
+const mockStorage = (() => {
+    let store: Record<string, string> = {};
+    return {
+        getItem: (key: string) => store[key] || null,
+        setItem: (key: string, value: string) => { store[key] = String(value); },
+        removeItem: (key: string) => { delete store[key]; },
+        clear: () => { store = {}; },
+        get length() { return Object.keys(store).length; },
+        key: (index: number) => Object.keys(store)[index] || null,
+    };
+})();
+
+Object.defineProperty(globalThis, 'localStorage', {
+    value: mockStorage,
+    writable: true,
+    configurable: true,
+});
+if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'localStorage', {
+        value: mockStorage,
+        writable: true,
+        configurable: true,
+    });
+}

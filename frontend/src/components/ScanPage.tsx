@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import axios from 'axios';
-import { AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FolderSearch, Pause, Play, Terminal, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ChevronDown, ChevronUp, FolderSearch, Pause, Play, Sparkles, Terminal, XCircle } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import type { FolderScanStatus, ScanHistoryItem, ScanStatus } from '../types';
 
@@ -561,6 +561,20 @@ export default function ScanPage() {
                         <div className="flex justify-end gap-3 font-medium">
                             <button onClick={() => setConfirmModal(null)} className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-300 transition-colors">
                                 Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (confirmModal.target === 'rescan') {
+                                        executeScan(false);
+                                    } else {
+                                        executeFolderScan(false);
+                                    }
+                                    setConfirmModal(null);
+                                }}
+                                className="px-5 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 transition-colors flex items-center gap-2"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                Scan New Only
                             </button>
                             <button onClick={handleConfirmNext} className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 transition-colors flex items-center gap-2">
                                 <FolderSearch className="w-4 h-4" />

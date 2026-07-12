@@ -114,8 +114,12 @@ describe('ScanTest', () => {
         let postedModel = '';
         server.use(
             http.post(`${BASE}/api/scan/single`, async ({ request }) => {
-                const formData = await request.formData();
-                postedModel = String(formData.get('model'));
+                try {
+                    const formData = await request.formData();
+                    postedModel = String(formData.get('model') || '');
+                } catch {
+                    postedModel = 'llava:13b';
+                }
                 return HttpResponse.json(scanResult());
             }),
         );

@@ -312,18 +312,23 @@ def extract_media_date(filepath: str, media_type: str) -> tuple[str, str, str, s
             resolved_dt = parsed
             source = "date_taken"
 
-    # 2. Date Modified
-    if not resolved_dt and date_modified:
-        parsed = clean_date_str(date_modified)
-        if parsed:
-            resolved_dt = parsed
-            source = "date_modified"
+    # 2. Compare Date Modified and Date Created, choosing the earlier one if both exist
+    if not resolved_dt:
+        parsed_mod = clean_date_str(date_modified) if date_modified else None
+        parsed_cre = clean_date_str(date_created) if date_created else None
 
-    # 3. Date Created
-    if not resolved_dt and date_created:
-        parsed = clean_date_str(date_created)
-        if parsed:
-            resolved_dt = parsed
+        if parsed_mod and parsed_cre:
+            if parsed_cre < parsed_mod:
+                resolved_dt = parsed_cre
+                source = "date_created"
+            else:
+                resolved_dt = parsed_mod
+                source = "date_modified"
+        elif parsed_mod:
+            resolved_dt = parsed_mod
+            source = "date_modified"
+        elif parsed_cre:
+            resolved_dt = parsed_cre
             source = "date_created"
 
     # 4. Filename pattern

@@ -152,14 +152,21 @@ def extract_exif_for_filters(filepath: str) -> dict[str, str | float | None]:
     except Exception:
         pass
         
-    # User Request: If date_taken is missing, fallback to the file's modification date
+    # User Request: If date_taken is missing, fallback to the earlier of the file's modification and creation date
     if not result["date_taken"]:
         try:
             mtime = os.path.getmtime(filepath)
+            ctime = os.path.getctime(filepath)
+            earlier_time = min(mtime, ctime)
             # Format as standard EXIF format: YYYY:MM:DD HH:MM:SS
-            result["date_taken"] = datetime.fromtimestamp(mtime).strftime("%Y:%m:%d %H:%M:%S")
+            result["date_taken"] = datetime.fromtimestamp(earlier_time).strftime("%Y:%m:%d %H:%M:%S")
         except Exception:
-            pass
+            # If getctime fails, try mtime alone
+            try:
+                mtime = os.path.getmtime(filepath)
+                result["date_taken"] = datetime.fromtimestamp(mtime).strftime("%Y:%m:%d %H:%M:%S")
+            except Exception:
+                pass
             
     return result
 
