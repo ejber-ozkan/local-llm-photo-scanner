@@ -12,6 +12,71 @@ existing accent choices retained. Persist preferences without a first-paint
 flash. Respect reduced motion and contrast preferences. Decorative effects must
 not degrade scrolling or obscure photographs.
 
+## Languages and locales
+
+Provide **33 selectable UI language/locale options**: all 24 official EU
+languages below plus nine global options. Simplified and Traditional Chinese
+are separate script locales, so this is 33 options rather than 33 distinct
+languages. These are required translation targets, not a claim that translations
+are already implemented.
+
+### Full coverage of official EU languages (24)
+
+Bulgarian (`bg`), Croatian (`hr`), Czech (`cs`), Danish (`da`), Dutch (`nl`),
+English (`en`), Estonian (`et`), Finnish (`fi`), French (`fr`), German (`de`),
+Greek (`el`), Hungarian (`hu`), Irish (`ga`), Italian (`it`), Latvian (`lv`),
+Lithuanian (`lt`), Maltese (`mt`), Polish (`pl`), Portuguese (`pt`), Romanian
+(`ro`), Slovak (`sk`), Slovenian (`sl`), Spanish (`es`), and Swedish (`sv`).
+
+### Expanded global locales (9)
+
+Turkish (`tr`), Arabic (`ar`), Simplified Chinese (`zh-Hans`), Traditional
+Chinese (`zh-Hant`), Japanese (`ja`), Korean (`ko`), Russian (`ru`), Ukrainian
+(`uk`), and Indonesian (`id`).
+
+### Selection, formatting and layout
+
+Offer a searchable language selector during first-run setup and under Settings.
+Display each language's native name alongside its current-UI-language name;
+do not use flags as language identifiers. Start from a supported OS/browser
+language, falling back to English, and persist an explicit user override.
+Switch without restarting or losing search filters, selection, date-rail anchor
+or job progress. Each LAN browser keeps its own preference independently of the
+desktop host. Update document language and direction for assistive technology.
+
+Use stable translation keys, complete local translation bundles, plural-aware
+messages and interpolation; avoid concatenating translated sentence fragments.
+All 33 options work offline. Load only the active/fallback bundle into the UI.
+Translate navigation, date-rail labels, filters, menus, tooltips, accessibility
+labels, onboarding, dialogs, privacy notices and actionable errors. Missing
+strings fall back to English defensively, but missing required translations
+fail release validation. Raw technical diagnostics may remain in their source
+language alongside a translated explanation.
+
+Use locale-aware dates, month/day names, numbers, plurals, units and collation.
+Separate UI language from regional date/number preferences; changing language
+must not reinterpret stored dates, rename files, translate user-entered labels
+or modify existing AI descriptions. Multilingual AI generation/search quality
+is a separate provider/model capability, not guaranteed by UI translation.
+
+Arabic requires right-to-left text, appropriate directional controls and keyboard
+behavior, and bidirectional isolation for paths, identifiers and mixed-script
+content. Preserve the date rail and the user's preferred position rather than
+hiding it in an RTL layout. Do not mirror photographs or video content. Allow
+text expansion and appropriate line wrapping for long translations, and provide
+licensed offline font coverage for Cyrillic, Greek, Arabic and CJK scripts.
+
+### Localization acceptance
+
+Check all 33 catalogues for key completeness, valid interpolation and plural
+forms. Use pseudo-localization to expose clipping and untranslated strings.
+Run layout/keyboard/screen-reader checks for Arabic RTL, CJK, Cyrillic, Turkish
+case handling and long EU-language strings, across light/dark themes, compact
+widths and 200% zoom. Verify localized date-rail jumps, unknown-date labels,
+language persistence, per-browser preferences and offline switching. Review
+privacy/destructive-action translations for meaning, not just key coverage;
+machine translation alone is insufficient release evidence.
+
 ## Desktop layout
 
 ```text
@@ -69,7 +134,7 @@ Filtered/semantic histograms must state their scope, including any result cap.
 | Entities | Review face evidence, rename/merge/remove labels, retain person/pet distinction; no original deletion through label actions |
 | Duplicates | Side-by-side evidence, grouped counts, source/date/size filters and CSV export; no automatic original deletion |
 | Sandbox | Clearly identified test area with independent clear action; show model, stage timings and result metadata |
-| Settings | Appearance, sources/cache, AI providers/models, LAN devices, backup/restore, scoped data clearing |
+| Settings | Appearance, language/region, sources/cache, AI providers/models, LAN devices, backup/restore, scoped data clearing |
 
 Provide a searchable command menu, visible keyboard shortcuts, clear focus rings,
 accessible names and live status announcements that are throttled. Prefer
