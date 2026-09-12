@@ -14,8 +14,10 @@ with sequential dependencies. All implementation phases remain unstarted.
   with separate, managed model downloads.
 - Windows 10/11, macOS Ventura 13+ on Intel and Apple Silicon, Ubuntu first,
   Fedora and Red Hat Linux. Mainstream Intel/AMD hardware from around 2022;
-  a dedicated GPU is optional.
-- Libraries can contain millions of photos/videos. Originals may live on SSD,
+  target GPU support spans 2022-onward NVIDIA/AMD/Intel/Apple devices, with validated
+  acceleration and CPU fallback; a dedicated GPU remains optional.
+- Libraries contain at most 500,000 indexed photo/video files across all roots,
+  counting duplicate file locations. Originals may live on SSD,
   NAS, USB, or external disks. Opening, searching, browsing, and importing take
   priority over AI throughput.
 - Local AI by default, multiple provider implementations, and explicit opt-in
@@ -34,7 +36,7 @@ vector caches, and managed inference helpers. Preserve useful Python AI code
 behind a worker boundary; do not load Python/ML to open the gallery.
 
 RHEL installation, packaged media support, Python native dependencies, and
-million-item query/index performance must pass the early feasibility gate.
+500,000-file query/index performance must pass the early feasibility gate.
 Electron is the shell fallback if packaged WebKit cannot meet the platform
 contract. Changing the shell must not require changing catalogue services.
 

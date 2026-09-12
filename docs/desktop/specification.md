@@ -5,11 +5,20 @@ Status: proposed acceptance contract; user requirements are recorded in
 
 ## Scale and storage
 
-Design for a one-million-asset working library, a five-million-asset release
-scale test, and a ten-million-row catalogue stress test. The latter is not a
-promise of equivalent inference speed or unlimited scale. Assume 16 GB RAM and
-a six-core-class 2022 CPU with local SSD; record actual reference models before
-benchmarking. An 8 GB machine is a reduced-concurrency validation profile.
+The maximum library size is **500,000 indexed photo/video files across all roots**.
+Each distinct indexed file location counts, including duplicate copies; folders,
+thumbnails, embeddings and other derived records do not. Reimporting an existing
+location does not consume another slot. This replaces the earlier larger-scale
+targets. Use 100,000-file development benchmarks and 500,000-file release tests.
+Assume 16 GB RAM and a six-core-class 2022 CPU with local SSD; record actual
+reference models before benchmarking. An 8 GB machine is a reduced-concurrency
+validation profile.
+
+Enforce capacity atomically across concurrent imports. At the limit, stop admitting
+new files and show the count, limit and next action; never silently truncate a
+successful import or remove originals. Existing files remain browsable and can
+be updated/rescanned. Resume discovery after catalogue entries are explicitly
+removed; interrupted import reservations must not permanently consume capacity.
 
 The catalogue, search indexes and thumbnail cache reside on local disk. Users
 may place originals on local/removable disks or OS-mounted SMB/NFS shares.
@@ -26,16 +35,42 @@ with an explanation that original reads and uncached imports may be slower.
 Cache size is visible and bounded. Proposed default thumbnail budget: 10 GiB,
 subject to available disk space, with user override and eviction/recreation.
 Show estimated index/model disk needs before enabling expensive processing.
-For perspective, one million 512-dimensional float32 vectors alone occupy
-about 1.91 GiB before index overhead; a million 40 KiB thumbnails occupy about
-38 GiB. A complete cache is not assumed.
+For perspective, 500,000 512-dimensional float32 vectors alone occupy about
+0.95 GiB before index overhead; 500,000 40 KiB thumbnails occupy about 19 GiB.
+Multiple models and face observations can generate more vectors than files.
+A complete cache is not assumed.
+
+## Local CPU and GPU support
+
+Target GPUs introduced in **2022 or later across NVIDIA, AMD, Intel and Apple
+Silicon**, including integrated and discrete graphics where applicable to the
+supported operating systems. Avoid a single-vendor requirement. A dedicated GPU
+remains optional: CPU-only library use and local processing remain supported,
+with processing speed and model size constrained by available resources.
+
+Use validated acceleration for local AI descriptions, embeddings, face analysis
+and media processing wherever the selected runtime/model/codec supports it.
+GPU release year alone does not establish driver/API compatibility, available
+VRAM or model support; not every GPU accelerates every stage. Publish a tested
+GPU/OS/driver/runtime matrix, detect capabilities at startup and offer Auto,
+CPU or a compatible GPU per processing profile. Keep catalogue operations on the
+CPU where appropriate rather than forcing all local work through a GPU.
+
+Show the actual device used, missing acceleration support and memory requirements.
+Constrain model/batch size to available memory, handle GPU out-of-memory and
+device-loss errors, and fall back to CPU with a visible notice when the stage
+supports it. Otherwise pause that stage with a useful explanation. Never fall
+back to cloud without consent. Older GPUs are best-effort; supported Macs and
+PCs can still use CPU fallback. Benchmark representative 2022-era and newer
+devices from each vendor on applicable platforms; do not claim exhaustive
+compatibility from a single GPU test.
 
 ## Required feature parity
 
 | ID | Capability to retain | Acceptance example |
 | --- | --- | --- |
 | F01 | Gallery, image details, full-size viewing, EXIF/GPS, date/camera/entity filters and sorting | The same fixture is reachable by date, camera and named-person filters; metadata remains inspectable |
-| F02 | Right-side year/month date rail and timeline grouping | Jump to an unloaded year in a million-row filtered query; back returns to the previous asset anchor |
+| F02 | Right-side year/month date rail and timeline grouping | Jump to an unloaded year in a 500,000-file filtered query; back returns to the previous asset anchor |
 | F03 | Keyword, semantic text-to-image and visually similar search | Results are labelled by search mode; indexed and unindexed availability is clear; filters apply to semantic results |
 | F04 | Folder explorer and year/month/day drilldown | Browse a root/subfolder and date scope, including undated items, without retrieving the whole tree |
 | F05 | Metadata-only and AI scans | Start root, single-file and date-scope scans; preserve new-only, force-rescan, screenshot exclusion, stage toggles and model selection |
@@ -89,7 +124,7 @@ on the pinned 16 GB reference machines. Cold means a fresh application process;
 also report filesystem-cache-cold measurements separately. Query measurements
 use fixed representative filters and data distributions, not a favourable demo.
 
-| Operation | Proposed p95 target at 1M assets |
+| Operation | Proposed p95 target at the 500,000-file limit |
 | --- | --- |
 | Cold launch to usable catalogue with first cached page | <= 3 seconds |
 | Warm cached gallery page (200 records maximum) | <= 200 ms engine response; <= 400 ms visible |
@@ -102,10 +137,12 @@ use fixed representative filters and data distributions, not a favourable demo.
 | Metadata-only discovery into catalogue on SSD | >= 1,000 files/sec sustained on the pinned fixture, excluding hashes/EXIF/thumbnails |
 | Idle app memory, excluding OS-shared pages and AI | <= 750 MiB across owned processes; no growth proportional to loaded catalogue rows |
 
-At 5M assets, aim for no more than twice the 1M cached page/search/date-jump
-latency and the same bounded UI memory. Record ingestion, index-build and peak
-memory separately. These thresholds can be revised only with documented
-measurements and a product decision, not silently relaxed to pass a build.
+Record ingestion, index-build and peak memory separately at 100,000 and 500,000
+files. Test admission at 499,999, 500,000 and 500,001 candidate files, including
+concurrent imports; exceeding the limit is a capacity-handling test, not a larger
+supported library. Keep the responsiveness targets above. These thresholds can
+be revised only with documented measurements and a product decision, not silently
+relaxed to pass a build.
 
 NAS and external-drive throughput is reported by operation/device, with injected
 latency/disconnection tests. Cached browsing should remain near local targets;

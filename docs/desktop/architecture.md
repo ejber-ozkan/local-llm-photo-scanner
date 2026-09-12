@@ -99,7 +99,7 @@ Do not mix incompatible vectors or reuse a threshold across model changes.
 
 Use composite indexes for root/date/status/entity queries and keyset pagination
 with deterministic ID tie-breaks. Date seeks and viewport anchors operate on
-query plus cursor, not numeric offsets into millions of rows. Base year/month/day
+query plus cursor, not numeric offsets into large result sets. Base year/month/day
 counts update transactionally; filtered histograms are cached by query/revision,
 with explicit loading states for expensive combinations. Never derive date-rail
 coverage from the current page. Semantic query sessions retain their bounded
@@ -119,10 +119,12 @@ descriptions remain authoritative in SQLite. A crash must not lose their edits.
 Evaluate USearch as the first embedded index candidate, against the current
 Chroma behavior and exact-search ground truth. Its Rust support and disk-backed
 views are useful, but do not prove cheap mutable indexing or bounded rebuild
-memory. Benchmark increment/delete, filtered recall and compaction at 1M/5M.
-Use bounded mutable segments and immutable snapshots only if the measurements
-require them. Keep indexing off the UI thread and bound working sets. If the
-candidate fails, record the replacement decision before the search phase.
+memory. Benchmark increment/delete, filtered recall and compaction at 100,000 and
+500,000 files, including multiple face vectors per file. Start with a single local
+catalogue and one index per embedding namespace; distributed search and custom
+index sharding are outside this plan. Keep indexing off the UI thread and bound
+working sets. Add segmentation only if capped-library measurements justify it.
+If the candidate fails, record the replacement decision before the search phase.
 [USearch capabilities](https://github.com/unum-cloud/USearch).
 
 Hybrid search combines indexed text/filter results with vector candidates;
@@ -140,6 +142,10 @@ items. These routes must not materialise entire result collections in memory.
 
 Enumerate lazily and commit discovered batches immediately. Discovery does not
 wait for hashing, full metadata, thumbnails, face recognition or descriptions.
+The catalogue writer atomically admits at most 500,000 distinct file locations,
+including concurrent imports. Existing-location updates consume no extra capacity.
+Persist capacity-paused discovery and reclaim abandoned reservations on restart;
+surface partial import status rather than reporting completion at the limit.
 Prioritise visible thumbnails and interactive queries above bulk imports and AI.
 Jobs have per-source I/O limits, bounded queues and CPU/RAM/VRAM budgets. NAS
 enumeration and unavailable devices use timeouts/backoff and do not block peers.
@@ -202,6 +208,12 @@ retain working Python adapters until native replacements prove parity.
 
 Model/runtime downloads use versioned manifests, size/hash checks, resumable
 temporary files and atomic activation. Enforce disk budgets and CPU fallback.
+The local acceleration contract covers 2022-onward NVIDIA, AMD, Intel and Apple
+GPUs on applicable supported OS/runtime combinations. Detect per-stage capability
+and free memory, choose a validated backend, and report the device actually used.
+Device loss or exhausted VRAM triggers bounded retry, a visible CPU fallback or
+a paused stage, never an implicit cloud request. Model/runtime adapters own the
+device-specific details; catalogue/UI services remain hardware-independent.
 Do not auto-download all accelerators/models. Credentials never enter frontend
 bundles, ordinary logs, exported reports or unencrypted backups.
 

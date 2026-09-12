@@ -32,7 +32,8 @@ failures and exclusions rather than claiming a clean baseline by ignoring them.
 | Browser journeys | Paired LAN browse/search; permissions, session revocation and TLS/origin rules; shared UI with real host engine |
 | Desktop journeys | Installed app starts, imports, date-seeks, searches, labels, backs up/restores and resumes after interruption |
 | AI evaluation | Fixed licensed image set, face false matches, pet labels, descriptions, text/image retrieval quality and model changes |
-| Performance | 1M/5M catalogues, 10M stress, memory/latency, incremental import, index maintenance and representative storage latency |
+| Performance | 100,000/500,000-file catalogues, capacity boundaries, memory/latency, incremental import, index maintenance and storage latency |
+| GPU compatibility | Representative 2022-onward NVIDIA/AMD/Intel/Apple hardware on applicable OS/runtime combinations, device selection, CPU fallback and memory/device failures |
 
 A minimum release journey runs: fresh install -> create library -> import -> date
 seek -> keyword and semantic search -> identify -> duplicate CSV -> video preview
@@ -41,11 +42,23 @@ separate tests for each transition so a single failure does not hide all results
 
 ## Failure and scale fixtures
 
-Use generated metadata for million-row tests and a small committed/licensed real
+Use generated metadata for 100,000/500,000-file tests and a small committed/licensed real
 media set for correctness. Generate additional distinct media for throughput;
 do not infer decode performance from repeated copies benefiting from caches.
 Seed datasets and record expected distributions, duplicate clusters, missing
 dates, multiple locations, filenames, face counts and provider outputs.
+
+Exercise 499,999, 500,000 and 500,001 candidate files, concurrent imports, duplicate
+locations, reimports, capacity-paused jobs and reservation recovery. Verify that
+the cap is never exceeded, originals are untouched, existing entries remain
+usable and the UI does not report truncated imports as complete.
+
+Record GPU model, release generation, driver, OS, runtime, model, VRAM/shared
+memory and actual selected backend. Include integrated/constrained-memory devices,
+GPU absence, unsupported acceleration, out-of-memory and device loss. Compare
+CPU/GPU quality within defined tolerances and keep browsing responsive during
+accelerated processing. GPU CI mocks protect routing/fallback; hardware runs prove
+actual acceleration. No single-device run proves every 2022-onward GPU works.
 
 Kill workers and engine at result/transaction/index boundaries. Replay jobs;
 assert no missing committed labels, duplicate observations or mixed model indexes.
